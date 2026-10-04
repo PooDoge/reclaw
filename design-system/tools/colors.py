@@ -32,9 +32,11 @@ C=[
 ("info","#66c0f4","#0b6aa8","Informational status text (queued, installing) on bg-panel, bg-base and info-bg."),
 ("info-bg","#12303f","#d8ecf8","Fill behind an info badge."),
 ("scrim","#05080cb3","#0b1017a6","Modal backdrop behind dialogs and drawers."),
-("deck-bg","#0a0e14","#0a0e14","Deck mode page background and the base under the Big Art backdrop. Deck mode is dark only, so both themes carry the same value."),
-("deck-scrim","#0a0e14d1","#0a0e14d1","82% deck-bg laid over Big Art wherever text sits on art (hero title, tile caption). Text over it must still hold 4.5:1 against a pure white image."),
-("focus-glow","#66c0f473","#66c0f473","Outer glow of the focused element in Deck mode: accent at 45%. Decoration only; the 3px accent border carries the focus meaning."),
+("deck-bg","#0a0e14","#f2f5f9","Deck mode page background and the base under the Big Art backdrop. Follows the theme: near-black in midnight, the page grey of bg-base in daylight."),
+("deck-scrim","#0a0e14d1","#f2f5f9d1","82% deck-bg laid over Big Art wherever text sits on art (hero title, tile caption). Text over it must still hold 4.5:1 against the worst image: pure white under the dark scrim, pure black under the light one."),
+("focus-glow","#66c0f473","#0b6aa873","Outer glow of the focused element in Deck mode: accent at 45%. Decoration only; the 3px accent border carries the focus meaning."),
+("deck-dim","#05080cd9","#0b1017c2","Dims the Deck page behind a centered menu, a confirmation or a notice's details. Dark in both themes, like scrim but deeper, so the light panel on top stands out in daylight."),
+("deck-dim-ink","#e8eef5","#f2f5f9","Text drawn straight on deck-dim (a centered menu's title). Light in both themes because the dim is dark in both."),
 ]
 SURF=["bg-deep","bg-nav","bg-base","bg-panel","bg-raised"]
 def over(fg_hex8, bg_hex):
@@ -52,14 +54,18 @@ def checks():
         chk("accent",["bg-nav","bg-base","bg-panel","bg-raised"],4.5); chk("accent-hover",["bg-base","bg-panel"],4.5)
         chk("on-accent",["accent","accent-hover"],4.5); chk("on-install",["install","install-hover"],4.5)
         chk("line-strong",["bg-base","bg-panel"],3.0)
-        # deck: text on deck-bg, and on deck-scrim over the worst case, a pure white image
-        if theme == "midnight":  # Deck mode is dark only
-            worst=over(dict((n,a) for n,a,b,_ in C)["deck-scrim"],"#ffffff")
-            for fg in ("ink","ink-muted","ink-subtle","accent"):
-                out.append((theme,fg,"deck-bg",4.5,cr(g(fg),g("deck-bg"))))
-            # Over art, only ink and ink-muted are allowed (ink-subtle misses on a white image).
-            for fg in ("ink","ink-muted"):
-                out.append((theme,fg,"deck-scrim over white",4.5,cr(g(fg),worst)))
+        # deck: text on deck-bg, and on deck-scrim over the worst image: white under a dark scrim, black under a light one
+        scrim=dict((n,(a,b)) for n,a,b,_ in C)["deck-scrim"][ti]
+        for fg in ("ink","ink-muted","ink-subtle","accent"):
+            out.append((theme,fg,"deck-bg",4.5,cr(g(fg),g("deck-bg"))))
+        # Over art, only ink and ink-muted are allowed (ink-subtle misses on a white image).
+        for fg in ("ink","ink-muted"):
+            for image in ("#ffffff","#000000"):
+                out.append((theme,fg,"deck-scrim over "+image,4.5,cr(g(fg),over(scrim,image))))
+        # text straight on the dim, over the page it dims at its lightest (white) and darkest (black)
+        dim=dict((n,(a,b)) for n,a,b,_ in C)["deck-dim"][ti]
+        for image in ("#ffffff","#000000"):
+            out.append((theme,"deck-dim-ink","deck-dim over "+image,4.5,cr(g("deck-dim-ink"),over(dim,image))))
         out.append((theme,"on-install","install",4.5,cr(g("on-install"),g("install"))))
         for s,bg in [("ok","ok-bg"),("warn","warn-bg"),("danger","danger-bg"),("info","info-bg")]:
             chk(s,[bg,"bg-panel","bg-base"],4.5)

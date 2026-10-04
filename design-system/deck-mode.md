@@ -14,7 +14,7 @@ The brief arrived as a summary of Valve's unified interface. We kept the ideas t
 | Slide-in overlays | Main menu from the left, Quick Access from the right, both over the page; focus trapped; Back closes. |
 | Glyph prompts | A bottom `HintBar` whose glyphs follow the controller in use, or keycaps if the keyboard was used last. |
 | Dense desktop vs big console | `Density::Controller`: rows 64, targets 56, body 20, safe zone 48x32. These sizes are ours, chosen for reading distance; they are not Valve's. |
-| Dark theme | Deck is dark only (`deck-bg`). |
+| Theme | Deck follows the theme (ADR 0007): `deck-bg`, `deck-scrim`, `focus-glow`, `deck-dim` and `deck-dim-ink` each have a value per theme. |
 
 ## Principles
 

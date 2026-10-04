@@ -32,11 +32,13 @@ pub struct Setup {
     pub scale: f64,
 }
 
-/// The launch configuration for a frame: the borderless plugin (resize bands, rounded corners) for
+/// The launch configuration for a frame: the borderless plugin (rounded corners) for
 /// the custom frame, nothing for the native one.
 pub fn with_frame(config: LaunchConfig, frame: Frame) -> LaunchConfig {
     match frame {
-        Frame::Custom => config.with_plugin(BorderlessPlugin::new().with_corner_radius(CORNER_RADIUS)),
+        // The plugin rounds the corners. Its resize bands are switched off (no thickness): they miss the right and bottom
+        // edges on a scaled display, so `ResizeBands`, mounted by the shell, does that job.
+        Frame::Custom => config.with_plugin(BorderlessPlugin::new().with_thickness(0.).with_corner_radius(CORNER_RADIUS)),
         Frame::Native => config,
     }
 }

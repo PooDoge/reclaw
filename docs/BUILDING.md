@@ -96,7 +96,8 @@ Nobody has run Reclaw on Bazzite yet. What is known and what is not:
 | | |
 |---|---|
 | Verified (Ubuntu 24.04, X11 under Xvfb with openbox, software rendering) | The build, all tests, and `scripts/x11-smoke.sh`: the custom title bar's buttons, dragging, the resize bands, fullscreen in Deck mode and back, closing, and the window's size and place restored on the next start. |
-| Not verified | The Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; native Wayland under GNOME (window creation, dragging and resizing through the compositor, transparency and rounded corners, fractional scaling); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
+| Verified on native Wayland (sway, headless, `scripts/wayland-smoke.sh`) | The window opens; the resize cursor appears on every edge and corner and a drag resizes, at scales 1.0, 1.5 and 2.0. |
+| Not verified | The Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; GNOME's compositor (Mutter: dragging and resizing, transparency and rounded corners); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
 
 If one of those fails, the terminal output and whichever variable above got it working are the most useful report.
 

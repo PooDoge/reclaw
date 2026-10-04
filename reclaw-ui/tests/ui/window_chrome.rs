@@ -9,7 +9,7 @@ use reclaw_ui::{
     nav::Route,
     settings::{SettingChange, SettingValue, SettingsTarget},
     store::AppAction,
-    window::{Frame, RawMonitor, WindowCommand, environment},
+    window::{Edge, Frame, RawMonitor, WindowCommand, environment},
 };
 
 use crate::common::*;
@@ -112,4 +112,50 @@ fn choosing_a_monitor_for_deck_mode_saves_its_number() {
     s.click_label("Deck mode monitor");
     s.click_label("Monitor 2");
     assert_eq!(s.store().snapshot().settings.choice(SettingsTarget::Global, "deck_display", 0), 2);
+}
+
+/// Press `at` (physical pixels) and say what the window was asked to do.
+fn pressed(s: &mut Session, at: (f64, f64)) -> Vec<Effect> {
+    click(s, at);
+    s.take_effects()
+}
+
+#[test]
+fn the_edges_of_the_window_start_a_resize_from_that_edge() {
+    let mut s = Mount::desktop().frame(Frame::Custom).size(1280., 800.).start();
+    let (w, h) = (1280., 800.);
+    for (at, edge) in [
+        ((w - 3., h / 2.), Edge::East),
+        ((w / 2., h - 3.), Edge::South),
+        ((3., h / 2.), Edge::West),
+        ((w / 2., 3.), Edge::North),
+        ((w - 3., h - 3.), Edge::SouthEast),
+        ((3., 3.), Edge::NorthWest),
+        ((w - 3., 3.), Edge::NorthEast),
+        ((3., h - 3.), Edge::SouthWest),
+    ] {
+        assert_eq!(pressed(&mut s, at), vec![Effect::Window(WindowCommand::BeginResize(edge))], "pressing at {at:?}");
+    }
+}
+
+/// The failure that only showed on a scaled display: Freya's bands were placed from the window's physical size, so
+/// at 150% the right and bottom bands lay outside the window and only the left and top edges answered.
+#[test]
+fn the_right_and_bottom_edges_answer_on_a_scaled_display_too() {
+    for scale in [1.25, 1.5, 2.] {
+        let (w, h) = (1280. * scale, 800. * scale);
+        let mut s = Mount::desktop().frame(Frame::Custom).scale(scale).size(w as f32, h as f32).start();
+        for (at, edge) in [((w - 4., h / 2.), Edge::East), ((w / 2., h - 4.), Edge::South), ((w - 4., h - 4.), Edge::SouthEast)] {
+            assert_eq!(pressed(&mut s, at), vec![Effect::Window(WindowCommand::BeginResize(edge))], "at {scale}x, pressing {at:?}");
+        }
+        // Well inside the window nothing starts a resize.
+        assert!(pressed(&mut s, (w - 60., h / 2.)).iter().all(|e| !matches!(e, Effect::Window(_))), "at {scale}x");
+    }
+}
+
+#[test]
+fn deck_mode_and_the_native_frame_have_no_resize_bands_of_ours() {
+    let mut native = Mount::desktop().frame(Frame::Native).start();
+    let at = (f64::from(native.size.0) - 3., 300.);
+    assert!(!pressed(&mut native, at).iter().any(|e| matches!(e, Effect::Window(WindowCommand::BeginResize(_)))));
 }

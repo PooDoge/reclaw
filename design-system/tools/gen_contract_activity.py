@@ -152,6 +152,9 @@ upsert(d["components"], comp("RemoteArt", "ImageViewer | SvgViewer + ArtPlacehol
 
 # ---- decisions
 for e in [
+    {"id": "deck-dark-only", "decision": "SUPERSEDED by deck-follows-theme. Deck mode was dark only (deck-bg) and daylight was not offered.", "why": "Kept for the record: TV and handheld OLED viewing, half the contrast matrix. It left a dark page behind dark text when the light theme was chosen."},
+    {"id": "deck-follows-theme", "decision": "Deck mode follows the theme. deck-bg, deck-scrim, focus-glow, deck-dim and deck-dim-ink have a value per theme; the dim behind modal menus is dark in both.", "why": "A near-black page behind theme-coloured text was unreadable in daylight, and a menu's focused row (ink with deck-bg text) became dark on dark.",
+     "rejected": ["pinning Deck to the midnight tokens", "dropping the deck-* tokens for bg-base and scrim", "a light veil behind menus in daylight"], "adr": "0007"},
     {"id": "one-router", "decision": "freya-router is the one truth about which page shows, for both interfaces.", "why": "Two navigation stacks drift; the mouse's back button moved one and not the other.",
      "rejected": ["a second stack in Deck's reducer", "nested layouts per section", "our own route enum with no router", "reading history back for Recents"], "adr": "0001"},
     {"id": "one-store", "decision": "Shared state is one AppState in a freya-radio station, changed only by AppAction; the saved part is a small TOML file.", "why": "Windows and modes must agree on the library, activity and settings.",

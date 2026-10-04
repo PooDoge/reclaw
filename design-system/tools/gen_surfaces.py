@@ -30,7 +30,7 @@ open("components/bundle.js", "w").write(m.group(1) + json.dumps(manifest, separa
 def deck_preview(name, height, subtitle, body):
     preview(name, "Surfaces", height, subtitle, body, pad=24, extra_css="body{background:var(--deck-bg)}")
     p = f"{P}/{name}/preview.html"; s = open(p).read()
-    s = s.replace('<div id="r"></div>', '<div id="r" data-theme="midnight"></div>')
+    # Deck follows the theme (ADR 0007): the preview shows whichever theme the host renders.
     open(p, "w").write(s)
 
 def readme(name, text):

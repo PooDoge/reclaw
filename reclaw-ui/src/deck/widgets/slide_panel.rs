@@ -58,6 +58,9 @@ impl Component for SlidePanel {
                     .width(Size::px(w))
                     .height(Size::px(h))
                     .background(faded)
+                    // Behind its siblings by layer, not by order: with order alone the scrim was painted over the
+                    // panel's own background (dimming it, and a white panel in daylight went gray) but under its rows.
+                    .layer(Layer::Relative(-1))
                     .on_press(move |_| on_close.call(())),
             )
             .child(

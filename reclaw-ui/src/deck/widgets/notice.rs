@@ -236,7 +236,7 @@ impl Component for NoticeDetails {
                     .position(Position::new_absolute().top(0.).left(0.))
                     .width(Size::px(w))
                     .height(Size::px(h))
-                    .background(Color::from_argb(217, 5, 8, 12))
+                    .background(t.deck_dim)
                     .on_press(move |_| scrim.call(())),
             )
             .child(

@@ -94,6 +94,12 @@ impl Component for Shell {
                 host_handler.call(effect);
             })
         };
+        // With no native border the window's edges are ours to resize from.
+        let resize_bands = (services.window.frame == crate::window::Frame::Custom).then(|| {
+            let on_effect = on_effect.clone();
+            crate::window::ResizeBands::new(window(), attached, EventHandler::new(move |command| on_effect.call(Effect::Window(command))))
+                .into_element()
+        });
         // The context is created once, on the first render; everything in it is a stable handle.
         use_provide_context({
             let (feed, map, dev, script, on_effect) = (self.feed.clone(), self.map.clone(), self.dev, self.script.clone(), on_effect);
@@ -114,5 +120,6 @@ impl Component for Shell {
                 _ => {}
             })
             .child(Router::<Route>::new(move || RouterConfig::default().with_initial_path(start.clone())))
+            .maybe_child(resize_bands)
     }
 }

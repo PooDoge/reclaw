@@ -76,7 +76,7 @@ keeps the compiled dependencies and drops only ours.
 
 Absolute `Position` is relative to the parent's origin and `bottom()` does not anchor like CSS (use `top`). `EventHandler`s are never
 equal across renders. Overlays need an absolute root with its own size and `Layer::Overlay`. Freya's wrapper moves focus on Tab and
-the vertical arrows. `Input` starts its caret at 0. `State<Option<String>>` cannot be called like a function (not `Copy`).
+the vertical arrows. `Input` starts its caret at 0. `State<Option<String>>` cannot be called like a function (not `Copy`). Sibling order did not decide paint order between an overlay's scrim and its panel (the scrim covered the panel's own background): put the scrim on `Layer::Relative(-1)`. `Platform::root_size` is the window in physical pixels while `Position` and `Size::px` are layout units (physical / display scale / UI scale): never place anything from `root_size`; use a size the shell measured (`on_sized`). The toolkit's resize bands do exactly that, which is why `window::ResizeBands` exists.
 
 ## Freya source of truth
 

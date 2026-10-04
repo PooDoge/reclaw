@@ -5,8 +5,7 @@ exec(open("tools/gen_components.py").read().split('preview("Button"')[0])
 def deck_preview(name, height, subtitle, body, group="Deck"):
     preview(name, group, height, subtitle, body, pad=24, extra_css="body{background:var(--deck-bg)}")
     p=f"{P}/{name}/preview.html"; s=open(p).read()
-    # Deck is dark only: scope the midnight tokens to the content so a daylight host cannot break it.
-    s=s.replace('<div id="r"></div>','<div id="r" data-theme="midnight"></div>')
+    # Deck follows the theme (ADR 0007): the preview shows whichever theme the host renders.
     open(p,"w").write(s)
 
 G="{title:'Starfall 64',status:'installed'}"

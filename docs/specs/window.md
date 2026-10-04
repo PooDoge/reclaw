@@ -8,8 +8,8 @@ How the window is framed, how Reclaw learns about the monitors, where the window
 ## The frame
 
 By default the window has **no native decoration** and is transparent. Reclaw draws its own: a title bar in the desktop interface
-(the page's name on a drag area, minimize, maximize or restore, close) and resize bands along the edges with rounded corners (the
-toolkit's `BorderlessPlugin`). Deck mode has no title bar; it fills the screen. `RECLAW_WINDOW_FRAME=native` gives the window
+(the page's name on a drag area, minimize, maximize or restore, close) and resize bands along the edges (`window::ResizeBands`, ADR 0008)
+with rounded corners (the toolkit's `BorderlessPlugin`, with its own bands switched off). Deck mode has no title bar; it fills the screen. `RECLAW_WINDOW_FRAME=native` gives the window
 manager's border instead, the way out if a compositor mishandles transparent undecorated windows.
 
 `Frame` says who draws the border. `WindowHost { frame, attached }` is what the `Shell` is told about the window behind it;
@@ -57,9 +57,11 @@ not connected means the one the window is on. The *UI scale* row multiplies the 
 
 `scripts/x11-smoke.sh` runs the real binary under Xvfb with openbox and checks, with xdotool: the title bar's three buttons, dragging,
 the resize bands, Deck mode fullscreen and back, the window's app-id class, closing, and the size and place restored on the next start
-(16 checks, all pass). **Not verified:** native Wayland / GNOME, transparency and rounded corners (no compositor in that rig), more
-than one monitor (a virtual X server has one), high-DPI, `Platform.root_size` and the toolkit's resize bands on a scaled display,
-Windows and macOS.
+(16 checks, all pass). `scripts/wayland-smoke.sh` runs it on a real Wayland compositor (sway, headless) with a virtual pointer
+(`tools/virtual-pointer`) and reads the cursor shape the app asks for at each edge and corner, then drags: at display scales 1.0, 1.5 and
+2.0. That found the resize bands missing the right and bottom edges on a scaled display (ADR 0008).
+**Not verified:** GNOME's compositor (Mutter), transparency and rounded corners, more than one monitor, a real high-DPI panel, Windows
+and macOS.
 
 ## Tests
 

@@ -15,4 +15,6 @@ pub enum WindowCommand {
     },
     /// Leave fullscreen.
     Windowed,
+    /// The pointer went down on a resize band: hand the rest of the drag to the window manager.
+    BeginResize(super::resize::Edge),
 }

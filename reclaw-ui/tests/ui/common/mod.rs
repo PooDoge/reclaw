@@ -74,6 +74,8 @@ pub struct Mount {
     pub window: WindowHost,
     /// The means of fetching pictures. None by default: artwork stays a placeholder.
     pub media: Option<reclaw_media::MediaHub>,
+    /// The display scale. `size` is then the window's size in physical pixels, as winit reports it.
+    pub scale: f64,
 }
 
 impl Mount {
@@ -90,6 +92,7 @@ impl Mount {
             animated: false,
             window: WindowHost::DETACHED,
             media: None,
+            scale: 1.,
         }
     }
 
@@ -145,6 +148,12 @@ impl Mount {
         self
     }
 
+    /// Mount on a scaled display, as most laptops and handhelds are.
+    pub fn scale(mut self, scale: f64) -> Self {
+        self.scale = scale;
+        self
+    }
+
     pub fn theme(mut self, theme: ThemeKind) -> Self {
         self.theme = theme;
         self
@@ -158,7 +167,7 @@ impl Mount {
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
-        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated, window, media } = self;
+        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated, window, media, scale } = self;
         // The theme is pinned, so the settings do not switch it under a snapshot.
         let motion = dev.motion.or((!animated).then_some(MotionOverride::Reduced));
         let dev = DevOverrides { theme: dev.theme.or(Some(theme)), motion, ..dev };
@@ -186,7 +195,7 @@ impl Mount {
                 }
             }
         };
-        let (runner, ()) = TestingRunner::new(AppComponent::from(app), size.into(), |_| {}, 1.);
+        let (runner, ()) = TestingRunner::new(AppComponent::from(app), size.into(), |_| {}, scale);
         let mut session = Session { runner, effects, store: stash, feed: tx, size };
         session.settle();
         session
@@ -421,6 +430,17 @@ impl Session {
     /// How many decoded pictures are on screen.
     pub fn pictures(&self) -> usize {
         self.runner.find_many(|_, element| Image::try_downcast(element).map(|_| ())).len()
+    }
+
+    /// The colour of one pixel of what is drawn now, as RGB. Read from the same render the snapshots save.
+    pub fn pixel(&mut self, x: u32, y: u32) -> (u8, u8, u8) {
+        let bytes = self.runner.render();
+        let mut reader = png::Decoder::new(std::io::Cursor::new(&bytes[..])).read_info().expect("the render is a PNG");
+        let mut buffer = vec![0; reader.output_buffer_size()];
+        let info = reader.next_frame(&mut buffer).expect("the PNG has a frame");
+        let channels = info.color_type.samples();
+        let at = (y as usize * info.width as usize + x as usize) * channels;
+        (buffer[at], buffer[at + 1], buffer[at + 2])
     }
 
     pub fn snapshot(&mut self, name: &str) {

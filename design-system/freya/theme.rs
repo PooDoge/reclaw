@@ -33,6 +33,8 @@ pub struct Reclaw {
     pub deck_bg: Color,
     pub deck_scrim: Color,
     pub focus_glow: Color,
+    pub deck_dim: Color,
+    pub deck_dim_ink: Color,
 }
 
 pub fn midnight() -> Reclaw {
@@ -65,6 +67,8 @@ pub fn midnight() -> Reclaw {
         deck_bg: Color::from_rgb(10, 14, 20),
         deck_scrim: Color::from_argb(209, 10, 14, 20),
         focus_glow: Color::from_argb(115, 102, 192, 244),
+        deck_dim: Color::from_argb(217, 5, 8, 12),
+        deck_dim_ink: Color::from_rgb(232, 238, 245),
     }
 }
 
@@ -95,9 +99,11 @@ pub fn daylight() -> Reclaw {
         info: Color::from_rgb(11, 106, 168),
         info_bg: Color::from_rgb(216, 236, 248),
         scrim: Color::from_argb(166, 11, 16, 23),
-        deck_bg: Color::from_rgb(10, 14, 20),
-        deck_scrim: Color::from_argb(209, 10, 14, 20),
-        focus_glow: Color::from_argb(115, 102, 192, 244),
+        deck_bg: Color::from_rgb(242, 245, 249),
+        deck_scrim: Color::from_argb(209, 242, 245, 249),
+        focus_glow: Color::from_argb(115, 11, 106, 168),
+        deck_dim: Color::from_argb(194, 11, 16, 23),
+        deck_dim_ink: Color::from_rgb(242, 245, 249),
     }
 }
 
@@ -157,6 +163,8 @@ impl Reclaw {
             "deck-bg" => self.deck_bg,
             "deck-scrim" => self.deck_scrim,
             "focus-glow" => self.focus_glow,
+            "deck-dim" => self.deck_dim,
+            "deck-dim-ink" => self.deck_dim_ink,
             _ => return None,
         })
     }

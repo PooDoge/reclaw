@@ -220,7 +220,7 @@ impl Component for ModalMenu {
                         .position(Position::new_absolute().top(0.).left(0.))
                         .width(Size::px(w))
                         .height(Size::px(h))
-                        .background(Color::from_argb(217, 5, 8, 12))
+                        .background(t.deck_dim)
                         .on_press(move |_| on_dismiss.call(())),
                 )
                 .child(
@@ -235,7 +235,7 @@ impl Component for ModalMenu {
                                 .vertical()
                                 .cross_align(Alignment::Center)
                                 .spacing(SPACE_5)
-                                .child(TypeStyle::DeckHeading.text(deepest_title, t.ink))
+                                .child(TypeStyle::DeckHeading.text(deepest_title, t.deck_dim_ink))
                                 .child(rect().horizontal().cross_align(Alignment::Start).interactive(Interactive::Yes).children(columns)),
                         ),
                 )

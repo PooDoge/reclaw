@@ -5,7 +5,7 @@ use freya::{
     winit::{
         event_loop::ActiveEventLoop,
         monitor::MonitorHandle,
-        window::{Fullscreen, Window},
+        window::{Fullscreen, ResizeDirection, Window},
     },
 };
 use futures_channel::oneshot;
@@ -14,6 +14,7 @@ use super::{
     command::WindowCommand,
     geometry::{Snapshot, remember},
     monitors::{RawMonitor, arrange, id_at, order_key},
+    resize::Edge,
 };
 use crate::store::{AppAction, Store};
 
@@ -129,6 +130,19 @@ pub(super) fn record(store: Store) {
     });
 }
 
+fn direction_of(edge: Edge) -> ResizeDirection {
+    match edge {
+        Edge::North => ResizeDirection::North,
+        Edge::South => ResizeDirection::South,
+        Edge::West => ResizeDirection::West,
+        Edge::East => ResizeDirection::East,
+        Edge::NorthWest => ResizeDirection::NorthWest,
+        Edge::NorthEast => ResizeDirection::NorthEast,
+        Edge::SouthWest => ResizeDirection::SouthWest,
+        Edge::SouthEast => ResizeDirection::SouthEast,
+    }
+}
+
 /// Carry out a command. `Close` records the window first and writes the preferences before it
 /// closes: the toolkit's own close call does not run the host's close hook, which is where the
 /// preferences are normally written.
@@ -148,6 +162,14 @@ pub(super) fn run(command: &WindowCommand, store: Store) {
             });
         }
         WindowCommand::Windowed => platform.with_window(id, |window| window.set_fullscreen(None)),
+        WindowCommand::BeginResize(edge) => {
+            let direction = direction_of(*edge);
+            platform.with_window(id, move |window| {
+                if let Err(e) = window.drag_resize_window(direction) {
+                    eprintln!("reclaw: the window system would not start a resize: {e}");
+                }
+            });
+        }
         WindowCommand::Close => {
             let answer = ask(snapshot);
             spawn(async move {

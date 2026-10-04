@@ -35,7 +35,9 @@
     "scrim": "#05080cb3",
     "deck-bg": "#0a0e14",
     "deck-scrim": "#0a0e14d1",
-    "focus-glow": "#66c0f473"
+    "focus-glow": "#66c0f473",
+    "deck-dim": "#05080cd9",
+    "deck-dim-ink": "#e8eef5"
    },
    "daylight": {
     "bg-deep": "#dde5ee",
@@ -63,9 +65,11 @@
     "info": "#0b6aa8",
     "info-bg": "#d8ecf8",
     "scrim": "#0b1017a6",
-    "deck-bg": "#0a0e14",
-    "deck-scrim": "#0a0e14d1",
-    "focus-glow": "#66c0f473"
+    "deck-bg": "#f2f5f9",
+    "deck-scrim": "#f2f5f9d1",
+    "focus-glow": "#0b6aa873",
+    "deck-dim": "#0b1017c2",
+    "deck-dim-ink": "#f2f5f9"
    }
   },
   "type": {
@@ -597,6 +601,370 @@
    }
   },
   {
+   "name": "Dialog",
+   "freya": "Popup | FullScreenPage | centered card",
+   "rust": {
+    "type": "Dialog",
+    "module": "reclaw_ui::surface",
+    "built": "custom"
+   },
+   "kind": "surface",
+   "props": {
+    "kind": "SurfaceKind",
+    "ctx": "SurfaceContext",
+    "window": "(w,h)",
+    "title": "String",
+    "body": "Element",
+    "actions": "Vec<DialogAction>",
+    "on_close": "EventHandler<()>",
+    "keyboard_inset": "f32",
+    "reveal": "Option<(top,bottom)>"
+   },
+   "note": "Describe the content and actions once; presentation(kind, ctx) picks the form."
+  },
+  {
+   "name": "FullScreenPage",
+   "freya": "rect + ScrollView",
+   "rust": {
+    "type": "FullScreenPage",
+    "module": "reclaw_ui::surface",
+    "built": "custom"
+   },
+   "kind": "surface",
+   "tokens": [
+    "bg-nav",
+    "deck-bg",
+    "line",
+    "ink",
+    "ink-muted"
+   ],
+   "layout": "col",
+   "size": {
+    "header": "surface-header-h (surface-header-h-compact under a large keyboard)",
+    "footer": "surface-footer-h",
+    "column": "surface-max-w"
+   },
+   "props": {
+    "title": "String",
+    "window": "(w,h)",
+    "density": "Density",
+    "on_back": "EventHandler<()>",
+    "body": "Element",
+    "footer": "Option<Element>",
+    "hints": "Option<Element>",
+    "keyboard_inset": "f32",
+    "reveal": "Option<(top,bottom)>",
+    "wide": "bool",
+    "fixed": "bool",
+    "back_focused": "bool"
+   },
+   "note": "See surfaces.fullScreenPage. Preview: components/FullScreenPage."
+  },
+  {
+   "name": "ModalMenu",
+   "freya": "rect (Layer::Overlay) + ScrollView per column",
+   "rust": {
+    "type": "ModalMenu",
+    "module": "reclaw_ui::surface",
+    "built": "custom"
+   },
+   "kind": "surface",
+   "tokens": [
+    "deck-bg",
+    "bg-panel",
+    "ink",
+    "ink-muted",
+    "ink-subtle"
+   ],
+   "props": {
+    "levels": "Vec<MenuLevelView>",
+    "placement": "Centered | Anchored{x,y}",
+    "window": "(w,h)",
+    "density": "Density",
+    "on_pick": "EventHandler<(level,index)>",
+    "on_dismiss": "EventHandler<()>",
+    "ring_visible": "bool"
+   },
+   "note": "See surfaces.modalMenu. Preview: components/ModalMenu."
+  },
+  {
+   "name": "ConfirmOverlay",
+   "freya": "rect (Layer::Overlay)",
+   "rust": {
+    "type": "ConfirmOverlay",
+    "module": "reclaw_ui::deck",
+    "built": "custom"
+   },
+   "kind": "deck",
+   "tokens": [
+    "bg-panel",
+    "line",
+    "danger"
+   ],
+   "props": {
+    "copy": "ConfirmCopy{title,message,action_label}",
+    "focus": "FocusId",
+    "window": "(w,h)"
+   },
+   "note": "Deck's confirmation: darkened screen, centered card, Cancel focused first so the destructive choice is never one stray press away."
+  },
+  {
+   "name": "SettingRow",
+   "freya": "rect + Input",
+   "rust": {
+    "type": "SettingRow",
+    "module": "reclaw_ui::surface",
+    "built": "custom"
+   },
+   "kind": "surface",
+   "tokens": [
+    "bg-panel",
+    "bg-raised",
+    "accent",
+    "ink",
+    "ink-muted",
+    "danger"
+   ],
+   "size": {
+    "height": "deck-settings-row-h (+72 text row)"
+   },
+   "props": {
+    "label": "String",
+    "description": "Option<String>",
+    "control": "Toggle(bool) | Value{text,opens_menu} | Text{input,placeholder,a11y} | Action{danger}",
+    "focused": "bool",
+    "density": "Density"
+   },
+   "note": "One line of a settings page. Preview: components/SettingRow."
+  },
+  {
+   "name": "SettingsBody",
+   "freya": "rect + RevealScroll",
+   "rust": {
+    "type": "SettingsBody",
+    "module": "reclaw_ui::deck",
+    "built": "custom"
+   },
+   "kind": "deck",
+   "props": {
+    "schema": "Schema",
+    "target": "SettingsTarget",
+    "values": "SettingsValues",
+    "section": "usize",
+    "two_pane": "bool",
+    "drilled": "bool",
+    "focus": "FocusId",
+    "viewport": "f32",
+    "reveal": "Option<(top,bottom)>"
+   },
+   "note": "See surfaces.settingsPage. Preview: components/SettingsPage."
+  },
+  {
+   "name": "DesktopApp",
+   "freya": "App content",
+   "rust": {
+    "type": "DesktopApp",
+    "module": "reclaw_ui::desktop",
+    "built": "custom"
+   },
+   "props": {
+    "host": "HostState",
+    "layout": "Option<LayoutClass>",
+    "density": "Option<Density>",
+    "on_action": "Option<EventHandler<(id,MenuAction)>>",
+    "on_deck_mode": "Option<EventHandler<()>>"
+   },
+   "note": "The desktop Library at the layout class and density the window calls for. Sets no theme; the root does."
+  },
+  {
+   "name": "Shell",
+   "freya": "App content",
+   "rust": {
+    "type": "Shell",
+    "module": "reclaw_ui::shell",
+    "built": "custom"
+   },
+   "props": {
+    "host": "HostState",
+    "feed": "ActionFeed",
+    "map": "ActionMap",
+    "on_effect": "EventHandler<Effect>",
+    "detected": "UiMode",
+    "dev": "DevOverrides",
+    "script": "Vec<Action>"
+   },
+   "note": "The root. See the `shell` section."
+  },
+  {
+   "name": "SystemBadge",
+   "freya": "rect + text",
+   "rust": {
+    "type": "SystemBadge",
+    "module": "reclaw_ui::components",
+    "built": "custom"
+   },
+   "tokens": [
+    "line-strong",
+    "ink-muted",
+    "ink",
+    "bg-base",
+    "radius-sm"
+   ],
+   "props": {
+    "platform": "Platform",
+    "over_art": "bool",
+    "large": "bool"
+   },
+   "note": "Neutral chip with the system's short name; draws nothing for an unknown system. over_art gives a solid fill; large is the Deck size. Preview: components/SystemBadge."
+  },
+  {
+   "name": "BadgeChip",
+   "freya": "rect + text",
+   "rust": {
+    "type": "BadgeChip",
+    "module": "reclaw_ui::readme",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-raised",
+    "ink-muted"
+   ],
+   "props": {
+    "badge": "Badge{label,message,color}",
+    "link": "Option<String>",
+    "on_open": "EventHandler<String>"
+   },
+   "note": "A README status badge drawn natively because the toolkit's SVG drawing has no fonts. Preview: components/BadgeChip."
+  },
+  {
+   "name": "IndicatorBadge",
+   "freya": "rect + icon + text",
+   "rust": {
+    "type": "IndicatorBadge",
+    "module": "reclaw_ui::components",
+    "built": "custom"
+   },
+   "tokens": [
+    "warn",
+    "accent",
+    "info",
+    "ok",
+    "danger",
+    "ink-muted"
+   ],
+   "props": {
+    "indicator": "Indicator",
+    "large": "bool",
+    "filled": "bool"
+   },
+   "note": "Icon and short text for one game's background work. Table in `activity.indicators`. Preview: components/IndicatorBadge."
+  },
+  {
+   "name": "CardIndicator",
+   "freya": "rect + canvas-free bar",
+   "rust": {
+    "type": "CardIndicator",
+    "module": "reclaw_ui::deck",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-base",
+    "bg-raised",
+    "accent",
+    "info",
+    "ok",
+    "ink-muted"
+   ],
+   "props": {
+    "indicator": "Indicator"
+   },
+   "size": {
+    "strip": "8px (CARD_STRIP_H, a Rust constant)",
+    "card": "deck-tile-w x deck-tile-h"
+   },
+   "note": "Chip at the top left of a Deck card and a bar along its bottom edge; the bar slides while the size is unknown. Reduced motion for the sliding bar is not implemented. Preview: components/CardIndicator."
+  },
+  {
+   "name": "NoticeToast",
+   "freya": "rect + canvas ring",
+   "rust": {
+    "type": "NoticeToast",
+    "module": "reclaw_ui::deck",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-panel",
+    "warn",
+    "ok",
+    "danger",
+    "accent",
+    "line-strong",
+    "ink",
+    "ink-muted",
+    "radius-lg"
+   ],
+   "props": {
+    "notice": "Notice",
+    "holding": "Option<Button>",
+    "kind": "ControllerKind",
+    "last_input": "LastInput",
+    "window": "(f32,f32)"
+   },
+   "size": {
+    "toast": "460x132 (TOAST_W, TOAST_H: Rust constants, not tokens)",
+    "ring": "44px, 4px stroke"
+   },
+   "note": "Newest notice at the bottom right with hold-X and hold-Y prompts; the ring (Skia arc) sweeps clockwise while held. Not focusable. See `notices`. Preview: components/NoticeToast."
+  },
+  {
+   "name": "Titlebar",
+   "freya": "rect + window_drag",
+   "rust": {
+    "type": "Titlebar",
+    "module": "reclaw_ui::window",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-deep",
+    "bg-raised",
+    "ink",
+    "ink-muted",
+    "danger",
+    "on-accent"
+   ],
+   "props": {
+    "on_command": "EventHandler<WindowCommand>",
+    "attached": "bool",
+    "page": "&'static str"
+   },
+   "size": {
+    "height": "36px (TITLEBAR_H, a Rust constant)",
+    "button": "46px wide"
+   },
+   "note": "Our own title bar: drag area, minimize, maximize or restore, close. Desktop only. Verified on X11, not on Wayland. Preview: components/Titlebar."
+  },
+  {
+   "name": "RemoteArt",
+   "freya": "ImageViewer | SvgViewer + ArtPlaceholder",
+   "rust": {
+    "type": "RemoteArt",
+    "module": "reclaw_ui::components",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-raised",
+    "bg-panel",
+    "ink-subtle"
+   ],
+   "props": {
+    "url": "Option<String>",
+    "placeholder": "ArtPlaceholder",
+    "width": "Size",
+    "height": "Size"
+   },
+   "note": "A fetched picture in the place of a placeholder; the placeholder stays if the file never arrives. Never fetches by itself (see `media`). Preview: components/RemoteArt."
+  },
+  {
    "name": "DeckTile",
    "freya": "custom",
    "tokens": [
@@ -965,370 +1333,6 @@
     "opened by Confirm on a text field in Controller density",
     "grid of 56px keys, spatial navigation, A types, X backspace, Y shift, Start done"
    ]
-  },
-  {
-   "name": "Dialog",
-   "freya": "Popup | FullScreenPage | centered card",
-   "rust": {
-    "type": "Dialog",
-    "module": "reclaw_ui::surface",
-    "built": "custom"
-   },
-   "kind": "surface",
-   "props": {
-    "kind": "SurfaceKind",
-    "ctx": "SurfaceContext",
-    "window": "(w,h)",
-    "title": "String",
-    "body": "Element",
-    "actions": "Vec<DialogAction>",
-    "on_close": "EventHandler<()>",
-    "keyboard_inset": "f32",
-    "reveal": "Option<(top,bottom)>"
-   },
-   "note": "Describe the content and actions once; presentation(kind, ctx) picks the form."
-  },
-  {
-   "name": "FullScreenPage",
-   "freya": "rect + ScrollView",
-   "rust": {
-    "type": "FullScreenPage",
-    "module": "reclaw_ui::surface",
-    "built": "custom"
-   },
-   "kind": "surface",
-   "tokens": [
-    "bg-nav",
-    "deck-bg",
-    "line",
-    "ink",
-    "ink-muted"
-   ],
-   "layout": "col",
-   "size": {
-    "header": "surface-header-h (surface-header-h-compact under a large keyboard)",
-    "footer": "surface-footer-h",
-    "column": "surface-max-w"
-   },
-   "props": {
-    "title": "String",
-    "window": "(w,h)",
-    "density": "Density",
-    "on_back": "EventHandler<()>",
-    "body": "Element",
-    "footer": "Option<Element>",
-    "hints": "Option<Element>",
-    "keyboard_inset": "f32",
-    "reveal": "Option<(top,bottom)>",
-    "wide": "bool",
-    "fixed": "bool",
-    "back_focused": "bool"
-   },
-   "note": "See surfaces.fullScreenPage. Preview: components/FullScreenPage."
-  },
-  {
-   "name": "ModalMenu",
-   "freya": "rect (Layer::Overlay) + ScrollView per column",
-   "rust": {
-    "type": "ModalMenu",
-    "module": "reclaw_ui::surface",
-    "built": "custom"
-   },
-   "kind": "surface",
-   "tokens": [
-    "deck-bg",
-    "bg-panel",
-    "ink",
-    "ink-muted",
-    "ink-subtle"
-   ],
-   "props": {
-    "levels": "Vec<MenuLevelView>",
-    "placement": "Centered | Anchored{x,y}",
-    "window": "(w,h)",
-    "density": "Density",
-    "on_pick": "EventHandler<(level,index)>",
-    "on_dismiss": "EventHandler<()>",
-    "ring_visible": "bool"
-   },
-   "note": "See surfaces.modalMenu. Preview: components/ModalMenu."
-  },
-  {
-   "name": "ConfirmOverlay",
-   "freya": "rect (Layer::Overlay)",
-   "rust": {
-    "type": "ConfirmOverlay",
-    "module": "reclaw_ui::deck",
-    "built": "custom"
-   },
-   "kind": "deck",
-   "tokens": [
-    "bg-panel",
-    "line",
-    "danger"
-   ],
-   "props": {
-    "copy": "ConfirmCopy{title,message,action_label}",
-    "focus": "FocusId",
-    "window": "(w,h)"
-   },
-   "note": "Deck's confirmation: darkened screen, centered card, Cancel focused first so the destructive choice is never one stray press away."
-  },
-  {
-   "name": "SettingRow",
-   "freya": "rect + Input",
-   "rust": {
-    "type": "SettingRow",
-    "module": "reclaw_ui::surface",
-    "built": "custom"
-   },
-   "kind": "surface",
-   "tokens": [
-    "bg-panel",
-    "bg-raised",
-    "accent",
-    "ink",
-    "ink-muted",
-    "danger"
-   ],
-   "size": {
-    "height": "deck-settings-row-h (+72 text row)"
-   },
-   "props": {
-    "label": "String",
-    "description": "Option<String>",
-    "control": "Toggle(bool) | Value{text,opens_menu} | Text{input,placeholder,a11y} | Action{danger}",
-    "focused": "bool",
-    "density": "Density"
-   },
-   "note": "One line of a settings page. Preview: components/SettingRow."
-  },
-  {
-   "name": "SettingsBody",
-   "freya": "rect + RevealScroll",
-   "rust": {
-    "type": "SettingsBody",
-    "module": "reclaw_ui::deck",
-    "built": "custom"
-   },
-   "kind": "deck",
-   "props": {
-    "schema": "Schema",
-    "target": "SettingsTarget",
-    "values": "SettingsValues",
-    "section": "usize",
-    "two_pane": "bool",
-    "drilled": "bool",
-    "focus": "FocusId",
-    "viewport": "f32",
-    "reveal": "Option<(top,bottom)>"
-   },
-   "note": "See surfaces.settingsPage. Preview: components/SettingsPage."
-  },
-  {
-   "name": "DesktopApp",
-   "freya": "App content",
-   "rust": {
-    "type": "DesktopApp",
-    "module": "reclaw_ui::desktop",
-    "built": "custom"
-   },
-   "props": {
-    "host": "HostState",
-    "layout": "Option<LayoutClass>",
-    "density": "Option<Density>",
-    "on_action": "Option<EventHandler<(id,MenuAction)>>",
-    "on_deck_mode": "Option<EventHandler<()>>"
-   },
-   "note": "The desktop Library at the layout class and density the window calls for. Sets no theme; the root does."
-  },
-  {
-   "name": "Shell",
-   "freya": "App content",
-   "rust": {
-    "type": "Shell",
-    "module": "reclaw_ui::shell",
-    "built": "custom"
-   },
-   "props": {
-    "host": "HostState",
-    "feed": "ActionFeed",
-    "map": "ActionMap",
-    "on_effect": "EventHandler<Effect>",
-    "detected": "UiMode",
-    "dev": "DevOverrides",
-    "script": "Vec<Action>"
-   },
-   "note": "The root. See the `shell` section."
-  },
-  {
-   "name": "SystemBadge",
-   "freya": "rect + text",
-   "rust": {
-    "type": "SystemBadge",
-    "module": "reclaw_ui::components",
-    "built": "custom"
-   },
-   "tokens": [
-    "line-strong",
-    "ink-muted",
-    "ink",
-    "bg-base",
-    "radius-sm"
-   ],
-   "props": {
-    "platform": "Platform",
-    "over_art": "bool",
-    "large": "bool"
-   },
-   "note": "Neutral chip with the system's short name; draws nothing for an unknown system. over_art gives a solid fill; large is the Deck size. Preview: components/SystemBadge."
-  },
-  {
-   "name": "BadgeChip",
-   "freya": "rect + text",
-   "rust": {
-    "type": "BadgeChip",
-    "module": "reclaw_ui::readme",
-    "built": "custom"
-   },
-   "tokens": [
-    "bg-raised",
-    "ink-muted"
-   ],
-   "props": {
-    "badge": "Badge{label,message,color}",
-    "link": "Option<String>",
-    "on_open": "EventHandler<String>"
-   },
-   "note": "A README status badge drawn natively because the toolkit's SVG drawing has no fonts. Preview: components/BadgeChip."
-  },
-  {
-   "name": "IndicatorBadge",
-   "freya": "rect + icon + text",
-   "rust": {
-    "type": "IndicatorBadge",
-    "module": "reclaw_ui::components",
-    "built": "custom"
-   },
-   "tokens": [
-    "warn",
-    "accent",
-    "info",
-    "ok",
-    "danger",
-    "ink-muted"
-   ],
-   "props": {
-    "indicator": "Indicator",
-    "large": "bool",
-    "filled": "bool"
-   },
-   "note": "Icon and short text for one game's background work. Table in `activity.indicators`. Preview: components/IndicatorBadge."
-  },
-  {
-   "name": "CardIndicator",
-   "freya": "rect + canvas-free bar",
-   "rust": {
-    "type": "CardIndicator",
-    "module": "reclaw_ui::deck",
-    "built": "custom"
-   },
-   "tokens": [
-    "bg-base",
-    "bg-raised",
-    "accent",
-    "info",
-    "ok",
-    "ink-muted"
-   ],
-   "props": {
-    "indicator": "Indicator"
-   },
-   "size": {
-    "strip": "8px (CARD_STRIP_H, a Rust constant)",
-    "card": "deck-tile-w x deck-tile-h"
-   },
-   "note": "Chip at the top left of a Deck card and a bar along its bottom edge; the bar slides while the size is unknown. Reduced motion for the sliding bar is not implemented. Preview: components/CardIndicator."
-  },
-  {
-   "name": "NoticeToast",
-   "freya": "rect + canvas ring",
-   "rust": {
-    "type": "NoticeToast",
-    "module": "reclaw_ui::deck",
-    "built": "custom"
-   },
-   "tokens": [
-    "bg-panel",
-    "warn",
-    "ok",
-    "danger",
-    "accent",
-    "line-strong",
-    "ink",
-    "ink-muted",
-    "radius-lg"
-   ],
-   "props": {
-    "notice": "Notice",
-    "holding": "Option<Button>",
-    "kind": "ControllerKind",
-    "last_input": "LastInput",
-    "window": "(f32,f32)"
-   },
-   "size": {
-    "toast": "460x132 (TOAST_W, TOAST_H: Rust constants, not tokens)",
-    "ring": "44px, 4px stroke"
-   },
-   "note": "Newest notice at the bottom right with hold-X and hold-Y prompts; the ring (Skia arc) sweeps clockwise while held. Not focusable. See `notices`. Preview: components/NoticeToast."
-  },
-  {
-   "name": "Titlebar",
-   "freya": "rect + window_drag",
-   "rust": {
-    "type": "Titlebar",
-    "module": "reclaw_ui::window",
-    "built": "custom"
-   },
-   "tokens": [
-    "bg-deep",
-    "bg-raised",
-    "ink",
-    "ink-muted",
-    "danger",
-    "on-accent"
-   ],
-   "props": {
-    "on_command": "EventHandler<WindowCommand>",
-    "attached": "bool",
-    "page": "&'static str"
-   },
-   "size": {
-    "height": "36px (TITLEBAR_H, a Rust constant)",
-    "button": "46px wide"
-   },
-   "note": "Our own title bar: drag area, minimize, maximize or restore, close. Desktop only. Verified on X11, not on Wayland. Preview: components/Titlebar."
-  },
-  {
-   "name": "RemoteArt",
-   "freya": "ImageViewer | SvgViewer + ArtPlaceholder",
-   "rust": {
-    "type": "RemoteArt",
-    "module": "reclaw_ui::components",
-    "built": "custom"
-   },
-   "tokens": [
-    "bg-raised",
-    "bg-panel",
-    "ink-subtle"
-   ],
-   "props": {
-    "url": "Option<String>",
-    "placeholder": "ArtPlaceholder",
-    "width": "Size",
-    "height": "Size"
-   },
-   "note": "A fetched picture in the place of a placeholder; the placeholder stays if the file never arrives. Never fetches by itself (see `media`). Preview: components/RemoteArt."
   }
  ],
  "layout": {
@@ -1549,8 +1553,8 @@
   },
   {
    "id": "deck-dark-only",
-   "decision": "Deck mode is dark only (deck-bg). Daylight is not offered.",
-   "why": "TV and handheld OLED viewing; halves the contrast matrix. Deck tokens carry the same value in both themes so lookups never fail."
+   "decision": "SUPERSEDED by deck-follows-theme. Deck mode was dark only (deck-bg) and daylight was not offered.",
+   "why": "Kept for the record: TV and handheld OLED viewing, half the contrast matrix. It left a dark page behind dark text when the light theme was chosen."
   },
   {
    "id": "mode-vs-density",
@@ -1660,6 +1664,17 @@
    "id": "files-small",
    "decision": "Files stay under 1000 lines and are split by responsibility; module roots document themselves; pure logic is Freya-free.",
    "why": "Small single-purpose files are cheaper for people and AI assistants to read, change and test; enforced by tests/repo_hygiene.rs."
+  },
+  {
+   "id": "deck-follows-theme",
+   "decision": "Deck mode follows the theme. deck-bg, deck-scrim, focus-glow, deck-dim and deck-dim-ink have a value per theme; the dim behind modal menus is dark in both.",
+   "why": "A near-black page behind theme-coloured text was unreadable in daylight, and a menu's focused row (ink with deck-bg text) became dark on dark.",
+   "rejected": [
+    "pinning Deck to the midnight tokens",
+    "dropping the deck-* tokens for bg-base and scrim",
+    "a light veil behind menus in daylight"
+   ],
+   "adr": "0007"
   },
   {
    "id": "one-router",

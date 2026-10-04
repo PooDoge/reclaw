@@ -1,0 +1,11 @@
+[package]
+name = "reclaw-virtual-pointer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wayland-client = "0.31"
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+
+# A test helper for scripts/wayland-smoke.sh, built on its own and not part of the workspace.
+[workspace]

@@ -18,6 +18,7 @@ mod deck_notices;
 mod deck_routes;
 mod deck_snapshots;
 mod deck_surfaces;
+mod deck_theme;
 mod desktop_pages;
 mod desktop_settings;
 mod desktop_snapshots;
