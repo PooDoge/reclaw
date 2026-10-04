@@ -1,34 +1,33 @@
 use freya::prelude::*;
 
 use super::{hoverable, pointer_cursor};
-use crate::{metrics::*, prelude::*, typography::TypeStyle};
+use crate::{metrics::*, nav::Section, prelude::*, typography::TypeStyle};
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
-pub enum NavItem {
-    Library,
-    Catalog,
-    Downloads,
-    Mods,
+/// Where a navigation button goes: one of the tabs, or Settings after them.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum NavTarget {
+    Tab(Section),
+    Settings,
 }
 
-impl NavItem {
-    pub const ALL: [NavItem; 4] = [Self::Library, Self::Catalog, Self::Downloads, Self::Mods];
+impl NavTarget {
+    pub const ALL: [NavTarget; 5] =
+        [Self::Tab(Section::Library), Self::Tab(Section::Catalog), Self::Tab(Section::Downloads), Self::Tab(Section::Mods), Self::Settings];
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::Library => "Library",
-            Self::Catalog => "Catalog",
-            Self::Downloads => "Downloads",
-            Self::Mods => "Mods",
+            Self::Tab(section) => section.label(),
+            Self::Settings => "Settings",
         }
     }
 
     fn icon(self) -> IconName {
         match self {
-            Self::Library => IconName::Library,
-            Self::Catalog => IconName::Catalog,
-            Self::Downloads => IconName::Queue,
-            Self::Mods => IconName::Mods,
+            Self::Tab(Section::Library) => IconName::Library,
+            Self::Tab(Section::Catalog) => IconName::Catalog,
+            Self::Tab(Section::Downloads) => IconName::Queue,
+            Self::Tab(Section::Mods) => IconName::Mods,
+            Self::Settings => IconName::Settings,
         }
     }
 }
@@ -54,11 +53,11 @@ impl From<LayoutClass> for NavMode {
 
 #[derive(Clone, PartialEq)]
 struct NavButton {
-    item: NavItem,
+    item: NavTarget,
     mode: NavMode,
     active: bool,
     count: Option<u32>,
-    on_select: Option<EventHandler<NavItem>>,
+    on_select: Option<EventHandler<NavTarget>>,
 }
 
 impl Component for NavButton {
@@ -146,15 +145,15 @@ impl Component for NavButton {
 #[derive(Clone, PartialEq)]
 pub struct Nav {
     mode: NavMode,
-    active: NavItem,
+    active: NavTarget,
     downloads: Option<u32>,
     trailing: Option<Element>,
     actions: Option<Element>,
-    on_select: Option<EventHandler<NavItem>>,
+    on_select: Option<EventHandler<NavTarget>>,
 }
 
 impl Nav {
-    pub fn new(mode: NavMode, active: NavItem) -> Self {
+    pub fn new(mode: NavMode, active: NavTarget) -> Self {
         Self { mode, active, downloads: None, trailing: None, actions: None, on_select: None }
     }
 
@@ -176,7 +175,7 @@ impl Nav {
         self
     }
 
-    pub fn on_select(mut self, handler: impl Into<EventHandler<NavItem>>) -> Self {
+    pub fn on_select(mut self, handler: impl Into<EventHandler<NavTarget>>) -> Self {
         self.on_select = Some(handler.into());
         self
     }
@@ -185,11 +184,11 @@ impl Nav {
 impl Component for Nav {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
-        let buttons = NavItem::ALL.map(|item| NavButton {
+        let buttons = NavTarget::ALL.map(|item| NavButton {
             item,
             mode: self.mode,
             active: item == self.active,
-            count: (item == NavItem::Downloads).then_some(self.downloads).flatten(),
+            count: (item == NavTarget::Tab(Section::Downloads)).then_some(self.downloads).flatten(),
             on_select: self.on_select.clone(),
         });
 

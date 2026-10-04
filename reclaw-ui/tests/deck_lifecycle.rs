@@ -14,7 +14,7 @@ use reclaw_ui::{
     effect::Effect,
     host::HostState,
     prelude::*,
-    sample::{sample_downloads, sample_games},
+    sample::{sample_downloads, sample_games, sample_mods, sample_projects},
 };
 
 /// Kills whatever the test started, even when an assertion fails halfway: the second `stop` is the
@@ -45,7 +45,7 @@ fn play_guide_resume_stop_with_a_real_process() {
         let (log, supervisor, events) = (log.clone(), supervisor.clone(), events.clone());
         move || {
             use_init_reclaw(ThemeKind::Midnight);
-            let host = HostState::use_new(sample_games(), sample_downloads());
+            let host = HostState::use_new(sample_games(), sample_downloads(), sample_projects(), sample_mods());
             let mut games = host.games;
             let (_tx, feed) = ActionFeed::new();
 

@@ -3,7 +3,13 @@
 //! Deck, speak the same vocabulary.
 use reclaw_input::InputOwner;
 
-use crate::deck::settings::{SettingChange, TextField};
+use reclaw_games::settings::{SettingKey, SettingValue};
+
+use crate::{
+    deck::settings::{SettingChange, TextField},
+    model::ModProvider,
+    nav::transition::TransitionConfig,
+};
 
 /// The interface the user asked for in Settings.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -48,7 +54,27 @@ pub enum Effect {
     NewCollection(u32),
     CancelDownload(u32),
     Search,
+    InstallMod {
+        provider: ModProvider,
+        id: String,
+    },
+    RemoveMod {
+        provider: ModProvider,
+        id: String,
+    },
+    /// Open a link (a project page, a release, a video) in the system browser or player.
+    OpenUrl(String),
     SwitchToDesktop,
+    /// A launch setting changed: for one game (`app`) or the defaults (`None`). `value: None` clears
+    /// the choice so the next level decides. The `Shell` has already applied it to `HostState`; the
+    /// host persists it.
+    LaunchSetting {
+        app: Option<u32>,
+        key: SettingKey,
+        value: Option<SettingValue>,
+    },
+    /// Page transition settings changed (already applied by the `Shell`); persist them.
+    Transitions(TransitionConfig),
     /// The Interface choice in Settings changed.
     SetMode(ModePref),
     /// A toggle or choice changed; persist it.

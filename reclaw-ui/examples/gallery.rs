@@ -14,8 +14,9 @@ use reclaw_input::{ActionMap, detect_environment};
 use reclaw_ui::{
     deck::ActionFeed,
     host::HostState,
+    nav::Route,
     prelude::*,
-    sample::{sample_downloads, sample_games},
+    sample::{sample_downloads, sample_games, sample_mods, sample_projects},
     shell::{DevOverrides, Shell},
 };
 
@@ -29,7 +30,7 @@ impl App for Gallery {
         let get = |k: &str| std::env::var(k).ok();
         let dev = DevOverrides::from_env(get);
         use_init_reclaw(dev.theme.unwrap_or(ThemeKind::Midnight));
-        let host = HostState::use_new(sample_games(), sample_downloads());
+        let host = HostState::use_new(sample_games(), sample_downloads(), sample_projects(), sample_mods());
         Shell {
             host,
             feed: self.feed.clone(),
@@ -38,6 +39,7 @@ impl App for Gallery {
             on_effect: EventHandler::new(|effect| eprintln!("effect: {effect:?}")),
             detected: detect_environment(get).mode,
             dev,
+            start: Route::Library {},
             script: vec![],
         }
     }

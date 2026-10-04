@@ -13,13 +13,15 @@ name = "deck"
 required-features = ["gamepad"]
 
 [dependencies]
-freya = { version = "=0.5.0-rc.8", features = ["router"] }
+freya = { version = "=0.5.0-rc.8", features = ["router", "radio", "query", "borderless", "titlebar", "markdown", "remote-asset", "html"] }
+freya-router = "=0.5.0-rc.8"
 freya-icons = { version = "=0.5.0-rc.8", features = ["lucide"] }
 bytes = "1"
 futures-channel = "0.3"
 futures-util = { version = "0.3", default-features = false }
 reclaw-input = { path = "../reclaw-input" }
 reclaw-runtime = { path = "../reclaw-runtime" }
+reclaw-games = { path = "../reclaw-games" }
 
 [dev-dependencies]
 serde_json = "1"

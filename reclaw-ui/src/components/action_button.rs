@@ -65,6 +65,8 @@ pub struct ActionButton {
     size: ButtonSize,
     icon: Option<IconName>,
     label: Option<Cow<'static, str>>,
+    /// The accessible name of an icon-only button.
+    alt: Option<Cow<'static, str>>,
     enabled: bool,
     on_press: Option<PressHandler>,
     key: DiffKey,
@@ -78,7 +80,7 @@ impl KeyExt for ActionButton {
 
 impl ActionButton {
     pub fn new(variant: ButtonVariant) -> Self {
-        Self { variant, size: ButtonSize::Md, icon: None, label: None, enabled: true, on_press: None, key: DiffKey::None }
+        Self { variant, size: ButtonSize::Md, icon: None, label: None, alt: None, enabled: true, on_press: None, key: DiffKey::None }
     }
 
     pub fn install() -> Self {
@@ -87,6 +89,12 @@ impl ActionButton {
 
     pub fn label(mut self, label: impl Into<Cow<'static, str>>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    /// What a screen reader says for a button that shows only an icon. Ignored when there is a label.
+    pub fn alt(mut self, alt: impl Into<Cow<'static, str>>) -> Self {
+        self.alt = Some(alt.into());
         self
     }
 
@@ -152,7 +160,8 @@ impl Component for ActionButton {
             .cross_align(Alignment::Center)
             .spacing(SPACE_2)
             .maybe_child(self.icon.map(|name| icon(name, self.size.icon(), fg)))
-            .maybe_child(self.label.clone().map(|text| label_style.text(text, fg)));
+            .maybe_child(self.label.clone().map(|text| label_style.text(text, fg)))
+            .map(self.alt.clone().filter(|_| icon_only), |el, alt| el.a11y_alt(alt.to_string()));
 
         Button::new()
             .filled()

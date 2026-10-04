@@ -17,7 +17,7 @@ fn open_install(s: &mut Session, phone: bool) {
     s.click_label("Dino Rush");
     if phone {
         // The phone grid opens the game page on the first press.
-        assert!(s.has_label("Library"), "the phone page has its back button: {:?}", s.labels());
+        assert!(s.has_label("Back"), "the game page has its back button: {:?}", s.labels());
     }
     s.click_label("Install");
 }

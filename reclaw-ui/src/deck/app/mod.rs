@@ -43,7 +43,7 @@ impl Component for DeckApp {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         use_provide_context(|| ManagedFocus);
-        let HostState { games, downloads, controller, keyboard_inset, mut chosen_file } = self.host;
+        let HostState { games, downloads, controller, keyboard_inset, mut chosen_file, .. } = self.host;
         let texts = TextBoxes::use_new();
         let root_focus = use_a11y();
 

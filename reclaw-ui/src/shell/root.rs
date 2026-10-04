@@ -1,22 +1,19 @@
-//! The app root: shows the desktop or the Deck interface, and lets either be entered by hand.
-use freya::prelude::*;
+//! The app root: the router, the shell context, and the keys that work in both interfaces.
+use freya::{prelude::*, router::*};
 use reclaw_input::{Action, ActionMap, UiMode};
 
 use super::{
+    ctx::ShellCtx,
     model::{ShellModel, keyboard_height},
     overrides::{DevOverrides, KeyboardStart},
 };
-use crate::{
-    app_menu::MenuAction,
-    deck::{ActionFeed, DeckApp},
-    desktop::DesktopApp,
-    effect::Effect,
-    host::HostState,
-};
+use crate::{deck::ActionFeed, effect::Effect, host::HostState, nav::Route};
 
-/// Keys that work in both interfaces, for testing without a device:
-/// **F10** switches between desktop and Deck mode; **F9** shows or hides a simulated on-screen
-/// keyboard so keyboard avoidance can be seen on a desktop.
+/// The root. Keys that work in both interfaces, for testing without a device: **F10** switches
+/// between desktop and Deck mode; **F9** shows or hides a simulated on-screen keyboard so keyboard
+/// avoidance can be seen on a desktop.
+///
+/// It mounts the router once; mode switches happen below it, so the current page survives them.
 #[derive(Clone, PartialEq)]
 pub struct Shell {
     pub host: HostState,
@@ -27,6 +24,8 @@ pub struct Shell {
     /// The interface to start in, from `reclaw_input::detect_environment`.
     pub detected: UiMode,
     pub dev: DevOverrides,
+    /// The page to open first: `Route::Library {}`, or what a `--open` argument named.
+    pub start: Route,
     /// Actions applied once when Deck mode opens (gallery and snapshot scenarios).
     pub script: Vec<Action>,
 }
@@ -47,6 +46,10 @@ impl Component for Shell {
                 m
             }
         });
+        let mut transitions = use_state({
+            let dev = self.dev;
+            move || dev.transitions()
+        });
 
         // Both interfaces read the keyboard height from the shared host state.
         use_side_effect(move || {
@@ -59,32 +62,20 @@ impl Component for Shell {
             let host_handler = self.on_effect.clone();
             EventHandler::new(move |effect: Effect| {
                 model.write().on_effect(&effect, window().1);
+                host.apply(&effect);
+                if let Effect::Transitions(config) = &effect {
+                    transitions.set(*config);
+                }
                 host_handler.call(effect);
             })
         };
-        let on_action = {
-            let on_effect = on_effect.clone();
-            EventHandler::new(move |(app, action): (u32, MenuAction)| {
-                if let Some(effect) = action.confirmed_effect(app) {
-                    on_effect.call(effect);
-                }
-            })
-        };
+        // The context is created once, on the first render; everything in it is a stable handle.
+        use_provide_context({
+            let (feed, map, dev, script, on_effect) = (self.feed.clone(), self.map.clone(), self.dev, self.script.clone(), on_effect);
+            move || ShellCtx { host, feed, map, on_effect, dev, script, model, transitions, window }
+        });
 
-        let content = match model.read().mode {
-            UiMode::Deck => {
-                DeckApp { host, feed: self.feed.clone(), on_effect, map: self.map.clone(), script: self.script.clone() }.into_element()
-            }
-            UiMode::Desktop => DesktopApp {
-                host,
-                layout: self.dev.layout,
-                density: self.dev.density,
-                on_action: Some(on_action),
-                on_deck_mode: Some(EventHandler::new(move |()| model.write().toggle_mode())),
-            }
-            .into_element(),
-        };
-
+        let start = self.start.clone();
         rect()
             .expanded()
             .on_sized(move |e: Event<SizedEventData>| window.set_if_modified((e.area.width(), e.area.height())))
@@ -93,6 +84,6 @@ impl Component for Shell {
                 Key::Named(NamedKey::F9) => model.write().toggle_keyboard(window().1),
                 _ => {}
             })
-            .child(content)
+            .child(Router::<Route>::new(move || RouterConfig::default().with_initial_path(start.clone())))
     }
 }

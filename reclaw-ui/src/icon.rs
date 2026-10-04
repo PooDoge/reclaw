@@ -29,6 +29,10 @@ pub enum IconName {
     Back,
     ChevronDown,
     Gamepad,
+    Star,
+    /// The star with its inside painted: a favorite.
+    StarFilled,
+    External,
 }
 
 impl IconName {
@@ -58,10 +62,22 @@ impl IconName {
             Self::Back => ("chevron-left", lucide::chevron_left()),
             Self::ChevronDown => ("chevron-down", lucide::chevron_down()),
             Self::Gamepad => ("gamepad-2", lucide::gamepad_2()),
+            Self::Star => ("star", lucide::star()),
+            Self::StarFilled => ("star-filled", filled(lucide::star())),
+            Self::External => ("external-link", lucide::external_link()),
         }
     }
 }
 
 pub fn icon(name: IconName, size: f32, color: Color) -> SvgViewer {
     SvgViewer::new(name.source()).color(color).width(Size::px(size)).height(Size::px(size)).show_loader(false)
+}
+
+/// Lucide icons are outlines (`fill="none"`); a filled variant is the same shape with a fill.
+/// If the markup is not what we expect the outline is returned unchanged.
+fn filled(svg: bytes::Bytes) -> bytes::Bytes {
+    match std::str::from_utf8(&svg) {
+        Ok(text) if text.contains("fill=\"none\"") => bytes::Bytes::from(text.replacen("fill=\"none\"", "fill=\"currentColor\"", 1)),
+        _ => svg,
+    }
 }

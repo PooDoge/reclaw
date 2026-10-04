@@ -1,31 +1,13 @@
 //! Headless renders of the Library page at each layout class and theme, written to
 //! target/snapshots/*.png for visual review. Also asserts the right layout class was selected.
-use std::path::PathBuf;
+mod common;
 
-use freya::prelude::*;
-use freya_core::element::AppComponent;
-use freya_testing::prelude::*;
-use reclaw_ui::{
-    app::ReclawApp,
-    metrics::Density,
-    sample::{sample_downloads, sample_games},
-    theme::ThemeKind,
-};
-
-fn out_dir() -> PathBuf {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target").join("snapshots");
-    std::fs::create_dir_all(&dir).expect("create snapshot dir");
-    dir
-}
+use common::*;
+use reclaw_ui::{metrics::Density, shell::DevOverrides, theme::ThemeKind};
 
 fn snapshot(name: &str, width: f32, height: f32, theme: ThemeKind, density: Option<Density>) {
-    let app = ReclawApp { games: sample_games(), downloads: sample_downloads(), theme, density };
-    let (mut runner, ()) = TestingRunner::new(AppComponent::new(app), (width, height).into(), |_| {}, 1.);
-    // on_sized fires after the first layout and re-renders with the measured class.
-    for _ in 0..3 {
-        runner.sync_and_update();
-    }
-    runner.render_to_file(out_dir().join(format!("{name}.png")));
+    let mut s = Mount::desktop().size(width, height).theme(theme).dev(DevOverrides { density, ..DevOverrides::default() }).start();
+    s.snapshot(name);
 }
 
 #[test]
@@ -46,6 +28,9 @@ fn library_daylight_all_classes() {
 /// States that need a pointer in the real app, rendered directly.
 #[test]
 fn component_states() {
+    use freya::prelude::*;
+    use freya_core::element::AppComponent;
+    use freya_testing::prelude::*;
     use reclaw_ui::{prelude::*, sample::sample_games};
     let games = sample_games();
     let state_sheet = {

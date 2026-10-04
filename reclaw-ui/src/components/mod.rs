@@ -21,7 +21,7 @@ pub use game_capsule::GameCapsule;
 pub use hero_header::HeroHeader;
 pub use install_dialog::InstallDialog;
 pub use library_row::LibraryRow;
-pub use nav::{Nav, NavItem, NavMode};
+pub use nav::{Nav, NavMode, NavTarget};
 pub use search_field::SearchField;
 
 pub use status_badge::{StatusBadge, status_tone};

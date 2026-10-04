@@ -4,15 +4,17 @@
 //! * `widgets` are single components; `pages` fill the body between the tabs and the hint bar;
 //! * `app` is the root that wires input, state and rendering together.
 mod app;
-pub mod launch;
+mod frame;
 pub mod layout;
 mod pages;
+pub mod routes;
 pub mod settings;
 pub mod state;
 mod widgets;
 
+pub use crate::launch::{LaunchVerb, failure_message, launch_verb, shows_stop_pair};
 pub use app::{ActionFeed, DeckApp, TextBoxes};
-pub use launch::{LaunchVerb, failure_message, launch_verb, shows_stop_pair};
+pub use frame::DeckFrame;
 pub use pages::{DownloadsPage, EmptyPage, GamePage, HomePage, InstallBody, SettingsBody, install_footer};
 pub use settings::{SettingChange, SettingValue, SettingsTarget, SettingsValues, TextField};
 pub use state::{

@@ -20,8 +20,9 @@ use reclaw_ui::{
     deck::ActionFeed,
     effect::Effect,
     host::HostState,
+    nav::Route,
     prelude::*,
-    sample::{sample_downloads, sample_games},
+    sample::{sample_downloads, sample_games, sample_mods, sample_projects},
     shell::{DevOverrides, Shell},
 };
 
@@ -119,6 +120,10 @@ impl Mount {
     }
 
     pub fn start(self) -> Session {
+        self.start_at(Route::Library {})
+    }
+
+    pub fn start_at(self, start: Route) -> Session {
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<HostState>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
@@ -129,17 +134,12 @@ impl Mount {
             move || {
                 use_init_reclaw(theme);
                 let host = HostState {
-                    games: use_state({
-                        let games = games.clone();
-                        move || games
-                    }),
-                    downloads: use_state(sample_downloads),
                     controller: use_state({
                         let pad = pad.clone();
                         move || pad
                     }),
                     keyboard_inset: use_state(move || keyboard),
-                    chosen_file: use_state(|| None),
+                    ..HostState::use_new(games.clone(), sample_downloads(), sample_projects(), sample_mods())
                 };
                 *stash.borrow_mut() = Some(host);
                 let sink = effects.clone();
@@ -150,6 +150,7 @@ impl Mount {
                     on_effect: EventHandler::new(move |e| sink.borrow_mut().push(e)),
                     detected: mode,
                     dev,
+                    start: start.clone(),
                     script: script.clone(),
                 }
             }
@@ -173,6 +174,15 @@ pub struct Session {
 impl Session {
     fn host(&self) -> HostState {
         self.host.borrow().expect("the app has rendered")
+    }
+
+    /// Ask the app to show a page, as the host does for a deep link.
+    pub fn open_route(&mut self, route: Route) {
+        let host = self.host();
+        self.runner.run_in(|| {
+            let mut open = host.open;
+            open.set(Some(route));
+        });
     }
 
     /// Let layout, effects and the 700 ms slide animations finish.
@@ -294,8 +304,7 @@ impl Session {
     pub fn click_label(&mut self, text: &str) {
         let (l, t, r, b) = self.top_label_box(text).unwrap_or_else(|| panic!("no label {text:?} in {:?}", self.labels()));
         self.runner.click_cursor((f64::from((l + r) / 2.), f64::from((t + b) / 2.)));
-        self.runner.poll(Duration::from_millis(16), Duration::from_millis(200));
-        self.runner.sync_and_update();
+        self.settle();
     }
 
     pub fn has_label(&self, text: &str) -> bool {

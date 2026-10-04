@@ -1,9 +1,10 @@
 //! Switches for developers and testers, read from the environment so any build can be pushed into
 //! any form factor without a device: `RECLAW_MODE`, `RECLAW_LAYOUT`, `RECLAW_DENSITY`,
-//! `RECLAW_KEYBOARD`, `RECLAW_SIM_KEYBOARD` and `RECLAW_THEME`. (`RECLAW_MODE` itself is read by
+//! `RECLAW_KEYBOARD`, `RECLAW_SIM_KEYBOARD`, `RECLAW_MOTION` and `RECLAW_THEME`. (`RECLAW_MODE` itself is read by
 //! `reclaw_input::detect_environment`.)
 use crate::{
     metrics::{Density, LayoutClass},
+    nav::transition::{Intensity, TransitionConfig},
     theme::ThemeKind,
 };
 
@@ -17,6 +18,15 @@ pub struct DevOverrides {
     /// Raise the simulated keyboard whenever a text field takes focus.
     pub keyboard_follows_focus: bool,
     pub theme: Option<ThemeKind>,
+    pub motion: Option<MotionOverride>,
+}
+
+/// `RECLAW_MOTION`: `reduced` (or `off`) cuts every transition; `subtle`, `standard` or `cinematic`
+/// sets both interfaces to that intensity.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum MotionOverride {
+    Reduced,
+    Intensity(Intensity),
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -53,7 +63,28 @@ impl DevOverrides {
                 "daylight" => Some(ThemeKind::Daylight),
                 _ => None,
             }),
+            motion: value("RECLAW_MOTION").and_then(|v| match v.as_str() {
+                "reduced" | "off" | "none" => Some(MotionOverride::Reduced),
+                "subtle" => Some(MotionOverride::Intensity(Intensity::Subtle)),
+                "standard" => Some(MotionOverride::Intensity(Intensity::Standard)),
+                "cinematic" => Some(MotionOverride::Intensity(Intensity::Cinematic)),
+                _ => None,
+            }),
         }
+    }
+
+    /// The starting transition settings: the defaults, changed by `RECLAW_MOTION`.
+    pub fn transitions(&self) -> TransitionConfig {
+        let mut config = TransitionConfig::default();
+        match self.motion {
+            Some(MotionOverride::Reduced) => config.reduce_motion = true,
+            Some(MotionOverride::Intensity(i)) => {
+                config.desktop.intensity = i;
+                config.console.intensity = i;
+            }
+            None => {}
+        }
+        config
     }
 }
 
@@ -84,6 +115,14 @@ mod tests {
         assert_eq!(d.keyboard, Some(KeyboardStart::Pixels(320.)));
         assert!(d.keyboard_follows_focus);
         assert_eq!(d.theme, Some(ThemeKind::Daylight));
+    }
+
+    #[test]
+    fn motion_overrides_change_the_starting_transitions() {
+        assert_eq!(from(&[]).transitions(), TransitionConfig::default());
+        assert!(from(&[("RECLAW_MOTION", "reduced")]).transitions().reduce_motion);
+        let cinematic = from(&[("RECLAW_MOTION", "Cinematic")]).transitions();
+        assert_eq!((cinematic.desktop.intensity, cinematic.console.intensity), (Intensity::Cinematic, Intensity::Cinematic));
     }
 
     #[test]

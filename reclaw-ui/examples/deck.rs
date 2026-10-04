@@ -20,8 +20,9 @@ use reclaw_ui::{
     deck::ActionFeed,
     effect::Effect,
     host::HostState,
+    nav::Route,
     prelude::*,
-    sample::{sample_downloads, sample_games},
+    sample::{sample_downloads, sample_games, sample_mods, sample_projects},
     shell::{DevOverrides, Shell},
 };
 
@@ -36,7 +37,7 @@ impl App for Host {
     fn render(&self) -> impl IntoElement {
         let dev = DevOverrides::from_env(|k| std::env::var(k).ok());
         use_init_reclaw(dev.theme.unwrap_or(ThemeKind::Midnight));
-        let host = HostState::use_new(sample_games(), sample_downloads());
+        let host = HostState::use_new(sample_games(), sample_downloads(), sample_projects(), sample_mods());
         let (mut games, mut controller) = (host.games, host.controller);
 
         // Everything long-lived is created once.
