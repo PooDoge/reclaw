@@ -7,12 +7,15 @@ Every game is a recompilation of a game from some system. Reclaw shows which, an
 
 ## The model
 
-`Platform` (`reclaw-games`) lists sixteen systems from NES to Dreamcast plus `Other`. Each has a name, a short mark of at most four
-characters ("N64", "GCN", "PS2"), a maker, a kind (console or handheld), and a **rank**: the order of the `ALL` array, grouped by
+`Platform` (`reclaw-games`) lists twenty-one systems plus `Other`: Nintendo's NES to 3DS, Sony's PlayStation to PSP, Xbox and Xbox 360,
+Sega's Genesis to Dreamcast, then Arcade, PC and Mobile (the community catalog has apps for each). Each has a name, a short mark of at
+most four characters ("N64", "GCN", "PS2"), a maker, a kind (console, handheld, arcade, computer, phone), and a **rank**: the order of the `ALL` array, grouped by
 maker and oldest first within a maker. Adding a system means adding a variant, an entry in `ALL`, and each `match`; the compiler
-points at all of them. The saved names (`n64`, `ps2`, `gba`, `other` from the first version) do not change.
+points at all of them. The saved names (`n64`, `ps2`, `gba`, `other` from the first version) do not change; new systems were added without reordering saved values.
 
-`GameEntry::platform` is set from the catalog project, or from a tag for a game added by hand (`Platform::from_tag`).
+`GameEntry::platform` is set from the catalog project, or from the tags (`Platform::from_tags`). Catalogs tag generously, so the first
+tag is not the answer: a tag naming one system (`ps2`, `x360`) beats a brand tag (`playstation`, `xbox`), which beats a tag for where the
+game runs today (`pc`, `mobile`); ties go to the tag listed first. `Platform::from_tag` still answers for one tag. See `catalog-format.md`.
 
 ## What the user sees
 

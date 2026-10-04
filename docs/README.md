@@ -4,6 +4,7 @@
 |---|---|---|
 | `../ARCHITECTURE.md` | How the code is arranged today | Updated when the shape changes |
 | `../AGENTS.md` | Commands and rules for working here | Short; pointers and hard rules only |
+| `quiver-parity.md` | The Quiver launcher's features against ours: what is done, what is next | Updated as milestones land |
 | `BUILDING.md` | Building and running on Bazzite (distrobox), Linux, and what has been verified where | Updated when the build or the checks change |
 | `specs/<area>.md` | Living specs: what the system does TODAY | Updated in the same commit as the behavior |
 | `adr/NNNN-*.md` | One decision each, with what was rejected | Never edited; superseded by a newer ADR that links back |
@@ -29,6 +30,7 @@
 | `specs/media.md` | Fetching and caching artwork, the README on the game page |
 | `specs/systems.md` | The original-system badge, filter and sort |
 | `specs/game-settings.md` | Per-game launch settings and the global defaults |
+| `specs/catalog-format.md` | The catalog and library documents, in Quiver's format, and the optional `reclaw` block |
 
 ## Decisions
 
@@ -40,3 +42,6 @@
 | `adr/0004-readme-on-the-stock-markdown-viewer.md` | No fork of the markdown viewer, no HTML engine |
 | `adr/0005-custom-window-frame.md` | Reclaw draws its own title bar |
 | `adr/0006-holds-in-the-pad-reader.md` | Press-and-hold is decided in the pad reader |
+| `adr/0007-deck-follows-the-theme.md` | Deck mode takes its colours from the theme, not fixed dark values |
+| `adr/0008-reclaw-places-its-own-resize-bands.md` | Reclaw places its own resize bands |
+| `adr/0009-reclaw-speaks-quivers-catalog-format.md` | Quiver's catalog format, with one optional `reclaw` block |

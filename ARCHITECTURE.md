@@ -17,11 +17,12 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-input` | Pad buttons to `Action`s, SDL mapping, spatial focus, press-and-hold (`HoldTracker`), environment detection, the gilrs reader (`gilrs-backend`) | no |
 | `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), controller `InputProfile` | no |
 | `reclaw-games` | What a project is (catalog metadata, art, media, releases), the systems games came from (`platform`), launch-setting capabilities and how a launch plan is built (`settings`) | no |
+| `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format) | no |
 | `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
 | `reclaw-ui` | Everything you see: tokens, components, the surface system, both interfaces, the store, the router, the window frame, the `Shell` | yes |
 
-Five crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
+Six crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
 
 ## Inside `reclaw-ui/src`
 
@@ -157,6 +158,8 @@ and the media hub); the shell's own effects are handled inside it.
 
 * Deck's Catalog and Mods pages, and the README on Deck.
 * Drawing mermaid diagrams (they show as source), a cache size and "clear cache" in Settings.
+* The library and catalog on disk, the comparison that decides what is new or changed, and everything that installs (releases, downloads,
+  extraction); `docs/quiver-parity.md` has the plan. The UI still shows sample data.
 * A production host binary: only the `gallery` and `deck` examples start the app. The install backend (downloads, builds) is not here;
   the store accepts its events (`ActivityEvent`).
 * An in-app on-screen keyboard (the OS provides one; here it is simulated) and a gamepad file browser (`Effect::ChooseFile` asks the host).

@@ -11,6 +11,7 @@ cargo test -p reclaw-ui --test ui deck_notices::   # one module of the UI binary
 cargo test -p reclaw-ui --test repo_hygiene        # file sizes, //! headers, docs rules
 cargo clippy --workspace --all-targets      # must stay clean (CI uses -D warnings)
 cargo fmt --all                             # rustfmt.toml sets the style; run before committing
+QUIVER_CATALOG_DIR=<checkout> cargo test -p reclaw-catalog   # also check the real community catalog (skipped without it)
 cargo run -p reclaw-ui --example gallery    # look at it (F10: Deck mode, F9: simulated keyboard)
 cargo run -p reclaw-ui --example deck --features gamepad   # with a real pad and processes
 scripts/x11-smoke.sh                        # a real window under Xvfb: drag, resize, maximize, close (not part of cargo test)
@@ -19,7 +20,7 @@ scripts/x11-smoke.sh                        # a real window under Xvfb: drag, re
 Linux needs `libudev-dev` and the GL/EGL dev packages (`libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libwayland-dev`).
 Snapshot PNGs land in `reclaw-ui/target/snapshots/`; look at them after changing any layout.
 Bazzite (immutable) builds in a distrobox: `docs/BUILDING.md`, `scripts/bazzite-build.sh`.
-Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime`
+Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog`
 keeps the compiled dependencies and drops only ours.
 
 ## Rules

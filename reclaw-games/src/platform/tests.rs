@@ -69,3 +69,74 @@ fn saved_names_stay_what_older_files_wrote() {
     }
     assert_eq!(serde_json::to_string(&Platform::GameCube).expect("serializes"), "\"game_cube\"");
 }
+
+#[test]
+fn a_whole_tag_list_is_weighed_so_a_brand_tag_does_not_hide_the_system() {
+    // The real catalog tags a PlayStation 2 game "playstation" before "ps2"; the first tag alone says PS1.
+    assert_eq!(Platform::from_tags(["recomp", "playstation", "ps2", "playstation 2"]), Some(Platform::Ps2));
+    assert_eq!(Platform::from_tags(["xbox", "x360", "xbox 360"]), Some(Platform::Xbox360), "an Xbox 360 game is not an original Xbox game");
+    assert_eq!(Platform::from_tags(["xbox"]), Some(Platform::Xbox), "a brand tag alone still gives the system the brand began with");
+    assert_eq!(Platform::from_tags(["playstation"]), Some(Platform::Ps1));
+    assert_eq!(Platform::from_tags(["xbox", "original xbox"]), Some(Platform::Xbox));
+}
+
+#[test]
+fn where_a_game_runs_today_never_beats_where_it_came_from() {
+    assert_eq!(Platform::from_tags(["recomp", "pc", "n64"]), Some(Platform::N64), "an N64 game ported to PC is still an N64 game");
+    assert_eq!(Platform::from_tags(["recreation", "pc", "club penguin"]), Some(Platform::Pc), "a PC game is");
+    assert_eq!(Platform::from_tags(["brew", "mobile"]), Some(Platform::Mobile));
+    assert_eq!(Platform::from_tags(["playstation", "pc"]), Some(Platform::Ps1), "a brand tag still beats a host tag");
+}
+
+#[test]
+fn equally_strong_tags_go_to_the_first_listed_and_no_system_tag_is_none() {
+    assert_eq!(Platform::from_tags(["gba", "n64"]), Some(Platform::Gba));
+    assert_eq!(Platform::from_tags(["n64", "gba"]), Some(Platform::N64));
+    assert_eq!(Platform::from_tags(["recomp", "mario", "favorite"]), None);
+    assert_eq!(Platform::from_tags(Vec::<String>::new()), None);
+}
+
+#[test]
+fn the_tags_the_real_catalog_uses_map_to_their_systems() {
+    for (tag, expected) in [
+        ("super nintendo entertainment system", Platform::Snes),
+        ("nintendo entertainment system", Platform::Nes),
+        ("nintendo 64", Platform::N64),
+        ("game boy color", Platform::GameBoy),
+        ("nintendo ds", Platform::Ds),
+        ("3ds", Platform::N3ds),
+        ("wii u", Platform::WiiU),
+        ("sega mega drive", Platform::Genesis),
+        ("sega genesis", Platform::Genesis),
+        ("smd", Platform::Genesis),
+        ("playstation portable", Platform::Psp),
+        ("arcade", Platform::Arcade),
+        ("pc", Platform::Pc),
+        ("mobile", Platform::Mobile),
+        ("brew", Platform::Mobile),
+        ("x360", Platform::Xbox360),
+    ] {
+        assert_eq!(Platform::from_tag(tag), Some(expected), "{tag}");
+    }
+    for brand_only in ["nintendo", "sega", "sony", "recomp", "recompilation", "decompilation"] {
+        assert_eq!(Platform::from_tag(brand_only), None, "{brand_only} names a maker or a kind of project, not a system");
+    }
+}
+
+#[test]
+fn systems_added_later_keep_their_own_saved_names() {
+    for (platform, name) in [
+        (Platform::Xbox360, "xbox360"),
+        (Platform::WiiU, "wii_u"),
+        (Platform::N3ds, "n3ds"),
+        (Platform::Pc, "pc"),
+        (Platform::Mobile, "mobile"),
+        (Platform::Arcade, "arcade"),
+    ] {
+        assert_eq!(serde_json::to_string(&platform).expect("serializes"), format!("\"{name}\""));
+        assert_eq!(serde_json::from_str::<Platform>(&format!("\"{name}\"")).expect("reads back"), platform);
+    }
+    assert_eq!(Platform::Pc.kind(), SystemKind::Computer);
+    assert_eq!(Platform::N3ds.kind(), SystemKind::Handheld);
+    assert_eq!(Platform::Xbox360.maker(), Maker::Microsoft);
+}
