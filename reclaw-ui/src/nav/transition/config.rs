@@ -3,7 +3,23 @@ use std::time::Duration;
 use reclaw_input::UiMode;
 
 use super::style::{Direction, Easing, Intensity, TransitionStyle};
-use crate::nav::Route;
+use crate::{
+    nav::Route,
+    settings::{
+        KEY_CONSOLE_INTENSITY, KEY_CONSOLE_PAGE_STYLES, KEY_CONSOLE_STYLE, KEY_DESKTOP_INTENSITY, KEY_DESKTOP_PAGE_STYLES,
+        KEY_DESKTOP_STYLE, KEY_REDUCE_MOTION, SettingsTarget, SettingsValues,
+    },
+};
+
+/// The page styles the Motion section offers, in the order of `STYLE_OPTIONS`.
+fn style_from_index(index: usize) -> TransitionStyle {
+    match index {
+        1 => TransitionStyle::Fade,
+        2 => TransitionStyle::Rise,
+        3 => TransitionStyle::Zoom,
+        _ => TransitionStyle::Slide,
+    }
+}
 
 /// One interface's transition settings.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -36,6 +52,22 @@ impl Default for TransitionConfig {
 }
 
 impl TransitionConfig {
+    /// The settings page's Motion section, as transition settings. A row never touched keeps its
+    /// default, which is the default of [`TransitionConfig::default`] too.
+    pub fn from_settings(values: &SettingsValues) -> Self {
+        let target = SettingsTarget::Global;
+        let profile = |intensity: (&'static str, usize), style: &'static str, pages: &'static str| ModeProfile {
+            intensity: Intensity::from_index(values.choice(target, intensity.0, intensity.1)),
+            style: style_from_index(values.choice(target, style, 0)),
+            page_styles: values.toggle(target, pages, true),
+        };
+        Self {
+            desktop: profile((KEY_DESKTOP_INTENSITY, 1), KEY_DESKTOP_STYLE, KEY_DESKTOP_PAGE_STYLES),
+            console: profile((KEY_CONSOLE_INTENSITY, 2), KEY_CONSOLE_STYLE, KEY_CONSOLE_PAGE_STYLES),
+            reduce_motion: values.toggle(target, KEY_REDUCE_MOTION, false),
+        }
+    }
+
     pub fn profile(&self, mode: UiMode) -> &ModeProfile {
         match mode {
             UiMode::Desktop => &self.desktop,
@@ -105,6 +137,26 @@ mod tests {
 
     fn at(config: &TransitionConfig, mode: UiMode, from: &Route, to: &Route, direction: Direction) -> Spec {
         resolve(config, mode, from, to, direction)
+    }
+
+    #[test]
+    fn untouched_settings_give_the_default_config() {
+        assert_eq!(TransitionConfig::from_settings(&SettingsValues::default()), TransitionConfig::default());
+    }
+
+    #[test]
+    fn the_motion_rows_set_each_interface_separately() {
+        use crate::settings::SettingValue;
+        let mut values = SettingsValues::default();
+        values.set(SettingsTarget::Global, KEY_CONSOLE_INTENSITY, SettingValue::Choice(3));
+        values.set(SettingsTarget::Global, KEY_CONSOLE_STYLE, SettingValue::Choice(3));
+        values.set(SettingsTarget::Global, KEY_DESKTOP_PAGE_STYLES, SettingValue::Bool(false));
+        values.set(SettingsTarget::Global, KEY_REDUCE_MOTION, SettingValue::Bool(true));
+        let config = TransitionConfig::from_settings(&values);
+        assert_eq!((config.console.intensity, config.console.style), (Intensity::Cinematic, TransitionStyle::Zoom));
+        assert!(!config.desktop.page_styles && config.console.page_styles);
+        assert_eq!(config.desktop.intensity, Intensity::Subtle, "the desktop row was not touched");
+        assert!(config.reduce_motion);
     }
 
     #[test]

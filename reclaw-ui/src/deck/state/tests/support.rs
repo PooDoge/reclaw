@@ -4,10 +4,14 @@ pub(super) use reclaw_input::{Action, Direction, FocusId, InputOwner};
 pub(super) use reclaw_runtime::RunState;
 
 pub(super) use crate::deck::state::*;
+use reclaw_config::LaunchPrefs;
+use reclaw_games::{project::ProjectInfo, settings::DisplayEnvironment};
+
 use crate::{
     activity::Activity,
     model::GameEntry,
-    sample::{sample_activity, sample_games},
+    sample::{sample_activity, sample_games, sample_projects},
+    settings::LaunchContext,
 };
 
 pub(super) fn running() -> RunState {
@@ -18,15 +22,28 @@ pub(super) fn running() -> RunState {
 pub(super) struct Fixture {
     pub games: Vec<GameEntry>,
     pub downloads: Vec<Activity>,
+    pub projects: Vec<ProjectInfo>,
+    pub env: DisplayEnvironment,
+    pub launch: LaunchPrefs,
 }
 
 impl Fixture {
     pub fn new() -> Self {
-        Self { games: sample_games(), downloads: sample_activity().queue().into_iter().cloned().collect() }
+        Self {
+            games: sample_games(),
+            downloads: sample_activity().queue().into_iter().cloned().collect(),
+            projects: sample_projects(),
+            env: DisplayEnvironment::unknown(),
+            launch: LaunchPrefs::default(),
+        }
     }
 
     pub fn view(&self) -> DeckView<'_> {
-        DeckView { games: &self.games, downloads: &self.downloads }
+        DeckView {
+            games: &self.games,
+            downloads: &self.downloads,
+            launch: Some(LaunchContext { env: &self.env, projects: &self.projects, prefs: &self.launch }),
+        }
     }
 
     pub fn set_run(&mut self, id: u32, run: RunState) {

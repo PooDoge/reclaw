@@ -128,6 +128,8 @@ impl Mount {
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
         let Mount { size, games, pad, script, mode, dev, keyboard, theme } = self;
+        // The theme is pinned, so the settings do not switch it under a snapshot.
+        let dev = DevOverrides { theme: dev.theme.or(Some(theme)), ..dev };
 
         let app = {
             let (effects, stash) = (effects.clone(), stash.clone());

@@ -11,6 +11,6 @@ pub mod pages;
 mod ui;
 
 pub use actions::{press_point, press_verb};
-pub use dialogs::{GameDialogs, GameDialogsLayer};
+pub use dialogs::{GameDialogs, GameDialogsLayer, OpenPicker};
 pub use frame::DesktopFrame;
 pub use ui::{DesktopEnv, DesktopUi, use_desktop_ui};

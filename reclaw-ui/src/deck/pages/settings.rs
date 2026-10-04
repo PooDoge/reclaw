@@ -59,6 +59,8 @@ pub struct SettingsBody {
     pub schema: Schema,
     pub target: SettingsTarget,
     pub values: SettingsValues,
+    /// The text on each launch row ("Default (1920x1080)", "Game's own", "Off"), by setting.
+    pub launch_text: std::collections::HashMap<reclaw_games::settings::SettingKey, String>,
     pub section: usize,
     pub two_pane: bool,
     pub drilled: bool,
@@ -102,6 +104,7 @@ impl SettingsBody {
             }
             RowKind::Action { danger, .. } => RowControl::Action { danger: *danger },
             RowKind::Info { value } => RowControl::Value { text: value.clone(), opens_menu: false },
+            RowKind::Launch { key } => RowControl::Value { text: self.launch_text.get(key).cloned().unwrap_or_default(), opens_menu: true },
         };
         let on_click = self.on_click.clone();
         let mut r = SettingRow::new(row.label, control, Density::Controller)

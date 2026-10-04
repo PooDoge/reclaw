@@ -9,8 +9,10 @@ use freya::prelude::*;
 mod confirm;
 mod install;
 mod manage;
+mod picker;
 mod slot;
 
+pub use picker::OpenPicker;
 pub(super) use slot::Slot;
 
 use crate::{
@@ -33,12 +35,13 @@ pub struct GameDialogs {
     pub(super) install: Slot<u32>,
     pub(super) manage: Slot<OpenManage>,
     pub(super) confirm: Slot<u32>,
+    pub(super) picker: Slot<OpenPicker>,
 }
 
 impl GameDialogs {
     /// Hooks: call once, from the frame.
     pub fn use_new() -> Self {
-        Self { install: Slot::use_new(), manage: Slot::use_new(), confirm: Slot::use_new() }
+        Self { install: Slot::use_new(), manage: Slot::use_new(), confirm: Slot::use_new(), picker: Slot::use_new() }
     }
 
     /// The game whose install form is open, if any. Reading it subscribes the caller, and it reads
@@ -55,6 +58,11 @@ impl GameDialogs {
     /// Open the Options menu for a game at a point (where it was pressed).
     pub fn manage(&self, game: &GameEntry, at: (f32, f32)) {
         self.manage.open(OpenManage { game: game.id, menu: options_menu(game, true), at });
+    }
+
+    /// Open a list of options to choose one from. `on_pick` is called with the index chosen.
+    pub fn pick(&self, picker: OpenPicker) {
+        self.picker.open(picker);
     }
 
     /// Ask whether to uninstall a game. Nothing is sent before the answer.
@@ -76,6 +84,7 @@ impl Component for GameDialogsLayer {
             .position(Position::new_absolute().top(0.).left(0.))
             .child(install::InstallSheet { open: d.install })
             .child(manage::ManageView { manage: d.manage, confirm: d.confirm })
+            .child(picker::PickerView { picker: d.picker })
             .child(confirm::UninstallConfirm { confirm: d.confirm })
     }
 }

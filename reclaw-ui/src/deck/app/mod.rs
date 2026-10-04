@@ -22,7 +22,10 @@ pub use text_boxes::TextBoxes;
 use crate::{
     deck::{DeckState, DeckView, Effect, LastInput, ids},
     prelude::*,
-    store::{AppChannel, Store, use_activity, use_channel, use_controller, use_games, use_keyboard_inset, use_settings},
+    store::{
+        AppChannel, Store, use_activity, use_channel, use_controller, use_display, use_games, use_keyboard_inset, use_launch, use_projects,
+        use_settings,
+    },
 };
 use dispatch::Dispatcher;
 use frame::Frame;
@@ -45,7 +48,7 @@ impl Component for DeckApp {
         use_provide_context(|| ManagedFocus);
         let store = self.store;
         let (games, activity, controller, keyboard_inset) = (use_games(), use_activity(), use_controller(), use_keyboard_inset());
-        let settings = use_settings();
+        let (settings, projects, display, launch) = (use_settings(), use_projects(), use_display(), use_launch());
         let (games_changed, activity_changed, mailbox) =
             (use_channel(AppChannel::Games), use_channel(AppChannel::Activity), use_channel(AppChannel::Mailbox));
         let texts = TextBoxes::use_new();
@@ -55,7 +58,7 @@ impl Component for DeckApp {
             let (script, games, activity) = (self.script.clone(), games.clone(), activity.clone());
             use_state(move || {
                 let queue: Vec<_> = activity.queue().into_iter().cloned().collect();
-                let view = DeckView { games: &games, downloads: &queue };
+                let view = DeckView { games: &games, downloads: &queue, launch: None };
                 let mut state = DeckState::new(&view);
                 for action in script {
                     state.apply(action, &view);
@@ -127,9 +130,25 @@ impl Component for DeckApp {
         let (g, d) = (games.clone(), activity.queue().into_iter().cloned().collect::<Vec<_>>());
         let pad = controller.clone();
         let kind = pad.as_ref().map_or(ControllerKind::Generic, |c| c.kind);
-        let (schema, reveal) = {
-            let view = DeckView { games: &g, downloads: &d };
-            (state.settings_target().and_then(|t| state.settings_schema(t, &view)), state.reveal_target(&view))
+        let (schema, reveal, launch_text) = {
+            let launch_ctx = crate::settings::LaunchContext { env: &display, projects: &projects, prefs: &launch };
+            let view = DeckView { games: &g, downloads: &d, launch: Some(launch_ctx) };
+            let target = state.settings_target();
+            let schema = target.and_then(|t| state.settings_schema(t, &view));
+            // The text of each launch row, worked out here so the page itself needs no engine.
+            let texts: std::collections::HashMap<_, _> = match (target, &schema) {
+                (Some(target), Some(schema)) => schema
+                    .sections
+                    .iter()
+                    .flat_map(|s| s.rows())
+                    .filter_map(|row| match row.kind {
+                        crate::settings::RowKind::Launch { key } => launch_ctx.control(target, key).map(|c| (key, c.summary)),
+                        _ => None,
+                    })
+                    .collect(),
+                _ => Default::default(),
+            };
+            (schema, state.reveal_target(&view), texts)
         };
         let frame = Frame {
             ring: state.focus_visible(),
@@ -142,6 +161,7 @@ impl Component for DeckApp {
             map: self.map.clone(),
             texts,
             schema,
+            launch_text,
             reveal,
             state,
             games: g,

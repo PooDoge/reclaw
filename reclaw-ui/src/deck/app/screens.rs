@@ -110,6 +110,7 @@ fn settings(f: &Frame) -> Element {
         schema: schema.clone(),
         target,
         values: state.values().clone(),
+        launch_text: f.launch_text.clone(),
         section: state.settings_section(),
         two_pane: two,
         drilled: state.drilled(),

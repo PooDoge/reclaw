@@ -33,7 +33,7 @@ impl App for Gallery {
     fn render(&self) -> impl IntoElement {
         let get = |k: &str| std::env::var(k).ok();
         let dev = DevOverrides::from_env(get);
-        use_init_reclaw(dev.theme.unwrap_or(ThemeKind::Midnight));
+        use_init_reclaw(dev.theme.unwrap_or_else(|| self.store.with(|s| ThemeKind::from_settings(&s.settings))));
         Shell {
             store: self.store,
             feed: self.feed.clone(),

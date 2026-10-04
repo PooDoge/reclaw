@@ -1,5 +1,6 @@
 //! Settings as data: sections of groups of rows. Pages render a schema; the reducer edits values
 //! by key. Nothing here knows about Freya.
+use reclaw_games::settings::SettingKey;
 
 /// Which text box a gamepad press should start typing into.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -53,6 +54,11 @@ pub enum RowKind {
     /// Read-only value.
     Info {
         value: String,
+    },
+    /// A launch setting from the games engine: its options, its value and where the value comes
+    /// from depend on the display and the game, so they are worked out when shown (see `launch`).
+    Launch {
+        key: SettingKey,
     },
 }
 

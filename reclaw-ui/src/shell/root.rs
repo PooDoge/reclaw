@@ -4,14 +4,15 @@ use reclaw_input::{Action, ActionMap, UiMode};
 
 use super::{
     ctx::ShellCtx,
-    model::{ShellModel, keyboard_height},
+    model::{ShellModel, keyboard_height, pref_from_settings},
     overrides::{DevOverrides, KeyboardStart},
 };
 use crate::{
     deck::ActionFeed,
     effect::Effect,
-    nav::Route,
-    store::{AppAction, Store, ui_action},
+    nav::{Route, transition::TransitionConfig},
+    store::{AppAction, AppChannel, Store, ui_action, use_channel},
+    theme::ThemeKind,
 };
 
 /// The root. Keys that work in both interfaces, for testing without a device: **F10** switches
@@ -44,6 +45,8 @@ impl Component for Shell {
             let (detected, dev) = (self.detected, self.dev);
             move || {
                 let mut m = ShellModel::new(detected, dev.keyboard_follows_focus);
+                // What the Interface row of the settings chose last time (Auto when never touched).
+                m.set_pref(store.with(|s| pref_from_settings(&s.settings)));
                 m.keyboard = match dev.keyboard {
                     Some(KeyboardStart::Pixels(px)) => px,
                     Some(KeyboardStart::Share) => keyboard_height(800.),
@@ -52,9 +55,16 @@ impl Component for Shell {
                 m
             }
         });
-        let transitions = use_state({
-            let dev = self.dev;
-            move || dev.transitions()
+        let dev = self.dev;
+        let mut transitions = use_state(move || dev.apply_motion(store.with(|s| TransitionConfig::from_settings(&s.settings))));
+        let mut theme = use_consume::<State<ThemeKind>>();
+        let settings = use_channel(AppChannel::Settings);
+
+        // Page transitions and the theme follow the settings page, unless a RECLAW_* variable pins them.
+        use_side_effect(move || {
+            let values = settings.read().settings.clone();
+            transitions.set_if_modified(dev.apply_motion(TransitionConfig::from_settings(&values)));
+            theme.set_if_modified(dev.theme.unwrap_or_else(|| ThemeKind::from_settings(&values)));
         });
 
         // Both interfaces read the keyboard height from the shared store.

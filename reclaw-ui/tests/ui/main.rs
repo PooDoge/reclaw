@@ -12,6 +12,8 @@ mod deck_input;
 mod deck_lifecycle;
 mod deck_snapshots;
 mod deck_surfaces;
+mod desktop_pages;
+mod desktop_settings;
 mod desktop_snapshots;
 mod desktop_surfaces;
 mod nav_stage;

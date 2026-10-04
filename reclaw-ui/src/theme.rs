@@ -26,6 +26,14 @@ impl ThemeKind {
         }
     }
 
+    /// The theme the Interface section's Theme row names. Untouched is Midnight.
+    pub fn from_settings(values: &crate::settings::SettingsValues) -> Self {
+        match values.choice(crate::settings::SettingsTarget::Global, crate::settings::KEY_THEME, 0) {
+            1 => Self::Daylight,
+            _ => Self::Midnight,
+        }
+    }
+
     pub fn toggled(self) -> Self {
         match self {
             Self::Midnight => Self::Daylight,

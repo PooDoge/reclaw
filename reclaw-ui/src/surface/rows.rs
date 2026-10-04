@@ -44,11 +44,21 @@ pub struct SettingRow {
     disabled: bool,
     density: Density,
     on_press: Option<EventHandler<()>>,
+    on_press_at: Option<EventHandler<(f32, f32)>>,
 }
 
 impl SettingRow {
     pub fn new(label: impl Into<String>, control: RowControl, density: Density) -> Self {
-        Self { label: label.into(), description: None, control, focused: false, disabled: false, density, on_press: None }
+        Self {
+            label: label.into(),
+            description: None,
+            control,
+            focused: false,
+            disabled: false,
+            density,
+            on_press: None,
+            on_press_at: None,
+        }
     }
 
     pub fn description(mut self, description: impl Into<String>) -> Self {
@@ -68,6 +78,13 @@ impl SettingRow {
 
     pub fn on_press(mut self, handler: impl Into<EventHandler<()>>) -> Self {
         self.on_press = Some(handler.into());
+        self
+    }
+
+    /// Like [`on_press`](Self::on_press), told where in the window the press was, so a picker can
+    /// open beside the row. A keyboard press has no position and reports the row's own corner (0, 0).
+    pub fn on_press_at(mut self, handler: impl Into<EventHandler<(f32, f32)>>) -> Self {
+        self.on_press_at = Some(handler.into());
         self
     }
 }
@@ -169,6 +186,16 @@ impl Component for SettingRow {
         }
 
         let card = card.map(self.on_press.clone().filter(|_| !self.disabled), |el, h| el.on_press(move |_| h.call(())));
+        let card = card.map(self.on_press_at.clone().filter(|_| !self.disabled), |el, h| {
+            el.on_press(move |e: Event<PressEventData>| {
+                let at = match e.data() {
+                    PressEventData::Mouse(m) => (m.global_location.x as f32, m.global_location.y as f32),
+                    PressEventData::Touch(t) => (t.global_location.x as f32, t.global_location.y as f32),
+                    PressEventData::Keyboard(_) => (0., 0.),
+                };
+                h.call(at);
+            })
+        });
         hoverable(card, hovering)
     }
 }

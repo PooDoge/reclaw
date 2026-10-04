@@ -1,6 +1,6 @@
 //! The form-like pages: Install, and the Settings/Properties pages with text entry.
 use super::support::*;
-use crate::deck::settings::{SettingChange, SettingValue, SettingsTarget, TextField};
+use crate::deck::settings::{RowKind, SettingChange, SettingValue, SettingsTarget, TextField};
 
 fn open_install(f: &Fixture) -> DeckState {
     let mut s = f.state();
@@ -127,7 +127,9 @@ fn the_rows_follow_the_section_list() {
 fn toggles_report_the_change_and_remember_it() {
     let f = Fixture::new();
     let mut s = open_global_settings(&f);
-    press(&mut s, &f, &[go(Down), Confirm, go(Down)]); // Controller > Vibration
+    let controller = section_index(&f, &s, SettingsTarget::Global, "controller");
+    s.focus = ids::settings_nav(controller);
+    press(&mut s, &f, &[Confirm, go(Down)]); // Controller > Vibration
     let fx = press(&mut s, &f, &[Confirm]);
     assert_eq!(fx, vec![Effect::Setting(SettingChange { app: None, key: "rumble", value: SettingValue::Bool(false) })]);
     assert!(!s.values().toggle(SettingsTarget::Global, "rumble", true));
@@ -197,9 +199,11 @@ fn the_uninstall_row_asks_before_acting() {
     let f = Fixture::new();
     let mut s = f.state();
     press(&mut s, &f, &[Options, go(Down), go(Down), go(Down), Confirm]); // Properties
-    // Installed files is the fourth section; its Remove group holds the Uninstall row (index 4).
-    press(&mut s, &f, &[go(Down), go(Down), go(Down), Confirm]);
-    s.focus = ids::settings_row(3, 4);
+    // Installed files holds the Uninstall row in its Remove group (row index 4).
+    let files = section_index(&f, &s, SettingsTarget::App(1), "files");
+    s.focus = ids::settings_nav(files);
+    press(&mut s, &f, &[Confirm]);
+    s.focus = ids::settings_row(files, 4);
     press(&mut s, &f, &[Confirm]);
     assert_eq!(s.overlay(), Overlay::Confirm(ConfirmKind::Uninstall(1)));
 }
@@ -212,4 +216,66 @@ fn launch_options_are_a_text_row() {
     assert_eq!(ids::row_of(s.focus()), Some((0, 0)));
     s.focus = ids::settings_row(0, 1);
     assert_eq!(press(&mut s, &f, &[Confirm]), vec![Effect::BeginTextEntry(TextField::LaunchOptions)]);
+}
+
+/// The position of a section in a target's schema, by its id, so a test does not depend on how many
+/// sections come before it.
+fn section_index(f: &Fixture, s: &DeckState, target: SettingsTarget, id: &str) -> usize {
+    let schema = s.settings_schema(target, &f.view()).expect("schema");
+    schema.sections.iter().position(|section| section.id == id).unwrap_or_else(|| panic!("no section {id}"))
+}
+
+/// The (section, row) of a launch row in a target's schema.
+fn launch_row(f: &Fixture, s: &DeckState, target: SettingsTarget, key: reclaw_games::settings::SettingKey) -> Option<(usize, usize)> {
+    let schema = s.settings_schema(target, &f.view())?;
+    schema
+        .sections
+        .iter()
+        .enumerate()
+        .find_map(|(si, section)| section.rows().position(|r| matches!(r.kind, RowKind::Launch { key: k } if k == key)).map(|ri| (si, ri)))
+}
+
+#[test]
+fn only_a_game_that_declares_launch_settings_gets_a_display_section() {
+    let f = Fixture::new();
+    let s = f.state();
+    let sections = |target| s.settings_schema(target, &f.view()).expect("schema").sections.iter().map(|x| x.id).collect::<Vec<_>>();
+    assert!(sections(SettingsTarget::App(1)).contains(&"display"), "Starfall 64 declares some");
+    assert!(!sections(SettingsTarget::App(3)).contains(&"display"), "Kart Ruins declares none, so there is nothing to show");
+    assert!(sections(SettingsTarget::Global).contains(&"games"), "the defaults are always on the global page");
+}
+
+#[test]
+fn a_launch_row_opens_a_picker_and_choosing_sends_the_setting() {
+    use reclaw_games::settings::{SettingKey, SettingValue as Launch};
+    let f = Fixture::new();
+    let mut s = f.state();
+    s.open_settings(SettingsTarget::App(1), &f.view());
+    let (section, row) = launch_row(&f, &s, SettingsTarget::App(1), SettingKey::Vsync).expect("Starfall 64 offers vsync");
+    s.focus = ids::settings_row(section, row);
+    s.settings_section = section;
+    press(&mut s, &f, &[Confirm]);
+    assert_eq!(s.overlay(), Overlay::Menu(MenuPurpose::Launch(SettingsTarget::App(1), SettingKey::Vsync)));
+    let labels: Vec<String> = s.menu().expect("menu").levels()[0].entries.iter().map(|e| e.label.clone()).collect();
+    assert_eq!(labels, vec!["Game's own", "On", "Off"]);
+    // Down to "Off", confirm.
+    let fx = press(&mut s, &f, &[go(Down), go(Down), Confirm]);
+    assert_eq!(fx, vec![Effect::LaunchSetting { app: Some(1), key: SettingKey::Vsync, value: Some(Launch::Bool(false)) }]);
+    assert_eq!(s.overlay(), Overlay::None);
+}
+
+#[test]
+fn choosing_the_first_entry_clears_the_choice() {
+    use reclaw_games::settings::{SettingKey, SettingValue as Launch};
+    let mut f = Fixture::new();
+    f.launch.apps.entry(1).or_default().set(SettingKey::Vsync, Launch::Bool(false));
+    let mut s = f.state();
+    s.open_settings(SettingsTarget::App(1), &f.view());
+    let (section, row) = launch_row(&f, &s, SettingsTarget::App(1), SettingKey::Vsync).expect("offered");
+    s.focus = ids::settings_row(section, row);
+    s.settings_section = section;
+    press(&mut s, &f, &[Confirm]);
+    assert_eq!(s.menu().expect("menu").levels()[0].focus, 2, "opens on the current choice, Off");
+    let fx = press(&mut s, &f, &[go(Up), go(Up), Confirm]);
+    assert_eq!(fx, vec![Effect::LaunchSetting { app: Some(1), key: SettingKey::Vsync, value: None }]);
 }

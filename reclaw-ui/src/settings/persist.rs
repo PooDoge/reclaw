@@ -20,7 +20,7 @@ type Table = BTreeMap<String, PrefValue>;
 /// The rows of both schemas, to find the static key and the options of a stored name.
 fn rows(target: SettingsTarget) -> Vec<Row> {
     let schema: Schema = match target {
-        SettingsTarget::Global => global_settings(),
+        SettingsTarget::Global => global_settings(&[]),
         SettingsTarget::App(_) => {
             // The rows do not depend on the game except for read-only info lines.
             let placeholder = GameEntry {
@@ -33,7 +33,7 @@ fn rows(target: SettingsTarget) -> Vec<Row> {
                 tags: Vec::new(),
                 run: RunState::Idle,
             };
-            app_properties(&placeholder)
+            app_properties(&placeholder, &[])
         }
     };
     schema.sections.into_iter().flat_map(|s| s.groups).flat_map(|g| g.rows).collect()

@@ -73,9 +73,8 @@ impl DevOverrides {
         }
     }
 
-    /// The starting transition settings: the defaults, changed by `RECLAW_MOTION`.
-    pub fn transitions(&self) -> TransitionConfig {
-        let mut config = TransitionConfig::default();
+    /// The transition settings with `RECLAW_MOTION` applied on top: the variable wins over the settings page.
+    pub fn apply_motion(&self, mut config: TransitionConfig) -> TransitionConfig {
         match self.motion {
             Some(MotionOverride::Reduced) => config.reduce_motion = true,
             Some(MotionOverride::Intensity(i)) => {
@@ -119,9 +118,10 @@ mod tests {
 
     #[test]
     fn motion_overrides_change_the_starting_transitions() {
-        assert_eq!(from(&[]).transitions(), TransitionConfig::default());
-        assert!(from(&[("RECLAW_MOTION", "reduced")]).transitions().reduce_motion);
-        let cinematic = from(&[("RECLAW_MOTION", "Cinematic")]).transitions();
+        let base = TransitionConfig::default();
+        assert_eq!(from(&[]).apply_motion(base), base);
+        assert!(from(&[("RECLAW_MOTION", "reduced")]).apply_motion(base).reduce_motion);
+        let cinematic = from(&[("RECLAW_MOTION", "Cinematic")]).apply_motion(base);
         assert_eq!((cinematic.desktop.intensity, cinematic.console.intensity), (Intensity::Cinematic, Intensity::Cinematic));
     }
 

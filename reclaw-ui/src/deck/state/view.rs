@@ -2,12 +2,15 @@
 //! derived from it.
 use reclaw_input::Rect;
 
-use crate::{activity::Activity, metrics::*, model::*};
+use crate::{activity::Activity, metrics::*, model::*, settings::LaunchContext};
 
 pub struct DeckView<'a> {
     pub games: &'a [GameEntry],
     /// The Downloads list: running jobs first, then failed, then finished.
     pub downloads: &'a [Activity],
+    /// What launch-setting rows need (the display, the catalog, the saved choices). `None` where a
+    /// view is only used for the Home shelves.
+    pub launch: Option<LaunchContext<'a>>,
 }
 
 impl DeckView<'_> {

@@ -114,7 +114,8 @@ fn the_keyboard_hides_the_footer_and_scrolls_the_focused_row_into_view() {
     // A landscape handheld with an on-screen keyboard over its lower 45 percent.
     let mut s = Mount::deck().size(854., 480.).start();
     open_settings(&mut s);
-    s.presses(&[ArrowDown, ArrowDown, Enter]); // Library section, drilled in
+    // Interface, Motion, Controller, Game defaults, Library: the fifth section, drilled in.
+    s.presses(&[ArrowDown, ArrowDown, ArrowDown, ArrowDown, Enter]);
     assert!(s.has_label("Default install location") || s.has_label("Check for updates when Reclaw starts"), "{:?}", s.labels());
     s.presses(&[ArrowDown, Enter]); // the install location text row: typing starts
     assert!(s.effects().contains(&Effect::BeginTextEntry(TextField::DefaultLocation)));

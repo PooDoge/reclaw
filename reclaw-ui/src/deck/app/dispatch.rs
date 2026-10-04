@@ -9,6 +9,7 @@ use crate::{
         DeckState, DeckView, Effect, InstallDraft, LastInput, Screen,
         settings::{SettingsTarget, TextField},
     },
+    settings::LaunchContext,
     store::Store,
 };
 
@@ -30,7 +31,8 @@ impl Dispatcher {
             let mut deck = self.deck;
             self.store.with(|s| {
                 let queue: Vec<_> = s.activity.queue().into_iter().cloned().collect();
-                let view = DeckView { games: &s.games, downloads: &queue };
+                let launch = LaunchContext { env: &s.display, projects: &s.projects, prefs: &s.launch };
+                let view = DeckView { games: &s.games, downloads: &queue, launch: Some(launch) };
                 let mut state = deck.write();
                 // The settings live in the store, which both interfaces share; the reducer works on a copy.
                 state.sync_values(&s.settings);

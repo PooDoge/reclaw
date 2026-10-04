@@ -40,6 +40,26 @@ impl DeckState {
         self.overlay = Overlay::Menu(MenuPurpose::Choice(target, row.key));
     }
 
+    /// The picker of a launch row: "Default" or "Game's own" first, then every value on offer, the
+    /// current one under the cursor.
+    pub(super) fn open_launch_choice(
+        &mut self,
+        target: SettingsTarget,
+        row: &Row,
+        key: reclaw_games::settings::SettingKey,
+        view: &DeckView,
+    ) {
+        let Some(control) = view.launch.and_then(|l| l.control(target, key)) else { return };
+        let entries = control.options.iter().enumerate().map(|(i, o)| MenuEntry::action(o.label.clone(), MenuAction::Choice(i))).collect();
+        let mut menu = MenuState::new(row.label, entries);
+        for _ in 0..control.selected {
+            menu.navigate(Direction::Down);
+        }
+        self.leave_scope();
+        self.menu = Some(menu);
+        self.overlay = Overlay::Menu(MenuPurpose::Launch(target, key));
+    }
+
     pub(super) fn close_menu(&mut self, view: &DeckView) {
         self.menu = None;
         self.overlay = Overlay::None;
@@ -82,6 +102,14 @@ impl DeckState {
             (MenuPurpose::Choice(target, key), MenuAction::Choice(i)) => {
                 self.close_menu(view);
                 self.set_value(target, key, SettingValue::Choice(i), fx);
+            }
+            (MenuPurpose::Launch(target, key), MenuAction::Choice(i)) => {
+                self.close_menu(view);
+                // The options are worked out again here, so a pick means what was on screen.
+                let value = view.launch.and_then(|l| l.control(target, key)).and_then(|c| c.options.into_iter().nth(i)).map(|o| o.value);
+                if let Some(value) = value {
+                    fx.push(Effect::LaunchSetting { app: target.app(), key, value });
+                }
             }
             (MenuPurpose::Options(app), MenuAction::Uninstall) => {
                 self.close_menu(view);

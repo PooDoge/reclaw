@@ -116,7 +116,7 @@ fn a_transition_ends_on_its_own() {
     s.open(Route::Settings {});
     s.runner.poll(Duration::from_millis(16), Duration::from_millis(900));
     s.runner.sync_and_update();
-    assert!(s.has_label("SettingsPage") && !s.on_library(), "{:?}", s.labels());
+    assert!(s.has_label("Motion") && !s.on_library(), "{:?}", s.labels());
 }
 
 #[test]

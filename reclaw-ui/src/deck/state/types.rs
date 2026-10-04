@@ -20,6 +20,8 @@ pub enum MenuPurpose {
     Options(u32),
     /// A picker for a choice row: which target and key.
     Choice(SettingsTarget, &'static str),
+    /// A picker for a launch-setting row.
+    Launch(SettingsTarget, reclaw_games::settings::SettingKey),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

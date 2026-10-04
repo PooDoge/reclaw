@@ -37,8 +37,8 @@ struct Host {
 impl App for Host {
     fn render(&self) -> impl IntoElement {
         let dev = DevOverrides::from_env(|k| std::env::var(k).ok());
-        use_init_reclaw(dev.theme.unwrap_or(ThemeKind::Midnight));
         let store = self.store;
+        use_init_reclaw(dev.theme.unwrap_or_else(|| store.with(|s| ThemeKind::from_settings(&s.settings))));
 
         // Everything long-lived is created once.
         let (supervisor, input) = use_hook({

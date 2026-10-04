@@ -13,7 +13,8 @@
 //! * `key`, `value`: the catalog of keys and the typed values
 //! * `capabilities`: what a game declares; `environment`: what the display offers
 //! * `kinds`: the shape of each key for a given game and display; `narrow`: a game's constraint on it
-//! * `layer`: stored user choices; `adapt`: fitting a stored value to a game
+//! * `layer`: stored user choices; `adapt`: fitting a stored value to a game; `options`: every value a
+//!   picker offers, with its label
 //! * `resolve`: layering the choices (`supported`, `effective`) and the entry point `plan`
 //! * `build`, `render`: running a binding's outputs, filling templates, typing config values
 //! * `plan`: the launch plan types and `apply_config`; `config_edit/`: JSON, TOML, INI and key-value
@@ -28,6 +29,7 @@ mod key;
 mod kinds;
 mod layer;
 mod narrow;
+mod options;
 mod plan;
 mod render;
 mod resolve;
@@ -42,6 +44,7 @@ pub use environment::{DisplayEnvironment, DisplayServer, Monitor};
 pub use key::{Group, SettingKey};
 pub use kinds::standard_kind;
 pub use layer::SettingsLayer;
+pub use options::{label, options};
 pub use plan::{Bases, ConfigFileEdit, ConfigValue, KeyEdit, LaunchPlan};
 pub use resolve::{Effective, SettingSpec, Source, all_specs, effective, plan, supported};
 pub use value::{Choice, SettingValue, Size, ValueKind};

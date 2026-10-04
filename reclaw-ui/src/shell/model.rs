@@ -17,6 +17,15 @@ pub fn resolve(pref: ModePref, detected: UiMode) -> UiMode {
     }
 }
 
+/// What the Interface row of the settings chose: Auto, Desktop or Deck. Untouched is Auto.
+pub fn pref_from_settings(values: &crate::settings::SettingsValues) -> ModePref {
+    match values.choice(crate::settings::SettingsTarget::Global, crate::settings::KEY_INTERFACE_MODE, 0) {
+        1 => ModePref::Desktop,
+        2 => ModePref::Deck,
+        _ => ModePref::Auto,
+    }
+}
+
 pub fn other(mode: UiMode) -> UiMode {
     match mode {
         UiMode::Desktop => UiMode::Deck,

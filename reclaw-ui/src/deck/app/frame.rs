@@ -26,6 +26,8 @@ pub(super) struct Frame {
     pub texts: TextBoxes,
     /// The settings schema of the open Settings page, if any.
     pub schema: Option<Schema>,
+    /// The text on each launch row of that schema.
+    pub launch_text: std::collections::HashMap<reclaw_games::settings::SettingKey, String>,
     /// The focused field's span in the page body, to keep above the keyboard.
     pub reveal: Option<(f32, f32)>,
     pub click: EventHandler<FocusId>,

@@ -20,6 +20,24 @@ pub enum ModePref {
     Deck,
 }
 
+impl Effect {
+    /// What a settings row changing to `value` asks for: the saved change, and for the Interface row
+    /// the switch itself. The Deck reducer and the desktop settings page both use this, so a row
+    /// does the same in either.
+    pub fn setting(target: crate::settings::SettingsTarget, key: &'static str, value: crate::settings::SettingValue) -> Vec<Effect> {
+        use crate::settings::{KEY_INTERFACE_MODE, SettingValue};
+        let mut effects = vec![Effect::Setting(SettingChange { app: target.app(), key, value })];
+        if let (KEY_INTERFACE_MODE, SettingValue::Choice(i)) = (key, value) {
+            effects.push(Effect::SetMode(match i {
+                1 => ModePref::Desktop,
+                2 => ModePref::Deck,
+                _ => ModePref::Auto,
+            }));
+        }
+        effects
+    }
+}
+
 /// What the host must do. The state never touches processes, windows or files itself.
 ///
 /// `SubmitInstall` is handled inside `DeckApp`, which holds the form's text and turns it into

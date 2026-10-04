@@ -4,10 +4,7 @@ use reclaw_input::{FocusId, FocusNode};
 
 use super::{DeckState, DeckView, Effect, Screen, ids, nodes::node, scope::SettingsPane, types::*};
 use crate::{
-    deck::settings::{
-        KEY_INTERFACE_MODE, RowAction, RowKind, Schema, SettingChange, SettingValue, SettingsTarget, app_properties, global_settings,
-        section_slots,
-    },
+    deck::settings::{RowAction, RowKind, Schema, SettingValue, SettingsTarget, app_properties, global_settings, section_slots},
     metrics::*,
 };
 
@@ -16,9 +13,11 @@ const ROWS_X: f32 = DECK_SETTINGS_NAV_W + 48.;
 
 impl DeckState {
     pub fn settings_schema(&self, target: SettingsTarget, view: &DeckView) -> Option<Schema> {
+        // Launch rows: only what the display and (for a game) the game agree on.
+        let specs = view.launch.map(|launch| launch.specs(target)).unwrap_or_default();
         match target {
-            SettingsTarget::Global => Some(global_settings()),
-            SettingsTarget::App(id) => view.game(id).map(app_properties),
+            SettingsTarget::Global => Some(global_settings(&specs)),
+            SettingsTarget::App(id) => view.game(id).map(|game| app_properties(game, &specs)),
         }
     }
 
@@ -103,20 +102,14 @@ impl DeckState {
             RowKind::Choice { .. } => self.open_choice(target, row, view),
             RowKind::Text { field, .. } => self.begin_entry(*field, fx),
             RowKind::Action { action, .. } => self.run_row_action(target, *action, view, fx),
+            RowKind::Launch { key } => self.open_launch_choice(target, row, *key, view),
             RowKind::Info { .. } => {}
         }
     }
 
     pub(super) fn set_value(&mut self, target: SettingsTarget, key: &'static str, value: SettingValue, fx: &mut Vec<Effect>) {
         self.values.set(target, key, value);
-        fx.push(Effect::Setting(SettingChange { app: target.app(), key, value }));
-        if let (KEY_INTERFACE_MODE, SettingValue::Choice(i)) = (key, value) {
-            fx.push(Effect::SetMode(match i {
-                1 => ModePref::Desktop,
-                2 => ModePref::Deck,
-                _ => ModePref::Auto,
-            }));
-        }
+        fx.extend(Effect::setting(target, key, value));
     }
 
     fn run_row_action(&mut self, target: SettingsTarget, action: RowAction, view: &DeckView, fx: &mut Vec<Effect>) {
