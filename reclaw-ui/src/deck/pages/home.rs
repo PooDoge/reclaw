@@ -7,6 +7,7 @@ use crate::{
     activity::Indicator,
     deck::{DeckView, NowPlayingBanner, Shelf, ShelfSpec, ids, shelf_top, shelves},
     prelude::*,
+    systems::Sort,
 };
 
 /// Library home: Now Playing banner (when an app is active) over the "Continue" and "All apps"
@@ -15,6 +16,7 @@ use crate::{
 pub struct HomePage {
     games: Vec<GameEntry>,
     indicators: Rc<HashMap<u32, Indicator>>,
+    sort: Sort,
     focus: FocusId,
     ring_visible: bool,
     viewport_w: f32,
@@ -30,13 +32,19 @@ impl HomePage {
         viewport_w: f32,
         on_click: EventHandler<FocusId>,
     ) -> Self {
-        Self { games, indicators, focus, ring_visible, viewport_w, on_click }
+        Self { games, indicators, sort: Sort::default(), focus, ring_visible, viewport_w, on_click }
+    }
+
+    /// How the shelves are ordered; by system there is one per system.
+    pub fn sort(mut self, sort: Sort) -> Self {
+        self.sort = sort;
+        self
     }
 }
 
 impl Component for HomePage {
     fn render(&self) -> impl IntoElement {
-        let view = DeckView { games: &self.games, downloads: &[], launch: None, notices: None };
+        let view = DeckView { games: &self.games, downloads: &[], launch: None, notices: None, sort: self.sort };
         let active = view.active_game().cloned();
         let banner = active.is_some();
         let specs: Vec<ShelfSpec> = shelves(&view);

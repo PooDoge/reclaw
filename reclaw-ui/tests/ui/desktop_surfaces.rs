@@ -66,9 +66,9 @@ fn a_tall_tablet_keeps_the_popup() {
 fn the_keyboard_hides_the_footer_of_a_full_screen_form() {
     // A landscape handheld: compact layout, touch density, 480px tall.
     let mut s = Mount::desktop().size(854., 480.).dev(dev(None, Some(Density::Touch))).start();
-    s.wheel(500., 300., -400.); // the capsule grid is below the hero
+    s.wheel(500., 300., -800.); // the capsule grid is below the hero and the filter chips (the wheel stops at the end)
     s.click_label("Dino Rush");
-    s.wheel(500., 300., 400.); // back up to the hero's Install button
+    s.wheel(500., 300., 800.); // back up to the hero's Install button
     s.click_label("Install");
     s.set_keyboard(216.);
     assert!(s.has_label("Install location"), "{:?}", s.labels());

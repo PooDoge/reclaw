@@ -69,13 +69,21 @@ impl Component for GameCapsule {
             .alignment(BorderAlignment::Inner);
         let show_play = hot && self.game.status.is_installed();
 
-        let art = rect().width(Size::fill()).child(ArtPlaceholder::capsule(Size::fill())).maybe(show_play, |el| {
-            el.child(
+        let art = rect()
+            .width(Size::fill())
+            .child(ArtPlaceholder::capsule(Size::fill()))
+            .child(
                 rect()
-                    .position(Position::new_absolute().top(CAPSULE_H - 44. - SPACE_2).right(SPACE_2))
-                    .child(ActionButton::install().icon(IconName::Play).label("Play").map(self.on_play.clone(), |b, h| b.on_press(h))),
+                    .position(Position::new_absolute().top(SPACE_2).left(SPACE_2))
+                    .child(SystemBadge::new(self.game.platform).over_art(true)),
             )
-        });
+            .maybe(show_play, |el| {
+                el.child(
+                    rect()
+                        .position(Position::new_absolute().top(CAPSULE_H - 44. - SPACE_2).right(SPACE_2))
+                        .child(ActionButton::install().icon(IconName::Play).label("Play").map(self.on_play.clone(), |b, h| b.on_press(h))),
+                )
+            });
 
         let body = rect()
             .vertical()

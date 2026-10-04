@@ -1,5 +1,7 @@
 //! Sample data for the gallery and the headless snapshots. Not a catalog; real data comes from
 //! the install/launch backend.
+use reclaw_games::project::Platform;
+
 use crate::{
     activity::{ActivityBoard, ActivityEvent, Kind, Stage},
     model::*,
@@ -14,6 +16,8 @@ pub fn sample_games() -> Vec<GameEntry> {
         source,
         status,
         tags: tags.iter().map(|t| (*t).into()).collect(),
+        // The sample library names the system in its tags, as an app added by hand would.
+        platform: tags.iter().find_map(|t| Platform::from_tag(t)).unwrap_or(Platform::Other),
         run: RunState::Idle,
     };
     vec![

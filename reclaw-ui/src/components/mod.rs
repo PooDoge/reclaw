@@ -12,6 +12,7 @@ mod library_row;
 mod nav;
 mod search_field;
 mod status_badge;
+mod system_badge;
 mod toggle_switch;
 
 pub use action_button::{ActionButton, ButtonSize, ButtonVariant};
@@ -27,6 +28,7 @@ pub use nav::{Nav, NavMode, NavTarget};
 pub use search_field::SearchField;
 
 pub use status_badge::{StatusBadge, status_tone};
+pub use system_badge::SystemBadge;
 pub use toggle_switch::ToggleSwitch;
 
 use freya::prelude::*;

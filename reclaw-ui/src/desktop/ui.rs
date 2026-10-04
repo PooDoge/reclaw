@@ -34,6 +34,8 @@ pub struct DesktopUi {
     pub search: State<String>,
     pub filter: State<Filter>,
     pub selected: State<Option<u32>>,
+    /// The Library's system filter; `None` is all systems.
+    pub system: State<Option<Platform>>,
     /// The Catalog's platform chip; `None` is All.
     pub platform: State<Option<Platform>>,
     /// The Mods list's provider chip; `None` is All.

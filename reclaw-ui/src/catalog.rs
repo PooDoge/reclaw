@@ -5,7 +5,10 @@ use reclaw_games::{
     settings::{DisplayEnvironment, SettingSpec, supported},
 };
 
-use crate::model::{GameEntry, ModEntry, ModProvider};
+use crate::{
+    model::{GameEntry, ModEntry, ModProvider},
+    systems::{Sort, sorted},
+};
 
 /// Everything the Game page shows about one game.
 #[derive(Clone, PartialEq, Debug)]
@@ -35,26 +38,32 @@ impl GameView {
 }
 
 /// Every project that passes the platform filter and the search, as a library entry when the user
-/// has added it and as an available one otherwise.
-pub fn catalog_entries(games: &[GameEntry], projects: &[ProjectInfo], platform: Option<Platform>, query: &str) -> Vec<GameEntry> {
-    projects
+/// has added it and as an available one otherwise, in `sort` order.
+pub fn catalog_entries(
+    games: &[GameEntry],
+    projects: &[ProjectInfo],
+    platform: Option<Platform>,
+    query: &str,
+    sort: Sort,
+) -> Vec<GameEntry> {
+    let matching = projects
         .iter()
         .filter(|p| platform.is_none_or(|wanted| p.platform == wanted))
         .map(|p| games.iter().find(|g| g.id == p.id).cloned().unwrap_or_else(|| GameEntry::from_project(p)))
         .filter(|g| matches_query(g, query))
-        .collect()
+        .collect();
+    sorted(matching, sort)
 }
 
-/// The platforms the catalog has projects for, in the order they first appear, with a count each.
+/// The platforms the catalog has projects for, in system order, with a count each.
 pub fn platforms(projects: &[ProjectInfo]) -> Vec<(Platform, u32)> {
-    let mut out: Vec<(Platform, u32)> = Vec::new();
-    for p in projects {
-        match out.iter_mut().find(|(platform, _)| *platform == p.platform) {
-            Some((_, count)) => *count += 1,
-            None => out.push((p.platform, 1)),
-        }
-    }
-    out
+    Platform::ALL
+        .into_iter()
+        .filter_map(|platform| {
+            let count = projects.iter().filter(|p| p.platform == platform).count() as u32;
+            (count > 0).then_some((platform, count))
+        })
+        .collect()
 }
 
 /// Mods from one provider (or all) whose title, author, summary or tags contain `query`.
@@ -131,27 +140,42 @@ mod tests {
 
     #[test]
     fn the_catalog_lists_every_project_once_with_library_state_where_there_is_some() {
-        let entries = catalog_entries(&sample_games(), &sample_projects(), None, "");
+        let entries = catalog_entries(&sample_games(), &sample_projects(), None, "", Sort::Title);
         assert_eq!(entries.len(), sample_projects().len());
         assert_eq!(entries.iter().find(|g| g.id == 2).map(|g| g.status), Some(AppStatus::UpdateReady));
-        let only_projects = catalog_entries(&[], &sample_projects(), None, "");
+        let only_projects = catalog_entries(&[], &sample_projects(), None, "", Sort::Title);
         assert!(only_projects.iter().all(|g| g.status == AppStatus::Available));
     }
 
     #[test]
     fn the_catalog_filters_by_platform_and_search() {
         let (games, projects) = (sample_games(), sample_projects());
-        let ps2 = catalog_entries(&games, &projects, Some(Platform::Ps2), "");
+        let ps2 = catalog_entries(&games, &projects, Some(Platform::Ps2), "", Sort::Title);
         assert_eq!(ps2.iter().map(|g| &*g.title).collect::<Vec<_>>(), vec!["Dino Rush"]);
-        assert!(catalog_entries(&games, &projects, Some(Platform::Ps2), "starfall").is_empty());
-        assert_eq!(catalog_entries(&games, &projects, None, "garden").len(), 1);
+        assert!(catalog_entries(&games, &projects, Some(Platform::Ps2), "starfall", Sort::Title).is_empty());
+        assert_eq!(catalog_entries(&games, &projects, None, "garden", Sort::Title).len(), 1);
     }
 
     #[test]
-    fn platforms_are_counted_in_first_seen_order() {
+    fn platforms_are_counted_in_system_order() {
         let counts = platforms(&sample_projects());
         assert_eq!(counts.first(), Some(&(Platform::N64, 4)));
+        assert_eq!(
+            counts.iter().map(|(p, _)| *p).collect::<Vec<_>>(),
+            [Platform::N64, Platform::Gba, Platform::Ps2],
+            "oldest Nintendo first, Sony last"
+        );
         assert_eq!(counts.iter().map(|(_, n)| n).sum::<u32>() as usize, sample_projects().len());
+    }
+
+    #[test]
+    fn the_catalog_sorts_by_title_or_by_system() {
+        let (games, projects) = (sample_games(), sample_projects());
+        let by_title = catalog_entries(&games, &projects, None, "", Sort::Title);
+        assert_eq!(by_title.first().map(|g| &*g.title), Some("Dino Rush"));
+        let by_system = catalog_entries(&games, &projects, None, "", Sort::System);
+        assert_eq!(by_system.first().map(|g| g.platform), Some(Platform::N64));
+        assert_eq!(by_system.last().map(|g| g.platform), Some(Platform::Ps2));
     }
 
     #[test]

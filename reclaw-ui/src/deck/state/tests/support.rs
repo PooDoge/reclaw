@@ -47,6 +47,7 @@ impl Fixture {
             downloads: &self.downloads,
             launch: Some(LaunchContext { env: &self.env, projects: &self.projects, prefs: &self.launch }),
             notices: Some(&self.notices),
+            sort: crate::systems::Sort::default(),
         }
     }
 

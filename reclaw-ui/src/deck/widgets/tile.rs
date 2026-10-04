@@ -49,6 +49,11 @@ impl Component for DeckTile {
             .corner_radius(RADIUS_MD)
             .overflow(Overflow::Clip)
             .child(ArtPlaceholder::new("CAPSULE 3:4", Size::fill(), Size::fill()))
+            .child(
+                rect()
+                    .position(Position::new_absolute().top(SPACE_3).right(SPACE_3))
+                    .child(SystemBadge::new(self.game.platform).over_art(true).large(true)),
+            )
             .maybe_child(self.indicator.clone().map(|indicator| CardIndicator::new(indicator).into_element()));
 
         let badge = if running { StatusBadge::running() } else { StatusBadge::new(self.game.status) };

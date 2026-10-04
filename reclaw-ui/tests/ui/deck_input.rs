@@ -123,7 +123,12 @@ fn the_keyboard_hides_the_footer_and_scrolls_the_focused_row_into_view() {
     }
     s.press(Enter);
     assert!(s.has_label("Default install location") || s.has_label("Check for updates when Reclaw starts"), "{:?}", s.labels());
-    s.presses(&[ArrowDown, Enter]); // the install location text row: typing starts
+    // Down to the install location text row by its place in the section, then Enter: typing starts.
+    let text_row = schema.sections[library].rows().position(|row| row.is_text()).expect("the text row");
+    for _ in 0..text_row {
+        s.press(ArrowDown);
+    }
+    s.press(Enter);
     assert!(s.effects().contains(&Effect::BeginTextEntry(TextField::DefaultLocation)));
 
     let (before_top, before_bottom) = s.label_span("Default install location").expect("the row is on screen");

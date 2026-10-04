@@ -31,6 +31,7 @@ fn rows(target: SettingsTarget) -> Vec<Row> {
                 source: Source::Manual,
                 status: AppStatus::Installed,
                 tags: Vec::new(),
+                platform: reclaw_games::project::Platform::Other,
                 run: RunState::Idle,
             };
             app_properties(&placeholder, &[])

@@ -40,6 +40,7 @@ use crate::{
         AppChannel, Store, use_activity, use_channel, use_controller, use_display, use_games, use_keyboard_inset, use_launch, use_notices,
         use_projects, use_settings,
     },
+    systems::Sort,
 };
 use dispatch::Dispatcher;
 use frame::Frame;
@@ -66,6 +67,7 @@ impl Component for DeckApp {
         let route = nav.current();
         let (games, activity, controller, keyboard_inset) = (use_games(), use_activity(), use_controller(), use_keyboard_inset());
         let (settings, projects, display, launch, notices) = (use_settings(), use_projects(), use_display(), use_launch(), use_notices());
+        let sort = Sort::from_settings(&settings);
         let (games_changed, activity_changed, notices_changed, mailbox) = (
             use_channel(AppChannel::Games),
             use_channel(AppChannel::Activity),
@@ -79,7 +81,7 @@ impl Component for DeckApp {
             let (script, games, activity, route) = (self.script.clone(), games.clone(), activity.clone(), route.clone());
             use_state(move || {
                 let queue: Vec<_> = activity.queue().into_iter().cloned().collect();
-                let view = DeckView { games: &games, downloads: &queue, launch: None, notices: None };
+                let view = DeckView { games: &games, downloads: &queue, launch: None, notices: None, sort };
                 let mut state = DeckState::new(&view);
                 // Entering Deck mode shows the page the app is on.
                 state.follow(&route, &view);
@@ -171,7 +173,7 @@ impl Component for DeckApp {
         let kind = pad.as_ref().map_or(ControllerKind::Generic, |c| c.kind);
         let (settings_now, reveal, toast, notice_details) = {
             let launch_ctx = crate::settings::LaunchContext { env: &display, projects: &projects, prefs: &launch };
-            let view = DeckView { games: &g, downloads: &d, launch: Some(launch_ctx), notices: Some(&notices) };
+            let view = DeckView { games: &g, downloads: &d, launch: Some(launch_ctx), notices: Some(&notices), sort };
             let target = state.settings_target();
             let schema = target.and_then(|t| state.settings_schema(t, &view));
             // The text of each launch row, worked out here so the page itself needs no engine.
@@ -207,6 +209,7 @@ impl Component for DeckApp {
         let indicators: HashMap<u32, Indicator> =
             g.iter().filter_map(|game| indicator_for(&activity, game).map(|i| (game.id, i))).collect();
         let frame = Frame {
+            sort,
             holding: state.holding(),
             toast,
             notice_details,

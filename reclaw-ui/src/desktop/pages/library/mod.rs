@@ -23,7 +23,8 @@ use crate::{
     nav::use_nav,
     prelude::*,
     shell::use_shell,
-    store::{use_activity, use_games},
+    store::{use_activity, use_games, use_settings},
+    systems::{Sort, systems_in},
 };
 
 #[derive(PartialEq)]
@@ -34,15 +35,19 @@ impl Component for LibraryPage {
         let t = use_reclaw();
         let (shell, ui, nav) = (use_shell(), use_desktop_ui(), use_nav());
         let env = *ui.env.read();
-        let (games, activity) = (use_games(), use_activity());
+        let (games, activity, settings) = (use_games(), use_activity(), use_settings());
+        let sort = Sort::from_settings(&settings);
         let selected = ui.selected;
         let updates_section = sidebar_entries(&activity, &games);
 
+        let systems = systems_in(&games);
+        let visible = filter::visible(&games, *ui.filter.read(), *ui.system.read(), &ui.search.read(), sort);
         let ctx = Ctx {
             t,
             env,
-            visible: filter::visible(&games, *ui.filter.read(), &ui.search.read()),
-            current: games.iter().find(|g| Some(g.id) == *selected.read()).or(games.first()).cloned(),
+            // The hero shows the selected game if the filters leave it in the list, else the first one left.
+            current: visible.iter().find(|g| Some(g.id) == *selected.read()).or(visible.first()).cloned(),
+            visible,
             installed: games.iter().filter(|g| g.status.is_installed()).count() as u32,
             updates: games.iter().filter(|g| g.status == AppStatus::UpdateReady).count() as u32,
             games,
@@ -50,6 +55,9 @@ impl Component for LibraryPage {
             activity,
             selected,
             filter: ui.filter,
+            system: ui.system,
+            systems,
+            sort,
             search: ui.search,
             dialogs: ui.dialogs,
             nav,

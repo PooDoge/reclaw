@@ -86,7 +86,9 @@ impl Component for LibraryRow {
                     .width(Size::flex(1.))
                     .child(text_style.text(self.game.title.clone(), fg).max_lines(1).text_overflow(TextOverflow::Ellipsis)),
             )
-            .maybe(!self.game.version.is_empty(), |el| el.child(TypeStyle::Mono.text(self.game.version.clone(), t.ink_subtle)))
+            // The system's mark takes the version's place: the title matters most in a narrow list, and
+            // the version is in the hero and on the game's page.
+            .child(SystemBadge::new(self.game.platform))
             .child(
                 rect()
                     .width(Size::px(8.))

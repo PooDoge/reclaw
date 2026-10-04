@@ -15,6 +15,7 @@ use crate::{
     nav::Nav,
     settings::LaunchContext,
     store::Store,
+    systems::Sort,
 };
 
 /// Everything needed to react to input. All handles are `Copy` states or cheap clones, so a
@@ -39,7 +40,13 @@ impl Dispatcher {
             self.store.with(|s| {
                 let queue: Vec<_> = s.activity.queue().into_iter().cloned().collect();
                 let launch = LaunchContext { env: &s.display, projects: &s.projects, prefs: &s.launch };
-                let view = DeckView { games: &s.games, downloads: &queue, launch: Some(launch), notices: Some(&s.notices) };
+                let view = DeckView {
+                    games: &s.games,
+                    downloads: &queue,
+                    launch: Some(launch),
+                    notices: Some(&s.notices),
+                    sort: Sort::from_settings(&s.settings),
+                };
                 let mut state = deck.write();
                 // The settings live in the store, which both interfaces share; the reducer works on a copy.
                 state.sync_values(&s.settings);

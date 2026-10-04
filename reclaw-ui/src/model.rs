@@ -1,7 +1,7 @@
 //! Data shapes from the contract's `dataModel`. Pure data: no Freya types except the art source.
 use std::borrow::Cow;
 
-use reclaw_games::project::{ProjectInfo, RepoHost};
+use reclaw_games::project::{Platform, ProjectInfo, RepoHost};
 
 pub use reclaw_runtime::RunState;
 
@@ -59,6 +59,8 @@ pub struct GameEntry {
     pub source: Source,
     pub status: AppStatus,
     pub tags: Vec<Cow<'static, str>>,
+    /// The system the game was recompiled from, for the badge and for browsing by system.
+    pub platform: Platform,
     /// Whether the app is running right now. Independent of `status`, which is install state.
     pub run: RunState,
 }
@@ -77,6 +79,7 @@ impl GameEntry {
             },
             status: AppStatus::Available,
             tags: project.tags.iter().cloned().map(Cow::Owned).collect(),
+            platform: project.platform,
             run: RunState::Idle,
         }
     }

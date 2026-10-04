@@ -160,7 +160,7 @@ impl Component for ActionButton {
             .cross_align(Alignment::Center)
             .spacing(SPACE_2)
             .maybe_child(self.icon.map(|name| icon(name, self.size.icon(), fg)))
-            .maybe_child(self.label.clone().map(|text| label_style.text(text, fg)))
+            .maybe_child(self.label.clone().map(|text| label_style.text(text, fg).max_lines(1)))
             .map(self.alt.clone().filter(|_| icon_only), |el, alt| el.a11y_alt(alt.to_string()));
 
         Button::new()

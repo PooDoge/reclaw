@@ -1,6 +1,7 @@
 //! What the three Library layouts share: the derived lists, the frame's state and the window facts.
 //! Built once per render by `LibraryPage`.
 use freya::prelude::*;
+use reclaw_games::project::Platform;
 
 use super::filter::Filter;
 use crate::{
@@ -9,6 +10,7 @@ use crate::{
     effect::Effect,
     nav::Nav,
     prelude::*,
+    systems::Sort,
 };
 
 pub(super) struct Ctx {
@@ -27,6 +29,10 @@ pub(super) struct Ctx {
     pub updates: u32,
     pub selected: State<Option<u32>>,
     pub filter: State<Filter>,
+    /// The system filter, and the systems the library has games for (with a count each) to offer.
+    pub system: State<Option<Platform>>,
+    pub systems: Vec<(Platform, u32)>,
+    pub sort: Sort,
     pub search: State<String>,
     pub dialogs: GameDialogs,
     pub nav: Nav,

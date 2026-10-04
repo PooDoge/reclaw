@@ -15,6 +15,8 @@ pub const SAFE_ZONE_OPTIONS: &[&str] = &["Off", "Small", "Large"];
 pub const DECK_DISPLAY_OPTIONS: &[&str] = &["Same as window", "Monitor 1", "Monitor 2", "Monitor 3", "Monitor 4"];
 pub const CONFIRM_OPTIONS: &[&str] = &["Bottom button (A, cross)", "Right button (B, circle)"];
 pub const CHANNEL_OPTIONS: &[&str] = &["Stable", "Pre-release"];
+/// In the order of `systems::Sort::ALL`: the saved choice is a position.
+pub const SORT_OPTIONS: &[&str] = &["Added", "Title", "System"];
 
 /// Keys that need more than a stored value when they change.
 pub const KEY_INTERFACE_MODE: &str = "interface_mode";
@@ -28,6 +30,7 @@ pub const KEY_CONSOLE_INTENSITY: &str = "motion_console_intensity";
 pub const KEY_CONSOLE_STYLE: &str = "motion_console_style";
 pub const KEY_CONSOLE_PAGE_STYLES: &str = "motion_console_pages";
 pub const KEY_UI_SCALE: &str = "ui_scale";
+pub const KEY_LIBRARY_SORT: &str = "library_sort";
 pub const KEY_DECK_FULLSCREEN: &str = "deck_fullscreen";
 pub const KEY_DECK_DISPLAY: &str = "deck_display";
 
@@ -195,7 +198,11 @@ fn global_sections(displays: &DisplayEnvironment) -> Schema {
                 id: "library",
                 title: "Library",
                 groups: vec![
-                    Group::new(vec![toggle("check_on_launch", "Check for updates when Reclaw starts", true)]),
+                    Group::new(vec![
+                        choice(KEY_LIBRARY_SORT, "Sort games by", SORT_OPTIONS, 0)
+                            .described("Added is the order they joined. System groups by console, oldest first."),
+                        toggle("check_on_launch", "Check for updates when Reclaw starts", true),
+                    ]),
                     Group::new(vec![Row::new(
                         "default_location",
                         "Default install location",

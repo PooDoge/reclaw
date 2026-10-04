@@ -3,15 +3,56 @@ use freya::prelude::*;
 
 use super::{ctx::Ctx, filter::Filter};
 use crate::{
-    desktop::{press_point, press_verb},
+    desktop::{OpenPicker, press_point, press_verb},
     effect::Effect,
     metrics::*,
     nav::Route,
     prelude::*,
+    settings::{KEY_LIBRARY_SORT, SettingValue, SettingsTarget},
+    systems::Sort,
     typography::TypeStyle,
 };
 
+/// The status chips, and under them the two ways to browse by system: narrow to one, and sort.
 pub(super) fn chips(c: &Ctx) -> Rect {
+    rect().vertical().spacing(SPACE_2).width(Size::fill()).child(status_chips(c)).child(system_chips(c))
+}
+
+/// "System: All" and "Sort: Title". Each opens a list to choose from, where it was pressed.
+fn system_chips(c: &Ctx) -> Rect {
+    let (dialogs, mut system, on_effect) = (c.dialogs, c.system, c.on_effect.clone());
+    let current = *system.read();
+    let systems = c.systems.clone();
+    let system_label = current.map_or("All systems", |p| p.label());
+    let pick_system = move |e: Event<PressEventData>| {
+        let mut labels = vec!["All systems".to_string()];
+        labels.extend(systems.iter().map(|(p, n)| format!("{} ({n})", p.label())));
+        let selected = current.and_then(|p| systems.iter().position(|(s, _)| *s == p)).map_or(0, |i| i + 1);
+        let systems = systems.clone();
+        let on_pick = EventHandler::new(move |i: usize| system.set(i.checked_sub(1).and_then(|i| systems.get(i)).map(|(p, _)| *p)));
+        dialogs.pick(OpenPicker::new("System", labels, selected, press_point(&e, (120., 160.)), on_pick));
+    };
+    let sort = c.sort;
+    let pick_sort = move |e: Event<PressEventData>| {
+        let labels = Sort::ALL.iter().map(|s| s.label().to_string()).collect();
+        let on_effect = on_effect.clone();
+        let on_pick = EventHandler::new(move |i: usize| {
+            for effect in Effect::setting(SettingsTarget::Global, KEY_LIBRARY_SORT, SettingValue::Choice(i)) {
+                on_effect.call(effect);
+            }
+        });
+        dialogs.pick(OpenPicker::new("Sort by", labels, sort.index(), press_point(&e, (120., 160.)), on_pick));
+    };
+    rect()
+        .horizontal()
+        .content(Content::wrap_spacing(SPACE_2))
+        .spacing(SPACE_2)
+        .width(Size::fill())
+        .child(FilterChip::new(system_label).selected(current.is_some()).on_press(pick_system))
+        .child(FilterChip::new(format!("Sort: {}", sort.label())).on_press(pick_sort))
+}
+
+fn status_chips(c: &Ctx) -> Rect {
     let (mut filter, all, installed, updates) = (c.filter, c.games.len() as u32, c.installed, c.updates);
     let favorites = c.games.iter().filter(|g| g.is_favorite()).count() as u32;
     let chip = move |label: &'static str, count: u32, which: Filter| {

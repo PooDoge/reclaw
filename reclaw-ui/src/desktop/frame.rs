@@ -57,8 +57,9 @@ impl Component for DesktopFrame {
         let filter = use_state(|| Filter::All);
         let selected = use_state(|| None::<u32>);
         let platform = use_state(|| None);
+        let system = use_state(|| None);
         let provider = use_state(|| None);
-        use_provide_context(move || DesktopUi { env, search, filter, selected, platform, provider, dialogs });
+        use_provide_context(move || DesktopUi { env, search, filter, selected, system, platform, provider, dialogs });
 
         let mut last = use_state(|| NavTarget::Tab(Section::Library));
         let active = target_for(&nav.current(), *last.peek());

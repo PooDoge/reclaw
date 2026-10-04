@@ -2,7 +2,14 @@
 //! derived from it.
 use reclaw_input::Rect;
 
-use crate::{activity::Activity, metrics::*, model::*, notices::Notices, settings::LaunchContext};
+use crate::{
+    activity::Activity,
+    metrics::*,
+    model::*,
+    notices::Notices,
+    settings::LaunchContext,
+    systems::{self, Sort},
+};
 
 pub struct DeckView<'a> {
     pub games: &'a [GameEntry],
@@ -13,6 +20,8 @@ pub struct DeckView<'a> {
     pub launch: Option<LaunchContext<'a>>,
     /// The notifications waiting; `None` where a view does not need them.
     pub notices: Option<&'a Notices>,
+    /// How Home orders its shelves; by system it makes one shelf per system.
+    pub sort: Sort,
 }
 
 impl DeckView<'_> {
@@ -36,14 +45,23 @@ pub struct ShelfSpec {
     pub games: Vec<u32>,
 }
 
-/// "Continue" (installed or active) then "All apps". An empty Continue shelf is left out.
+/// "Continue" (installed or active) then "All apps", in the view's sort order. An empty Continue shelf
+/// is left out. Sorted by system, "All apps" becomes one shelf per system, each titled with the system.
 pub fn shelves(view: &DeckView) -> Vec<ShelfSpec> {
-    let cont: Vec<u32> = view.games.iter().filter(|g| g.status.is_installed() || g.run.is_active()).map(|g| g.id).collect();
+    let ordered = systems::sorted(view.games.to_vec(), view.sort);
+    let ids = |games: &[GameEntry]| games.iter().map(|g| g.id).collect::<Vec<u32>>();
+    let cont: Vec<GameEntry> = ordered.iter().filter(|g| g.status.is_installed() || g.run.is_active()).cloned().collect();
     let mut out = Vec::new();
     if !cont.is_empty() {
-        out.push(ShelfSpec { title: "Continue", games: cont });
+        out.push(ShelfSpec { title: "Continue", games: ids(&cont) });
     }
-    out.push(ShelfSpec { title: "All apps", games: view.games.iter().map(|g| g.id).collect() });
+    if view.sort == Sort::System {
+        out.extend(
+            systems::grouped(&ordered).into_iter().map(|(platform, games)| ShelfSpec { title: platform.label(), games: ids(&games) }),
+        );
+    } else {
+        out.push(ShelfSpec { title: "All apps", games: ids(&ordered) });
+    }
     out
 }
 

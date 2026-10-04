@@ -4,26 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::settings::Capabilities;
 
-/// The console the original game ran on.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Platform {
-    N64,
-    Ps2,
-    Gba,
-    Other,
-}
-
-impl Platform {
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::N64 => "Nintendo 64",
-            Self::Ps2 => "PlayStation 2",
-            Self::Gba => "Game Boy Advance",
-            Self::Other => "Other",
-        }
-    }
-}
+pub use crate::platform::{Maker, Platform, SystemKind};
 
 /// Where releases come from.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

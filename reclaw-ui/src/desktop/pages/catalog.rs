@@ -6,7 +6,8 @@ use crate::{
     desktop::use_desktop_ui,
     metrics::*,
     prelude::*,
-    store::{use_games, use_projects},
+    store::{use_games, use_projects, use_settings},
+    systems::Sort,
 };
 
 /// Every known recompilation project, filtered by platform and the search box. A card opens the
@@ -19,11 +20,11 @@ impl Component for CatalogPage {
         let t = use_reclaw();
         let ui = use_desktop_ui();
         let env = *ui.env.read();
-        let (games, projects) = (use_games(), use_projects());
+        let (games, projects, settings) = (use_games(), use_projects(), use_settings());
         let mut platform = ui.platform;
         let current = *platform.read();
 
-        let entries = catalog_entries(&games, &projects, current, &ui.search.read());
+        let entries = catalog_entries(&games, &projects, current, &ui.search.read(), Sort::from_settings(&settings));
         let chip = |label: &'static str, count: u32, which: Option<_>| {
             FilterChip::new(label).count(count).selected(current == which).on_press(move |_| platform.set(which)).key(label)
         };

@@ -74,7 +74,10 @@ mod tests {
         let schema = global_settings(&[], &reclaw_games::settings::DisplayEnvironment::unknown());
         let library = schema.sections.iter().find(|s| s.id == "library").unwrap();
         let (slots, _) = section_slots(library, Density::Controller);
-        // Second group has a heading: its row starts after the first row, the gap and the heading.
-        assert_eq!(slots[1].y, slots[0].y + slots[0].h + ROW_GAP + GROUP_GAP + HEADING_H);
+        // The second group has a heading: its first row starts after the last row of the first group, the
+        // gap and the heading.
+        let second = library.groups[0].rows.len();
+        assert!(library.groups[1].heading.is_some(), "the install location group is headed");
+        assert_eq!(slots[second].y, slots[second - 1].y + slots[second - 1].h + ROW_GAP + GROUP_GAP + HEADING_H);
     }
 }

@@ -29,6 +29,8 @@ pub struct Frame {
     pub state: DeckState,
     pub games: Vec<GameEntry>,
     pub downloads: Vec<Activity>,
+    /// How Home orders its shelves.
+    pub sort: crate::systems::Sort,
     /// What each game's card shows of its background work, by game id.
     pub indicators: Rc<HashMap<u32, Indicator>>,
     /// The toast on screen, if any: the newest notice, when nothing else is in the way.
