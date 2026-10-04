@@ -3,7 +3,7 @@ use reclaw_input::{ControllerInfo, FocusId, PowerState};
 
 use super::deck_row::DeckRow;
 use crate::{
-    deck::{FocusFrame, elapsed_label, ids},
+    deck::{FocusFrame, QA_RECENTS, elapsed_label, ids},
     metrics::*,
     prelude::*,
     typography::TypeStyle,
@@ -25,6 +25,8 @@ pub struct QuickAccess {
     active: Option<GameEntry>,
     controller: Option<ControllerInfo>,
     queue: usize,
+    /// Titles of the pages visited lately, newest first; the first few are listed.
+    recents: Vec<String>,
     focus: FocusId,
     ring_visible: bool,
     on_click: EventHandler<FocusId>,
@@ -39,7 +41,13 @@ impl QuickAccess {
         ring_visible: bool,
         on_click: EventHandler<FocusId>,
     ) -> Self {
-        Self { active, controller, queue, focus, ring_visible, on_click }
+        Self { active, controller, queue, recents: Vec::new(), focus, ring_visible, on_click }
+    }
+
+    /// The pages to jump back to, by title.
+    pub fn recents(mut self, recents: Vec<String>) -> Self {
+        self.recents = recents;
+        self
     }
 }
 
@@ -113,10 +121,22 @@ impl Component for QuickAccess {
             .child(section("Downloads"))
             .child(DeckRow {
                 icon: IconName::Queue,
-                label: if self.queue == 0 { "Nothing in the queue" } else { "Open the download queue" },
+                label: if self.queue == 0 { "Nothing in the queue" } else { "Open the download queue" }.into(),
                 current: false,
                 focused: self.ring_visible && self.focus == ids::QA_DOWNLOADS,
                 on_press: EventHandler::new(move |_| on_click.call(ids::QA_DOWNLOADS)),
             })
+            .maybe(!self.recents.is_empty(), |el| el.child(section("Recent")))
+            .children(self.recents.iter().take(QA_RECENTS).enumerate().map(|(i, title)| {
+                let (id, on_click) = (ids::qa_recent(i), self.on_click.clone());
+                DeckRow {
+                    icon: IconName::Clock,
+                    label: title.clone().into(),
+                    current: false,
+                    focused: self.ring_visible && self.focus == id,
+                    on_press: EventHandler::new(move |_| on_click.call(id)),
+                }
+                .into_element()
+            }))
     }
 }

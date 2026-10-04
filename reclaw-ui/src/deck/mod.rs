@@ -18,7 +18,7 @@ pub use pages::{DownloadsPage, EmptyPage, GamePage, HomePage, InstallBody, Setti
 pub use settings::{SettingChange, SettingValue, SettingsTarget, SettingsValues, TextField};
 pub use state::{
     BANNER_BLOCK, BANNER_H, ConfirmKind, DeckState, DeckView, Effect, InstallDraft, LastInput, MAIN_MENU, MainMenuEntry, MenuAction,
-    MenuPurpose, ModePref, Overlay, SHELF_H, SHELF_TITLE_BLOCK, Screen, Section, ShelfSpec, TWO_PANE_MIN_W, ids, shelf_top, shelves,
-    tile_rect,
+    MenuPurpose, ModePref, Overlay, QA_RECENTS, SHELF_H, SHELF_TITLE_BLOCK, Screen, Section, ShelfSpec, TWO_PANE_MIN_W, ids, shelf_top,
+    shelves, tile_rect,
 };
 pub use widgets::*;

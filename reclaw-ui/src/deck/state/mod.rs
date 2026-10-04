@@ -31,7 +31,7 @@ mod tests;
 
 pub use install::InstallDraft;
 pub use types::*;
-pub use view::{BANNER_BLOCK, BANNER_H, DeckView, SHELF_H, SHELF_TITLE_BLOCK, ShelfSpec, shelf_top, shelves, tile_rect};
+pub use view::{BANNER_BLOCK, BANNER_H, DeckView, QA_RECENTS, SHELF_H, SHELF_TITLE_BLOCK, ShelfSpec, shelf_top, shelves, tile_rect};
 
 use scope::Scope;
 

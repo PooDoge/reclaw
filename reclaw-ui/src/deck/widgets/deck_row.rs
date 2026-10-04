@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use freya::prelude::*;
 
 use crate::{metrics::*, prelude::*, typography::TypeStyle};
@@ -6,7 +8,7 @@ use crate::{metrics::*, prelude::*, typography::TypeStyle};
 #[derive(Clone, PartialEq)]
 pub struct DeckRow {
     pub icon: IconName,
-    pub label: &'static str,
+    pub label: Cow<'static, str>,
     pub current: bool,
     pub focused: bool,
     pub on_press: EventHandler<()>,
@@ -32,7 +34,7 @@ impl Component for DeckRow {
                     .alignment(BorderAlignment::Inner),
             )
             .child(icon(self.icon, 24., fg))
-            .child(TypeStyle::DeckBody.text(self.label, fg))
+            .child(TypeStyle::DeckBody.text(self.label.clone(), fg))
             .on_press(move |_| on_press.call(()))
     }
 }

@@ -1,7 +1,8 @@
 use freya::prelude::*;
 
 use super::{
-    dialogs::{GameDialogs, GameDialogsLayer},
+    actions::press_point,
+    dialogs::{GameDialogs, GameDialogsLayer, OpenPicker},
     pages::library::Filter,
     ui::{DesktopEnv, DesktopUi},
 };
@@ -11,7 +12,7 @@ use crate::{
     nav::{Route, RouteStage, Section, use_nav},
     prelude::*,
     shell::use_shell,
-    store::{use_activity, use_games, use_keyboard_inset},
+    store::{use_activity, use_games, use_keyboard_inset, use_mods},
     typography::TypeStyle,
     window::{Frame, Titlebar},
 };
@@ -45,7 +46,7 @@ impl Component for DesktopFrame {
         let config = *shell.transitions.read();
         let mode = shell.model.read().mode;
 
-        let (games, activity, keyboard_inset) = (use_games(), use_activity(), use_keyboard_inset());
+        let (games, activity, keyboard_inset, mods) = (use_games(), use_activity(), use_keyboard_inset(), use_mods());
         let window = *shell.window.read();
         let class = shell.dev.layout.unwrap_or_else(|| LayoutClass::from_width(window.0));
         let measured = DesktopEnv { class, density: shell.dev.density.unwrap_or_else(|| class.default_density()), window, keyboard_inset };
@@ -78,6 +79,26 @@ impl Component for DesktopFrame {
                     .label("Deck mode")
                     .size(ButtonSize::Md)
                     .on_press(move |_| toggle.write().toggle_mode());
+                // The pages visited lately, to jump back to: browsers have this under the back button.
+                let recent = {
+                    let recents = nav.recents();
+                    let (games, mods) = (games.clone(), mods.clone());
+                    ActionButton::new(ButtonVariant::Ghost)
+                        .icon(IconName::Clock)
+                        .label("Recent")
+                        .size(ButtonSize::Md)
+                        .enabled(!recents.is_empty())
+                        .on_press(move |e: Event<PressEventData>| {
+                            let labels = recents.iter().map(|r| crate::nav::title(r, &games, &mods)).collect();
+                            let routes = recents.clone();
+                            let on_pick = EventHandler::new(move |i: usize| {
+                                if let Some(route) = routes.get(i) {
+                                    nav.open(route.clone());
+                                }
+                            });
+                            dialogs.pick(OpenPicker::new("Recent pages", labels, 0, press_point(&e, (480., 60.)), on_pick));
+                        })
+                };
                 let updates = games.iter().filter(|g| g.status == AppStatus::UpdateReady).count();
                 let status = rect()
                     .horizontal()
@@ -96,7 +117,11 @@ impl Component for DesktopFrame {
                     .vertical()
                     .content(Content::Flex)
                     .expanded()
-                    .child(bar(NavMode::Top).actions(deck).trailing(SearchField::new(search)))
+                    .child(
+                        bar(NavMode::Top)
+                            .actions(rect().horizontal().spacing(SPACE_2).child(recent).child(deck))
+                            .trailing(SearchField::new(search)),
+                    )
                     .child(stage)
                     .child(status)
             }

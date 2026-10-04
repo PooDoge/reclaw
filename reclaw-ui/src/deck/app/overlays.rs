@@ -25,7 +25,7 @@ pub(super) fn overlays(f: &Frame) -> Vec<Element> {
             state.overlay() == Overlay::QuickAccess,
             f.window,
             f.dismiss.clone(),
-            QuickAccess::new(active, f.pad.clone(), f.downloads.len(), state.focus(), f.ring, f.click.clone()),
+            QuickAccess::new(active, f.pad.clone(), f.downloads.len(), state.focus(), f.ring, f.click.clone()).recents(f.recents.clone()),
         )
         .into_element(),
     ];

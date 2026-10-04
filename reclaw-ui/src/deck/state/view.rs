@@ -22,6 +22,9 @@ pub struct DeckView<'a> {
     pub notices: Option<&'a Notices>,
     /// How Home orders its shelves; by system it makes one shelf per system.
     pub sort: Sort,
+    /// The pages visited lately, newest first, without the one showing: the Quick access panel lists
+    /// the first few. The router keeps them; this is a copy for the moment.
+    pub recents: &'a [crate::nav::Route],
 }
 
 impl DeckView<'_> {
@@ -64,6 +67,9 @@ pub fn shelves(view: &DeckView) -> Vec<ShelfSpec> {
     }
     out
 }
+
+/// How many recent pages the Quick access panel lists.
+pub const QA_RECENTS: usize = 4;
 
 pub const BANNER_H: f32 = 72.;
 pub const BANNER_BLOCK: f32 = BANNER_H + 24.;

@@ -29,6 +29,7 @@ const MENU: u32 = 0x2000_0000;
 const DOWNLOAD: u32 = 0x4000_0000;
 const SETTINGS_NAV: u32 = 0x5000_0000;
 const SETTINGS_ROW: u32 = 0x6000_0000;
+const QA_RECENT: u32 = 0x7000_0000;
 const KIND_MASK: u32 = 0xF000_0000;
 
 pub fn tile(shelf: usize, game: u32) -> FocusId {
@@ -59,6 +60,15 @@ pub fn tile_game(id: FocusId) -> Option<u32> {
 
 pub fn tile_shelf(id: FocusId) -> Option<usize> {
     (id.0 & KIND_MASK == TILE).then_some(((id.0 >> 20) & 0xFF) as usize)
+}
+
+/// A row of the Quick access panel's recent pages.
+pub fn qa_recent(index: usize) -> FocusId {
+    FocusId(QA_RECENT | index as u32)
+}
+
+pub fn qa_recent_index(id: FocusId) -> Option<usize> {
+    (id.0 & KIND_MASK == QA_RECENT).then_some((id.0 & 0xFFFF) as usize)
 }
 
 pub fn menu_index(id: FocusId) -> Option<usize> {

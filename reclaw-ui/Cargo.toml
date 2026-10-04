@@ -13,7 +13,7 @@ name = "deck"
 required-features = ["gamepad"]
 
 [dependencies]
-freya = { version = "=0.5.0-rc.8", features = ["router", "radio", "query", "borderless", "titlebar", "markdown", "remote-asset", "html", "engine"] }
+freya = { version = "=0.5.0-rc.8", features = ["router", "radio", "query", "borderless", "titlebar", "markdown", "engine"] }
 freya-router = "=0.5.0-rc.8"
 freya-icons = { version = "=0.5.0-rc.8", features = ["lucide"] }
 bytes = "1"

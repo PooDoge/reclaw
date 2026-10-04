@@ -58,6 +58,9 @@ impl DeckState {
                     v.push(node(ids::QA_STOP, 206., 0., 150., DECK_TARGET_MIN));
                 }
                 v.push(node(ids::QA_DOWNLOADS, 0., 200., DECK_PANEL_W, DECK_ROW_H));
+                for i in 0..view.recents.len().min(super::view::QA_RECENTS) {
+                    v.push(node(ids::qa_recent(i), 0., 300. + i as f32 * DECK_ROW_H, DECK_PANEL_W, DECK_ROW_H));
+                }
                 v
             }
             Scope::Menu => Vec::new(),

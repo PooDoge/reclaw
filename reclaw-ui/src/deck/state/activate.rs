@@ -41,6 +41,15 @@ impl DeckState {
         if id == ids::QA_DOWNLOADS {
             return self.go_to_section(Section::Downloads, view);
         }
+        if let Some(index) = ids::qa_recent_index(id) {
+            // Jump to a page visited lately. The router moves and this follows it; the panel closes first.
+            if let Some(route) = view.recents.get(index) {
+                self.came_from_game = false;
+                self.close_overlay_quietly(view);
+                fx.push(Effect::Navigate(route.clone()));
+            }
+            return;
+        }
         match self.screen {
             Screen::Game(game_id) => {
                 if let Some(game) = view.game(game_id) {

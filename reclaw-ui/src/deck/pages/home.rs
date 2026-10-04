@@ -44,7 +44,7 @@ impl HomePage {
 
 impl Component for HomePage {
     fn render(&self) -> impl IntoElement {
-        let view = DeckView { games: &self.games, downloads: &[], launch: None, notices: None, sort: self.sort };
+        let view = DeckView { games: &self.games, downloads: &[], launch: None, notices: None, sort: self.sort, recents: &[] };
         let active = view.active_game().cloned();
         let banner = active.is_some();
         let specs: Vec<ShelfSpec> = shelves(&view);

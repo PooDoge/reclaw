@@ -44,7 +44,7 @@ impl Component for MainMenu {
             let on_click = self.on_click.clone();
             DeckRow {
                 icon,
-                label,
+                label: label.into(),
                 current: *entry == MainMenuEntry::Section(self.section),
                 focused: self.ring_visible && self.focus == id,
                 on_press: EventHandler::new(move |_| on_click.call(id)),

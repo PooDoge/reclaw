@@ -29,6 +29,8 @@ pub struct Frame {
     pub state: DeckState,
     pub games: Vec<GameEntry>,
     pub downloads: Vec<Activity>,
+    /// What the Quick access panel lists as pages to jump back to, by title.
+    pub recents: Vec<String>,
     /// How Home orders its shelves.
     pub sort: crate::systems::Sort,
     /// What each game's card shows of its background work, by game id.

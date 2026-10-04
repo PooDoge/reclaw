@@ -1,7 +1,7 @@
 //! Navigation: which page is showing, how the user got there, and how one page gives way to the next.
 //!
 //! * `route`: every page as one `freya-router` enum; `meta`: what is known about a route without drawing it
-//! * `section`: the top-level tabs; `recents`: the pages visited lately
+//! * `section`: the top-level tabs; `recents`: the pages visited lately; `titles`: what to call a page in a list
 //! * `transition`: styles, per-interface settings and frame maths (all pure)
 //!
 //! * `handle`: `Nav`, the one way code changes page; `stage`: plays transitions between pages (`stage_state` is its pure core)
@@ -19,6 +19,7 @@ mod route;
 mod section;
 mod stage;
 mod stage_state;
+mod titles;
 pub mod transition;
 
 pub use handle::{Nav, use_nav};
@@ -31,3 +32,4 @@ pub use route::Route;
 pub use section::Section;
 pub use stage::RouteStage;
 pub use stage_state::StageState;
+pub use titles::title;

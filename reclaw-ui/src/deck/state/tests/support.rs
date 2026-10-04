@@ -27,6 +27,7 @@ pub(super) struct Fixture {
     pub env: DisplayEnvironment,
     pub launch: LaunchPrefs,
     pub notices: Notices,
+    pub recents: Vec<crate::nav::Route>,
 }
 
 impl Fixture {
@@ -38,6 +39,7 @@ impl Fixture {
             env: DisplayEnvironment::unknown(),
             launch: LaunchPrefs::default(),
             notices: Notices::default(),
+            recents: Vec::new(),
         }
     }
 
@@ -48,6 +50,7 @@ impl Fixture {
             launch: Some(LaunchContext { env: &self.env, projects: &self.projects, prefs: &self.launch }),
             notices: Some(&self.notices),
             sort: crate::systems::Sort::default(),
+            recents: &self.recents,
         }
     }
 

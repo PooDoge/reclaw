@@ -37,6 +37,7 @@ impl Dispatcher {
     pub fn run(&self, f: impl FnOnce(&mut DeckState, &DeckView) -> Vec<Effect>) {
         let effects = {
             let mut deck = self.deck;
+            let recents = self.nav.recents();
             self.store.with(|s| {
                 let queue: Vec<_> = s.activity.queue().into_iter().cloned().collect();
                 let launch = LaunchContext { env: &s.display, projects: &s.projects, prefs: &s.launch };
@@ -46,6 +47,7 @@ impl Dispatcher {
                     launch: Some(launch),
                     notices: Some(&s.notices),
                     sort: Sort::from_settings(&s.settings),
+                    recents: &recents,
                 };
                 let mut state = deck.write();
                 // The settings live in the store, which both interfaces share; the reducer works on a copy.
