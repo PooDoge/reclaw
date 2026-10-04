@@ -1,0 +1,560 @@
+{
+ "design": "Reclaw",
+ "host": "Library, Game page, Downloads, Catalog, Mods",
+ "source": "Reclaw Design System (tokens.json + components/*)",
+ "status": "buildable",
+ "note": "Agent-facing translation contract. Read this INSTEAD of parsing the previews. Where it disagrees with README.md, this file wins. Hex values are per theme; alpha tokens (scrim) are #rrggbbaa.",
+ "theme": {
+  "default": "midnight",
+  "themes": {
+   "midnight": {
+    "bg-deep": "#0b1017",
+    "bg-nav": "#101820",
+    "bg-base": "#16202b",
+    "bg-panel": "#1c2937",
+    "bg-raised": "#26374a",
+    "line": "#2c3e52",
+    "line-strong": "#5b7390",
+    "ink": "#e8eef5",
+    "ink-muted": "#a9b8c9",
+    "ink-subtle": "#8496aa",
+    "accent": "#66c0f4",
+    "accent-hover": "#8fd2f8",
+    "on-accent": "#08141f",
+    "install": "#37790f",
+    "install-hover": "#2f6a0b",
+    "on-install": "#ffffff",
+    "ok": "#86cc4a",
+    "ok-bg": "#1f3318",
+    "warn": "#f3bd52",
+    "warn-bg": "#3a2f12",
+    "danger": "#ff8484",
+    "danger-bg": "#3d1c1f",
+    "info": "#66c0f4",
+    "info-bg": "#12303f",
+    "scrim": "#05080cb3"
+   },
+   "daylight": {
+    "bg-deep": "#dde5ee",
+    "bg-nav": "#e8eef4",
+    "bg-base": "#f2f5f9",
+    "bg-panel": "#ffffff",
+    "bg-raised": "#e3eaf2",
+    "line": "#cfd9e4",
+    "line-strong": "#6f8297",
+    "ink": "#14202c",
+    "ink-muted": "#445568",
+    "ink-subtle": "#58697c",
+    "accent": "#0b6aa8",
+    "accent-hover": "#0a5a90",
+    "on-accent": "#ffffff",
+    "install": "#2f7a12",
+    "install-hover": "#276a0f",
+    "on-install": "#ffffff",
+    "ok": "#2d7a14",
+    "ok-bg": "#e1f1d6",
+    "warn": "#7a4f00",
+    "warn-bg": "#fbefcf",
+    "danger": "#b3261e",
+    "danger-bg": "#fbdcda",
+    "info": "#0b6aa8",
+    "info-bg": "#d8ecf8",
+    "scrim": "#0b1017a6"
+   }
+  },
+  "type": {
+   "sans": "Hanken Grotesk",
+   "mono": "JetBrains Mono",
+   "styles": {
+    "title-hero": {
+     "fontSize": "32px",
+     "lineHeight": "36px",
+     "fontWeight": 700
+    },
+    "title-page": {
+     "fontSize": "22px",
+     "lineHeight": "28px",
+     "fontWeight": 700
+    },
+    "heading": {
+     "fontSize": "16px",
+     "lineHeight": "22px",
+     "fontWeight": 600
+    },
+    "body": {
+     "fontSize": "14px",
+     "lineHeight": "20px",
+     "fontWeight": 400
+    },
+    "body-touch": {
+     "fontSize": "16px",
+     "lineHeight": "24px",
+     "fontWeight": 400
+    },
+    "label": {
+     "fontSize": "13px",
+     "lineHeight": "16px",
+     "fontWeight": 600
+    },
+    "meta": {
+     "fontSize": "12px",
+     "lineHeight": "16px",
+     "fontWeight": 400
+    },
+    "eyebrow": {
+     "fontSize": "11px",
+     "lineHeight": "14px",
+     "fontWeight": 700
+    },
+    "mono": {
+     "fontSize": "12px",
+     "lineHeight": "16px",
+     "fontWeight": 400
+    }
+   }
+  },
+  "spacing": {
+   "space-1": "4px",
+   "space-2": "8px",
+   "space-3": "12px",
+   "space-4": "16px",
+   "space-5": "24px",
+   "space-6": "32px",
+   "space-8": "48px"
+  },
+  "radius": {
+   "radius-sm": "2px",
+   "radius-md": "4px",
+   "radius-lg": "8px",
+   "radius-pill": "999px"
+  },
+  "shadow": {
+   "shadow-card": "0 2px 8px rgba(0,0,0,0.35)",
+   "shadow-pop": "0 12px 32px rgba(0,0,0,0.5)",
+   "shadow-focus": "0 0 0 2px #66c0f4"
+  },
+  "vocabulary": {
+   "install": "the one state-changing verb per region",
+   "accent": "selected, linked, focused, in progress",
+   "ok/warn/danger/info": "badge, dot or bar only; word + icon always",
+   "needsfile": "project ships no assets; user supplies own file"
+  }
+ },
+ "dataModel": {
+  "App": "{id,name,project,source:github|gitlab|manual,repo,tags:Vec<String>,installed_version:Option,latest_version:Option,status:installed|update|installing|failed|available|needsfile,needs_user_file:bool,art:{capsule,hero},mods_provider:Option<thunderstore|gamebanana>}",
+  "Catalog": "{url, apps:Vec<App>} (apps.json subscription)",
+  "Download": "{app_id,stage,progress:f32,speed_bps,detail:Option<String>,error:Option<String>}"
+ },
+ "components": [
+  {
+   "name": "Button",
+   "freya": "Button",
+   "tokens": [
+    "install",
+    "install-hover",
+    "on-install",
+    "accent",
+    "accent-hover",
+    "on-accent",
+    "bg-raised",
+    "line-strong",
+    "danger",
+    "danger-bg"
+   ],
+   "radius": "4,4,4,4",
+   "props": {
+    "variant": "install|primary|secondary|ghost|danger",
+    "size": "md(32)|lg(44)|touch(48)",
+    "icon": "lucide name",
+    "disabled": "bool"
+   },
+   "freyaApi": "Button::new().filled()|.outline()|.flat() + theme_colors(ButtonColorsThemePartial{..})",
+   "action": "press"
+  },
+  {
+   "name": "Chip",
+   "freya": "Chip",
+   "tokens": [
+    "accent",
+    "on-accent",
+    "line-strong",
+    "ink-muted"
+   ],
+   "radius": "2,2,2,2",
+   "props": {
+    "selected": "bool",
+    "count": "Option<u32> mono"
+   },
+   "action": "toggle"
+  },
+  {
+   "name": "StatusBadge",
+   "freya": "custom",
+   "tokens": [
+    "ok",
+    "ok-bg",
+    "warn",
+    "warn-bg",
+    "danger",
+    "danger-bg",
+    "info",
+    "info-bg",
+    "bg-raised",
+    "ink-muted"
+   ],
+   "radius": "2,2,2,2",
+   "props": {
+    "kind": "installed|update|installing|failed|available|needsfile"
+   },
+   "map": {
+    "installed": {
+     "icon": "check",
+     "tone": "ok"
+    },
+    "update": {
+     "icon": "download",
+     "tone": "warn"
+    },
+    "installing": {
+     "icon": "arrow-down-to-line",
+     "tone": "info"
+    },
+    "failed": {
+     "icon": "triangle-alert",
+     "tone": "danger"
+    },
+    "available": {
+     "icon": null,
+     "tone": "neutral"
+    },
+    "needsfile": {
+     "icon": "file",
+     "tone": "warn"
+    }
+   },
+   "note": "Word + icon always; never hue alone. needsfile = user must supply own game file."
+  },
+  {
+   "name": "Switch",
+   "freya": "Switch",
+   "tokens": [
+    "accent",
+    "on-accent",
+    "bg-raised",
+    "line-strong",
+    "ink-muted"
+   ],
+   "action": "toggle"
+  },
+  {
+   "name": "SearchField",
+   "freya": "Input",
+   "tokens": [
+    "bg-raised",
+    "line-strong",
+    "accent",
+    "ink",
+    "ink-subtle"
+   ],
+   "radius": "4,4,4,4",
+   "action": "input",
+   "note": "explicit .background(bg_raised) or it renders invisible"
+  },
+  {
+   "name": "GameCapsule",
+   "freya": "Card",
+   "tokens": [
+    "bg-panel",
+    "line",
+    "accent",
+    "shadow-card",
+    "ink",
+    "ink-subtle"
+   ],
+   "radius": "4,4,4,4",
+   "layout": "col",
+   "size": {
+    "width": "capsule-w",
+    "art": "168x224 (3:4)"
+   },
+   "props": {
+    "title": "String",
+    "project": "String",
+    "status": "StatusBadge.kind",
+    "art": "ImageSource|None"
+   },
+   "states": [
+    "rest",
+    "hover",
+    "selected",
+    "focus"
+   ],
+   "action": "navigate",
+   "note": "hover shows Play over art when installed; touch has no hover, Play lives in HeroHeader"
+  },
+  {
+   "name": "LibraryRow",
+   "freya": "SideBarItem",
+   "tokens": [
+    "ink-muted",
+    "ink",
+    "bg-raised",
+    "accent",
+    "ok",
+    "warn",
+    "info",
+    "danger",
+    "ink-subtle"
+   ],
+   "radius": "4,4,4,4",
+   "layout": "row",
+   "content": "Content::Flex (name = Size::flex(1.0))",
+   "size": {
+    "height": "row-h|row-h-touch"
+   },
+   "states": [
+    "rest",
+    "hover",
+    "selected",
+    "focus"
+   ],
+   "action": "navigate"
+  },
+  {
+   "name": "HeroHeader",
+   "freya": "custom",
+   "tokens": [
+    "bg-base",
+    "bg-panel",
+    "line",
+    "accent",
+    "ink",
+    "ink-subtle"
+   ],
+   "radius": "4,4,4,4",
+   "layout": "col",
+   "size": {
+    "art": "16:5, hero-h 280 wide"
+   },
+   "children": [
+    "Button(install,lg)",
+    "kv(Version)",
+    "kv(Source)",
+    "StatusBadge",
+    "spacer(Size::flex)",
+    "Button(ghost,folder)",
+    "Button(ghost,settings)"
+   ],
+   "content": "action bar needs Content::Flex",
+   "note": "title on solid bg-base strip; narrow collapses secondary actions to icon-only"
+  },
+  {
+   "name": "DownloadItem",
+   "freya": "custom",
+   "tokens": [
+    "bg-panel",
+    "line",
+    "accent",
+    "ok",
+    "danger",
+    "ink",
+    "ink-muted",
+    "ink-subtle"
+   ],
+   "radius": "4,4,4,4",
+   "layout": "row",
+   "children": [
+    "image(92x43)",
+    "col(name|stage mono, ProgressBar, detail|speed)",
+    "Button(ghost,x)"
+   ],
+   "content": "Content::Flex",
+   "stages": [
+    "Fetching release",
+    "Verifying hash",
+    "Checking your game file",
+    "Building",
+    "Extracting"
+   ],
+   "note": "fill accent; ok at verified; danger with reason on failure"
+  },
+  {
+   "name": "Nav",
+   "freya": "SideBarItem|FloatingTab",
+   "tokens": [
+    "bg-nav",
+    "line",
+    "ink",
+    "ink-muted",
+    "accent",
+    "bg-raised"
+   ],
+   "layout": "top|rail|bottom",
+   "items": [
+    {
+     "id": "library",
+     "icon": "library-big"
+    },
+    {
+     "id": "catalog",
+     "icon": "store"
+    },
+    {
+     "id": "queue",
+     "label": "Downloads",
+     "icon": "arrow-down-to-line"
+    },
+    {
+     "id": "mods",
+     "icon": "puzzle"
+    }
+   ],
+   "forms": {
+    "top": "width>=1100",
+    "rail": "720..1099, 64px, TooltipContainer per item",
+    "bottom": "<720, 56px"
+   }
+  },
+  {
+   "name": "InstallDialog",
+   "freya": "Popup",
+   "tokens": [
+    "bg-panel",
+    "bg-base",
+    "line",
+    "scrim",
+    "shadow-pop"
+   ],
+   "radius": "8,8,8,8",
+   "fields": [
+    "install location (folder picker)",
+    "user's game file (file picker, never downloaded)",
+    "shortcut Switch",
+    "pre-release Switch"
+   ],
+   "touch": "bottom sheet, radius 8,8,0,0"
+  }
+ ],
+ "layout": {
+  "shell": "switch on container width",
+  "classes": [
+   {
+    "id": "wide",
+    "minWidth": 1100,
+    "nav": "top",
+    "regions": [
+     {
+      "id": "sidebar",
+      "width": 240,
+      "kind": "list"
+     },
+     {
+      "id": "main",
+      "kind": "flex"
+     }
+    ]
+   },
+   {
+    "id": "compact",
+    "minWidth": 720,
+    "maxWidth": 1099,
+    "nav": "rail",
+    "regions": [
+     {
+      "id": "rail",
+      "width": 64
+     },
+     {
+      "id": "main",
+      "kind": "flex",
+      "contains": [
+       "search",
+       "hero",
+       "grid(4)"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "phone",
+    "maxWidth": 719,
+    "nav": "bottom",
+    "regions": [
+     {
+      "id": "main",
+      "kind": "flex",
+      "contains": [
+       "header",
+       "grid(2)"
+      ]
+     },
+     {
+      "id": "tabbar",
+      "height": 56
+     }
+    ],
+    "gamePage": "pushed page with back button; install bar pinned above tabs",
+    "dialogs": "bottom sheet"
+   }
+  ],
+  "density": {
+   "pointer": {
+    "rowHeight": 32,
+    "button": 32,
+    "body": 14
+   },
+   "touch": {
+    "rowHeight": 48,
+    "button": 48,
+    "body": 16,
+    "minTarget": 44,
+    "hover": "none"
+   },
+   "rule": "density follows input device, independent of width (a 1280x800 handheld = wide + touch)"
+  }
+ },
+ "responsive": {
+  "strategy": "key off the root container width via on_sized with an epsilon guard (peek + abs diff > 1.0), not the OS",
+  "breakpoints": {
+   "wide": 1100,
+   "compact": 720
+  }
+ },
+ "animations": [
+  {
+   "name": "hover",
+   "kind": "translate-y+border",
+   "ms": 120,
+   "ease": "out",
+   "drives": "GameCapsule lift 2px"
+  },
+  {
+   "name": "collapse",
+   "kind": "width",
+   "ms": 240,
+   "ease": "expo-out",
+   "drives": "sidebar 240 -> rail 64 (labels fade first)"
+  },
+  {
+   "name": "drawer",
+   "kind": "translate-x",
+   "ms": 280,
+   "ease": "expo-out",
+   "drives": "phone side drawers"
+  },
+  {
+   "name": "sheet",
+   "kind": "translate-y",
+   "ms": 300,
+   "ease": "expo-out",
+   "drives": "InstallDialog on phone"
+  },
+  {
+   "name": "progress",
+   "kind": "width",
+   "ms": 200,
+   "ease": "linear",
+   "drives": "ProgressBar value changes"
+  }
+ ]
+}

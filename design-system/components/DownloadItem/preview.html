@@ -1,0 +1,8 @@
+<!-- @dsCard group="Progress" height=280 subtitle="Queue entries: fetching, verifying, failed" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
+<body><div id="r"></div><script>
+var R=window.Reclaw,h=React.createElement;
+function App(){return h("div",{className:"col",style:{maxWidth:620}},h(R.DownloadItem,{title:"Starfall 64  v1.4.3",stage:"Fetching release",value:34,detail:"21 MB of 61 MB",speed:"7.4 MB/s"}),h(R.DownloadItem,{title:"Skyward Quest  v0.9.2",stage:"Verifying hash",value:100,detail:"Checking sha256",speed:"",tone:"ok"}),h(R.DownloadItem,{title:"Moon Garden  v2.0.1",stage:"Failed",value:48,detail:"Release asset not found",speed:"",tone:"danger"}),h(R.ProgressBar,{value:62}))}
+ReactDOM.createRoot(document.getElementById("r")).render(h(App));
+</script></body></html>

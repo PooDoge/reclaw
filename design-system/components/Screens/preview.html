@@ -1,0 +1,8 @@
+<!-- @dsCard group="Screens" height=1750 page subtitle="Library at wide, compact and phone widths" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
+<body><div id="r"></div><script>
+var R=window.Reclaw,h=React.createElement;
+function App(){return h("div",{className:"col",style:{gap:32,alignItems:"flex-start"}},[["wide","Wide, at least 1100px: top nav, library sidebar, hero"],["compact","Compact, 720 to 1099px: icon rail, hero, capsule grid"],["phone","Phone / handheld, under 720px: bottom tabs, 2-column grid, 48px targets"]].map(function(s){var f=s[0]==="wide"?1100:s[0]==="compact"?860:390;return h("div",{key:s[0],style:{zoom:Math.min(1,(window.innerWidth-32)/f)}},h("p",{className:"cap"},s[1]),h(R.LibraryScreen,{mode:s[0]}))}))}
+ReactDOM.createRoot(document.getElementById("r")).render(h(App));
+</script></body></html>

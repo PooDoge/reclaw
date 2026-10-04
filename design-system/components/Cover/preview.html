@@ -1,0 +1,29 @@
+<!-- @dsCard height=288 -->
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;700&display=swap">
+<style>
+html,body{margin:0;background:var(--bg-base)}
+svg{display:block;width:960px;height:288px}
+.ground{fill:var(--bg-base)}
+.install{fill:var(--install)}.accent{fill:var(--accent)}.raised{fill:var(--bg-raised)}.strong{fill:var(--line-strong)}.panel{fill:var(--bg-panel)}.warn{fill:var(--warn)}
+.t1{rx:var(--radius-md)}.t2{rx:var(--radius-sm)}
+.name{font:700 104px/1 "Hanken Grotesk",system-ui,sans-serif;fill:var(--ink);letter-spacing:-0.02em}
+.tag{font:400 14px "Hanken Grotesk",system-ui,sans-serif;fill:var(--ink-muted)}
+</style></head><body>
+<svg viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Reclaw">
+<!-- blocks: install 104x256, accent 104x124, line-strong 104x124, bg-raised 104x168 bleeding off the top, warn 104x96, bg-panel 128x256 bleeding off the right
+     arrangement: four staggered columns of portrait capsules, unequal heights, cut on the 8px grid (gap 8)
+     pattern: game-capsule tiles (portrait 3:4-ish) because the product is a Steam-style library; one tile carries a download progress bar, the product's other signature
+     steps/radii: gap space-1x2 = 8, corners radius-md 4 on tiles, radius-sm 2 on the bar -->
+<rect class="ground" width="960" height="288"/>
+<rect class="install t1" x="496" y="16" width="104" height="256"/>
+<rect class="accent t1" x="608" y="16" width="104" height="124"/>
+<rect class="strong t1" x="608" y="148" width="104" height="124"/>
+<rect class="raised t1" x="720" y="-8" width="104" height="176"/>
+<rect class="warn t1" x="720" y="176" width="104" height="96"/>
+<rect class="panel t1" x="832" y="16" width="136" height="256"/>
+<rect class="raised t2" x="848" y="248" width="96" height="8"/>
+<rect class="install t2" x="848" y="248" width="56" height="8"/>
+<text class="name" x="44" y="226">Reclaw</text>
+<text class="tag" x="48" y="258">Install, update and launch your recompiled games.</text>
+</svg></body></html>

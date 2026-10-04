@@ -1,0 +1,1 @@
+Library and catalog filter (name, tag, repo, folder, as in Quiver). Freya: `Input::new(writable).placeholder(..)`; give it an explicit `.background(bg_raised)` or it renders invisible. Focus draws a solid 2px accent border. On phone use the touch size and let it fill the width.

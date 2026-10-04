@@ -1,0 +1,8 @@
+<!-- @dsCard group="Library" height=260 subtitle="Sidebar list rows: resting, hover, selected, each status dot" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
+<body><div id="r"></div><script>
+var R=window.Reclaw,h=React.createElement;
+function App(){return h("div",{className:"row",style:{alignItems:"flex-start",gap:24}},h("div",{className:"col",style:{width:240,gap:2}},h(R.LibraryRow,{title:"Starfall 64",status:"installed",selected:true,version:"v1.4.2"}),h(R.LibraryRow,{title:"Skyward Quest",status:"update",hover:true}),h(R.LibraryRow,{title:"Kart Ruins",status:"needsfile"}),h(R.LibraryRow,{title:"Dino Rush",status:"available"}),h(R.LibraryRow,{title:"Moon Garden",status:"failed"})),h("div",{className:"col",style:{width:300,gap:2}},h("p",{className:"cap"},"Touch density"),h(R.LibraryRow,{title:"Starfall 64",status:"installed",selected:true,size:"touch"}),h(R.LibraryRow,{title:"Skyward Quest",status:"update",size:"touch"})))}
+ReactDOM.createRoot(document.getElementById("r")).render(h(App));
+</script></body></html>
