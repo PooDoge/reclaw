@@ -169,7 +169,12 @@
     "disabled": "bool"
    },
    "freyaApi": "Button::new().filled()|.outline()|.flat() + theme_colors(ButtonColorsThemePartial{..})",
-   "action": "press"
+   "action": "press",
+   "rust": {
+    "type": "ActionButton",
+    "module": "reclaw_ui::components",
+    "built": "Button"
+   }
   },
   {
    "name": "Chip",
@@ -185,7 +190,12 @@
     "selected": "bool",
     "count": "Option<u32> mono"
    },
-   "action": "toggle"
+   "action": "toggle",
+   "rust": {
+    "type": "FilterChip",
+    "module": "reclaw_ui::components",
+    "built": "Chip"
+   }
   },
   {
    "name": "StatusBadge",
@@ -232,7 +242,12 @@
      "tone": "warn"
     }
    },
-   "note": "Word + icon always; never hue alone. needsfile = user must supply own game file."
+   "note": "Word + icon always; never hue alone. needsfile = user must supply own game file.",
+   "rust": {
+    "type": "StatusBadge",
+    "module": "reclaw_ui::components",
+    "built": "custom"
+   }
   },
   {
    "name": "Switch",
@@ -244,7 +259,12 @@
     "line-strong",
     "ink-muted"
    ],
-   "action": "toggle"
+   "action": "toggle",
+   "rust": {
+    "type": "ToggleSwitch",
+    "module": "reclaw_ui::components",
+    "built": "Switch"
+   }
   },
   {
    "name": "SearchField",
@@ -258,7 +278,12 @@
    ],
    "radius": "4,4,4,4",
    "action": "input",
-   "note": "explicit .background(bg_raised) or it renders invisible"
+   "note": "explicit .background(bg_raised) or it renders invisible",
+   "rust": {
+    "type": "SearchField",
+    "module": "reclaw_ui::components",
+    "built": "Input"
+   }
   },
   {
    "name": "GameCapsule",
@@ -290,7 +315,13 @@
     "focus"
    ],
    "action": "navigate",
-   "note": "hover shows Play over art when installed; touch has no hover, Play lives in HeroHeader"
+   "note": "hover shows Play over art when installed; touch has no hover, Play lives in HeroHeader",
+   "rust": {
+    "type": "GameCapsule",
+    "module": "reclaw_ui::components",
+    "built": "custom",
+    "deviation": "contract said Card; needs the accent hover border and Play overlay, which Card cannot draw"
+   }
   },
   {
    "name": "LibraryRow",
@@ -318,7 +349,13 @@
     "selected",
     "focus"
    ],
-   "action": "navigate"
+   "action": "navigate",
+   "rust": {
+    "type": "LibraryRow",
+    "module": "reclaw_ui::components",
+    "built": "custom",
+    "deviation": "contract said SideBarItem; SideBarItem active state is route-driven; selection here is plain app state"
+   }
   },
   {
    "name": "HeroHeader",
@@ -346,7 +383,12 @@
     "Button(ghost,settings)"
    ],
    "content": "action bar needs Content::Flex",
-   "note": "title on solid bg-base strip; narrow collapses secondary actions to icon-only"
+   "note": "title on solid bg-base strip; narrow collapses secondary actions to icon-only",
+   "rust": {
+    "type": "HeroHeader",
+    "module": "reclaw_ui::components",
+    "built": "custom"
+   }
   },
   {
    "name": "DownloadItem",
@@ -376,7 +418,12 @@
     "Building",
     "Extracting"
    ],
-   "note": "fill accent; ok at verified; danger with reason on failure"
+   "note": "fill accent; ok at verified; danger with reason on failure",
+   "rust": {
+    "type": "DownloadItem",
+    "module": "reclaw_ui::components",
+    "built": "ProgressBar in custom row"
+   }
   },
   {
    "name": "Nav",
@@ -413,6 +460,12 @@
     "top": "width>=1100",
     "rail": "720..1099, 64px, TooltipContainer per item",
     "bottom": "<720, 56px"
+   },
+   "rust": {
+    "type": "Nav",
+    "module": "reclaw_ui::components",
+    "built": "custom + TooltipContainer on rail",
+    "deviation": "contract said SideBarItem|FloatingTab; three forms from one component; SideBarItem/FloatingTab do not cover the top bar or the accent underline"
    }
   },
   {
@@ -432,7 +485,12 @@
     "shortcut Switch",
     "pre-release Switch"
    ],
-   "touch": "bottom sheet, radius 8,8,0,0"
+   "touch": "bottom sheet, radius 8,8,0,0",
+   "rust": {
+    "type": "InstallDialog",
+    "module": "reclaw_ui::components",
+    "built": "Popup"
+   }
   }
  ],
  "layout": {
@@ -556,5 +614,9 @@
    "ease": "linear",
    "drives": "ProgressBar value changes"
   }
- ]
+ ],
+ "freya": {
+  "version": "0.5.0-rc.8",
+  "note": "Pinned exactly; newest on crates.io, no final 0.5.0 yet. Verified by compiling and rendering headless snapshots in reclaw-ui/."
+ }
 }
