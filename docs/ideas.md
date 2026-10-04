@@ -19,8 +19,9 @@ about an outside service that I could not check is marked **unverified**.
 
 ## Keeping the collection current ("it just updates")
 
-**1. Staged installs with one-click rollback.** Download to a staging folder, verify, swap, keep the previous version. Bazzite is Btrfs, where
-a copy of a game folder can share its data blocks (reflink), so keeping the last two versions costs almost nothing there.
+**1. Staged installs with one-click rollback.** Download to a staging folder, verify, swap, keep the previous version. On a filesystem with
+reflinks (Btrfs, XFS; I believe Bazzite installs to Btrfs by default but have not checked your machine) a copy of a game folder
+shares its data blocks, so keeping the last two versions costs almost nothing there.
 *Pros:* no half-updated games; "this update broke my mods" becomes one click; fixes Quiver's weakest point. *Cons:* more disk on filesystems
 without reflinks; saves that live inside the install folder must be carried across; more states to test. *Effort:* M. *Needs:* the installer.
 
