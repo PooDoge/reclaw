@@ -15,8 +15,10 @@ impl DeckState {
     pub fn settings_schema(&self, target: SettingsTarget, view: &DeckView) -> Option<Schema> {
         // Launch rows: only what the display and (for a game) the game agree on.
         let specs = view.launch.map(|launch| launch.specs(target)).unwrap_or_default();
+        let unknown = reclaw_games::settings::DisplayEnvironment::unknown();
+        let displays = view.launch.map_or(&unknown, |launch| launch.env);
         match target {
-            SettingsTarget::Global => Some(global_settings(&specs)),
+            SettingsTarget::Global => Some(global_settings(&specs, displays)),
             SettingsTarget::App(id) => view.game(id).map(|game| app_properties(game, &specs)),
         }
     }

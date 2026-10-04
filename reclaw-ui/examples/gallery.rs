@@ -10,7 +10,8 @@
 //! * Environment: `RECLAW_MODE=deck|desktop`, `RECLAW_LAYOUT=wide|compact|phone`,
 //!   `RECLAW_DENSITY=pointer|touch|controller`, `RECLAW_THEME=midnight|daylight`,
 //!   `RECLAW_MOTION=reduced|subtle|standard|cinematic`, `RECLAW_KEYBOARD=auto|<px>` (start with the
-//!   keyboard up), `RECLAW_SIM_KEYBOARD=1` (raise it whenever a text box takes focus).
+//!   keyboard up), `RECLAW_SIM_KEYBOARD=1` (raise it whenever a text box takes focus),
+//!   `RECLAW_WINDOW_FRAME=native` (the window manager's border instead of Reclaw's own title bar).
 use freya::prelude::*;
 use reclaw_input::{ActionMap, detect_environment};
 use reclaw_ui::{
@@ -20,6 +21,7 @@ use reclaw_ui::{
     prelude::*,
     shell::{DevOverrides, Shell},
     store::{AppState, Store},
+    window::{Frame, WindowHost, detect_server, launch::launch_config},
 };
 
 #[derive(Clone, PartialEq)]
@@ -27,6 +29,7 @@ struct Gallery {
     feed: ActionFeed,
     store: Store,
     start: Route,
+    frame: Frame,
 }
 
 impl App for Gallery {
@@ -42,6 +45,7 @@ impl App for Gallery {
             on_effect: EventHandler::new(|effect| eprintln!("effect: {effect:?}")),
             detected: detect_environment(get).mode,
             dev,
+            host_window: WindowHost::attached(self.frame),
             start: self.start.clone(),
             script: vec![],
         }
@@ -78,16 +82,8 @@ fn main() {
     let store = opened.store;
     // The gallery has no pad, so the feed's sender is dropped and it simply stays quiet.
     let (_tx, feed) = ActionFeed::new();
-    launch(
-        LaunchConfig::new().with_window(
-            WindowConfig::new_app(Gallery { feed, store, start: start_route() })
-                .with_title("Reclaw")
-                .with_size(1100., 700.)
-                .with_min_size(360., 480.)
-                .with_on_close(move |_, _| {
-                    store.flush();
-                    CloseDecision::Close
-                }),
-        ),
-    );
+    // RECLAW_WINDOW_FRAME=native keeps the window manager's border and title bar.
+    let frame = Frame::from_env(|k| std::env::var(k).ok());
+    let server = detect_server(|k| std::env::var(k).ok());
+    launch(launch_config(Gallery { feed, store, start: start_route(), frame }, store, frame, server));
 }

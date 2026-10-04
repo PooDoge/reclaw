@@ -121,4 +121,6 @@ pub enum Effect {
     /// A notification toast appeared (true) or went away (false): while it is up the pad reader treats
     /// X and Y as holds, so a tap still does its usual job on release.
     NoticeHolds(bool),
+    /// Minimize, maximize, close, fill a monitor. The `Shell` carries it out; the host may also watch.
+    Window(crate::window::WindowCommand),
 }

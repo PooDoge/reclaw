@@ -25,6 +25,7 @@ pub mod surface;
 pub mod theme;
 mod tokens;
 pub mod typography;
+pub mod window;
 
 pub mod prelude {
     pub use crate::components::*;

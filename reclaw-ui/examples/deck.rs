@@ -25,10 +25,12 @@ use reclaw_ui::{
     prelude::*,
     shell::{DevOverrides, Shell},
     store::{AppAction, AppState, Store},
+    window::{Frame, WindowHost, detect_server, launch::launch_config},
 };
 
 #[derive(Clone, PartialEq)]
 struct Host {
+    frame: Frame,
     store: Store,
     feed: ActionFeed,
     map: ActionMap,
@@ -130,6 +132,7 @@ impl App for Host {
             on_effect,
             detected: self.env.mode,
             dev,
+            host_window: WindowHost::attached(self.frame),
             start: Route::Library {},
             script: vec![],
         }
@@ -162,16 +165,7 @@ fn main() {
     }
     let store = opened.store;
     let (_tx, feed) = ActionFeed::new();
-    launch(
-        LaunchConfig::new().with_window(
-            WindowConfig::new_app(Host { store, feed, map, env })
-                .with_title("Reclaw")
-                .with_size(1280., 800.)
-                .with_min_size(640., 400.)
-                .with_on_close(move |_, _| {
-                    store.flush();
-                    CloseDecision::Close
-                }),
-        ),
-    );
+    let frame = Frame::from_env(|k| std::env::var(k).ok());
+    let server = detect_server(|k| std::env::var(k).ok());
+    launch(launch_config(Host { frame, store, feed, map, env }, store, frame, server));
 }

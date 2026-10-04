@@ -24,6 +24,7 @@ use reclaw_ui::{
     sample::sample_games,
     shell::{DevOverrides, MotionOverride, Shell},
     store::{AppAction, AppState, Store},
+    window::{Frame, WindowHost},
 };
 
 pub fn out_dir() -> PathBuf {
@@ -67,6 +68,8 @@ pub struct Mount {
     /// Play page transitions. Off by default: most tests assert on the page that has arrived, and
     /// during a transition the old page is still there.
     pub animated: bool,
+    /// The window behind the UI. Detached by default; a test of the title bar draws one (`frame`).
+    pub host_window: WindowHost,
 }
 
 impl Mount {
@@ -81,6 +84,7 @@ impl Mount {
             keyboard: 0.,
             theme: ThemeKind::Midnight,
             animated: false,
+            host_window: WindowHost::DETACHED,
         }
     }
 
@@ -124,6 +128,12 @@ impl Mount {
         self
     }
 
+    /// Draw the custom frame's title bar. Still no real window: its commands only show up as effects.
+    pub fn frame(mut self, frame: Frame) -> Self {
+        self.host_window = WindowHost { frame, attached: false };
+        self
+    }
+
     pub fn theme(mut self, theme: ThemeKind) -> Self {
         self.theme = theme;
         self
@@ -137,7 +147,7 @@ impl Mount {
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
-        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated } = self;
+        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated, host_window } = self;
         // The theme is pinned, so the settings do not switch it under a snapshot.
         let motion = dev.motion.or((!animated).then_some(MotionOverride::Reduced));
         let dev = DevOverrides { theme: dev.theme.or(Some(theme)), motion, ..dev };
@@ -159,6 +169,7 @@ impl Mount {
                     on_effect: EventHandler::new(move |e| sink.borrow_mut().push(e)),
                     detected: mode,
                     dev,
+                    host_window,
                     start: start.clone(),
                     script: script.clone(),
                 }

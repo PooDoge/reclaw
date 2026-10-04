@@ -6,6 +6,7 @@
 //! * `common`: the headless harness (`Mount`, `Session`) every test uses
 //! * `deck_*`: Deck mode (input, lifecycle with real processes, notifications and holds, surfaces, snapshots)
 //! * `desktop_*`, `nav_stage`: the desktop interface and the router
+//! * `window_chrome`: the custom title bar and the Screen settings
 //! * `shell_modes`: switching interface; `tokens_in_sync`: the design tokens against the Rust constants
 mod common;
 mod deck_input;
@@ -21,3 +22,4 @@ mod desktop_surfaces;
 mod nav_stage;
 mod shell_modes;
 mod tokens_in_sync;
+mod window_chrome;

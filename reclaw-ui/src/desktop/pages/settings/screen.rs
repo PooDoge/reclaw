@@ -56,7 +56,7 @@ impl Component for SettingsScreen {
                 Some(view) => (app_properties(&view.game, &specs), view.game.title.to_string(), "Properties"),
                 None => return NotFound { what: "game", id: id.to_string() }.into_element(),
             },
-            _ => (global_settings(&specs), "Settings".to_string(), ""),
+            _ => (global_settings(&specs, &display), "Settings".to_string(), ""),
         };
 
         let first = schema.sections.first().map(|s| s.id.to_string()).unwrap_or_default();

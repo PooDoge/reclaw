@@ -36,6 +36,10 @@ pub enum IconName {
     /// Files here, being made ready.
     Package,
     Clock,
+    /// A bar: the window's minimize button.
+    Minus,
+    /// Two squares: the maximized window's restore button.
+    Restore,
 }
 
 impl IconName {
@@ -70,6 +74,8 @@ impl IconName {
             Self::External => ("external-link", lucide::external_link()),
             Self::Package => ("package", lucide::package()),
             Self::Clock => ("clock", lucide::clock()),
+            Self::Minus => ("minus", lucide::minus()),
+            Self::Restore => ("copy", lucide::copy()),
         }
     }
 }

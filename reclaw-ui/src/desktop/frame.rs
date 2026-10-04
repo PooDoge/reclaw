@@ -7,11 +7,13 @@ use super::{
 };
 use crate::{
     components::{Nav as NavBar, NavMode, NavTarget},
+    effect::Effect,
     nav::{Route, RouteStage, Section, use_nav},
     prelude::*,
     shell::use_shell,
     store::{use_activity, use_games, use_keyboard_inset},
     typography::TypeStyle,
+    window::{Frame, Titlebar},
 };
 
 /// The navigation target a route belongs under. Pages without a tab of their own (a game, a form)
@@ -100,6 +102,21 @@ impl Component for DesktopFrame {
             LayoutClass::Compact => rect().horizontal().content(Content::Flex).expanded().child(bar(NavMode::Rail)).child(stage),
             LayoutClass::Phone => rect().vertical().content(Content::Flex).expanded().child(stage).child(bar(NavMode::Bottom)),
         };
-        rect().expanded().background(t.bg_base).child(body).child(GameDialogsLayer { dialogs })
+        // With no native border the window's title bar is ours. It is part of the desktop interface only:
+        // Deck mode fills the screen and has no use for window buttons.
+        let titlebar = (shell.host_window.frame == Frame::Custom).then(|| {
+            let on_effect = shell.on_effect.clone();
+            let page = nav.current().label();
+            Titlebar::new(EventHandler::new(move |command| on_effect.call(Effect::Window(command))), shell.host_window.attached, page)
+                .into_element()
+        });
+        rect()
+            .vertical()
+            .content(Content::Flex)
+            .expanded()
+            .background(t.bg_base)
+            .maybe_child(titlebar)
+            .child(rect().width(Size::fill()).height(Size::flex(1.)).child(body))
+            .child(GameDialogsLayer { dialogs })
     }
 }

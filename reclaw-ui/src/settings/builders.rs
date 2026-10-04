@@ -1,6 +1,6 @@
 //! The two schemas Reclaw ships: per-app Properties and global Settings. Both interfaces show these,
 //! so a row added here appears in both.
-use reclaw_games::settings::{Group as LaunchGroup, SettingKey, SettingSpec};
+use reclaw_games::settings::{DisplayEnvironment, DisplayServer, Group as LaunchGroup, Monitor, SettingKey, SettingSpec};
 
 use super::schema::*;
 use crate::model::GameEntry;
@@ -11,6 +11,8 @@ pub const INTENSITY_OPTIONS: &[&str] = &["Off", "Subtle", "Standard", "Cinematic
 pub const STYLE_OPTIONS: &[&str] = &["Slide", "Fade", "Rise", "Zoom"];
 pub const SCALE_OPTIONS: &[&str] = &["100%", "125%", "150%"];
 pub const SAFE_ZONE_OPTIONS: &[&str] = &["Off", "Small", "Large"];
+/// "Monitor 1" is the leftmost; see `window::monitors`. Four is as many as a Deck-style UI is ever put on.
+pub const DECK_DISPLAY_OPTIONS: &[&str] = &["Same as window", "Monitor 1", "Monitor 2", "Monitor 3", "Monitor 4"];
 pub const CONFIRM_OPTIONS: &[&str] = &["Bottom button (A, cross)", "Right button (B, circle)"];
 pub const CHANNEL_OPTIONS: &[&str] = &["Stable", "Pre-release"];
 
@@ -25,6 +27,9 @@ pub const KEY_DESKTOP_PAGE_STYLES: &str = "motion_desktop_pages";
 pub const KEY_CONSOLE_INTENSITY: &str = "motion_console_intensity";
 pub const KEY_CONSOLE_STYLE: &str = "motion_console_style";
 pub const KEY_CONSOLE_PAGE_STYLES: &str = "motion_console_pages";
+pub const KEY_UI_SCALE: &str = "ui_scale";
+pub const KEY_DECK_FULLSCREEN: &str = "deck_fullscreen";
+pub const KEY_DECK_DISPLAY: &str = "deck_display";
 
 fn toggle(key: &'static str, label: &'static str, default: bool) -> Row {
     Row::new(key, label, RowKind::Toggle { default })
@@ -128,9 +133,10 @@ fn app_sections(game: &GameEntry) -> Schema {
 }
 
 /// Reclaw's own settings (Main menu, Settings). `launch` is every launch setting the display can
-/// honor (`all_specs`): the defaults for games, applied to the ones that support each.
-pub fn global_settings(launch: &[SettingSpec]) -> Schema {
-    let mut schema = global_sections();
+/// honor (`all_specs`): the defaults for games, applied to the ones that support each. `displays` is
+/// what the windowing system reported, for the Screen section.
+pub fn global_settings(launch: &[SettingSpec], displays: &DisplayEnvironment) -> Schema {
+    let mut schema = global_sections(displays);
     if let Some(section) = launch_section("games", "Game defaults", launch) {
         // After Controller, before Library.
         let at = schema.sections.iter().position(|s| s.id == "library").unwrap_or(schema.sections.len());
@@ -139,7 +145,7 @@ pub fn global_settings(launch: &[SettingSpec]) -> Schema {
     schema
 }
 
-fn global_sections() -> Schema {
+fn global_sections(displays: &DisplayEnvironment) -> Schema {
     Schema {
         title: "Settings".into(),
         sections: vec![
@@ -150,11 +156,12 @@ fn global_sections() -> Schema {
                     choice(KEY_INTERFACE_MODE, "Interface", MODE_OPTIONS, 0)
                         .described("Auto picks Deck mode under a console session; the others force one."),
                     choice(KEY_THEME, "Theme", THEME_OPTIONS, 0),
-                    choice("ui_scale", "UI scale", SCALE_OPTIONS, 0),
+                    choice(KEY_UI_SCALE, "UI scale", SCALE_OPTIONS, 0),
                     choice("safe_zone", "Screen edge margin", SAFE_ZONE_OPTIONS, 1)
                         .described("Raise it if the edges of your TV are cut off."),
                 ])],
             },
+            screen_section(displays),
             Section {
                 id: "motion",
                 title: "Motion",
@@ -205,6 +212,55 @@ fn global_sections() -> Schema {
                     Row::new("toolkit", "Interface toolkit", RowKind::Info { value: "Freya 0.5".to_string() }),
                 ])],
             },
+        ],
+    }
+}
+
+const MONITOR_LABELS: [(&str, &str); 4] =
+    [("monitor_1", "Monitor 1"), ("monitor_2", "Monitor 2"), ("monitor_3", "Monitor 3"), ("monitor_4", "Monitor 4")];
+
+fn server_label(server: DisplayServer) -> &'static str {
+    match server {
+        DisplayServer::Wayland => "Wayland",
+        DisplayServer::X11 => "X11",
+        DisplayServer::Gamescope => "Gamescope",
+        DisplayServer::Windows => "Windows",
+        DisplayServer::MacOs => "macOS",
+        DisplayServer::Unknown => "Unknown",
+    }
+}
+
+/// "DP-1, 2560x1440, 144 Hz", or without the refresh rate when the system did not say.
+fn monitor_summary(m: &Monitor) -> String {
+    let mut parts = vec![m.name.clone(), m.native.label()];
+    if m.refresh_mhz > 0 {
+        parts.push(format!("{} Hz", (f64::from(m.refresh_mhz) / 1000.).round()));
+    }
+    parts.join(", ")
+}
+
+/// Where Deck mode appears, and what Reclaw found. The detected monitors are read-only rows, one per
+/// monitor up to four, in the same left-to-right order the Deck mode monitor row counts in.
+fn screen_section(displays: &DisplayEnvironment) -> Section {
+    let mut found = vec![Row::new("display_server", "Display server", RowKind::Info { value: server_label(displays.server).to_string() })];
+    found.extend(
+        displays
+            .monitors
+            .iter()
+            .zip(MONITOR_LABELS)
+            .map(|(m, (key, label))| Row::new(key, label, RowKind::Info { value: monitor_summary(m) })),
+    );
+    Section {
+        id: "screen",
+        title: "Screen",
+        groups: vec![
+            Group::new(vec![
+                toggle(KEY_DECK_FULLSCREEN, "Fill the screen in Deck mode", true)
+                    .described("Deck mode covers the whole monitor, like Big Picture."),
+                choice(KEY_DECK_DISPLAY, "Deck mode monitor", DECK_DISPLAY_OPTIONS, 0)
+                    .described("A number counts from the left. Same as window stays where you are."),
+            ]),
+            Group::new(found).headed("Detected"),
         ],
     }
 }

@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn rows_are_stacked_without_overlap() {
-        let schema = global_settings(&[]);
+        let schema = global_settings(&[], &reclaw_games::settings::DisplayEnvironment::unknown());
         for section in &schema.sections {
             let (slots, total) = section_slots(section, Density::Controller);
             assert_eq!(slots.len(), section.rows().count());
@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn text_rows_are_taller() {
-        let schema = global_settings(&[]);
+        let schema = global_settings(&[], &reclaw_games::settings::DisplayEnvironment::unknown());
         let library = schema.sections.iter().find(|s| s.id == "library").unwrap();
         let (slots, _) = section_slots(library, Density::Controller);
         let text = library.rows().position(|r| matches!(r.kind, RowKind::Text { .. })).unwrap();
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn group_headings_push_their_rows_down() {
-        let schema = global_settings(&[]);
+        let schema = global_settings(&[], &reclaw_games::settings::DisplayEnvironment::unknown());
         let library = schema.sections.iter().find(|s| s.id == "library").unwrap();
         let (slots, _) = section_slots(library, Density::Controller);
         // Second group has a heading: its row starts after the first row, the gap and the heading.

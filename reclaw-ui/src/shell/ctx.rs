@@ -15,6 +15,7 @@ pub struct ShellCtx {
     /// Commands for the host. The shell has already handled the ones that are its own.
     pub on_effect: EventHandler<Effect>,
     pub dev: DevOverrides,
+    pub host_window: crate::window::WindowHost,
     /// Actions applied once when Deck mode opens (gallery and snapshot scenarios).
     pub script: Vec<Action>,
     pub model: State<ShellModel>,
