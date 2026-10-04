@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Reclaw
+GenericName=Recompiled game launcher
+Comment=Install and launch recompiled games
+Exec=reclaw-deck
+Icon=dev.reclaw.Reclaw
+Terminal=false
+Categories=Game;
+StartupWMClass=dev.reclaw.Reclaw
+StartupNotify=true

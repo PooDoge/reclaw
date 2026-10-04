@@ -1,0 +1,98 @@
+# Building and running Reclaw
+
+## What there is to run today
+
+There is no installer-and-launcher binary yet: the install and launch backends are not written. What runs is the
+whole UI over sample data, in two example programs:
+
+| Program | What it is |
+|---|---|
+| `gallery` | Both interfaces over sample data, with no gamepad and no processes. For looking at layouts. |
+| `deck` | The same shell wired to a real gamepad reader and the process supervisor. "Games" are a shell loop that stands in for a recompiled game, so Play, Resume, Stop and Force quit are real processes. |
+
+```sh
+cargo run -p reclaw-ui --example gallery
+cargo run -p reclaw-ui --example deck --features gamepad
+```
+
+**F10** switches between the desktop and Deck mode, **F9** shows a simulated on-screen keyboard. Settings, favorites and
+the window's size and place are saved like the real app's; `RECLAW_HOME=/tmp/reclaw-try` keeps them (and the downloaded
+artwork cache) out of your real profile.
+
+## Environment variables
+
+| Variable | Effect |
+|---|---|
+| `RECLAW_HOME` | Put the config, data and cache folders under one root. |
+| `RECLAW_MODE=deck\|desktop` | Start in an interface (otherwise it is detected: SteamOS, gamescope and Steam variables mean Deck). |
+| `RECLAW_WINDOW_FRAME=native` | Use the window manager's border and title bar instead of Reclaw's own. The fallback if a compositor mishandles transparent, undecorated windows. |
+| `RECLAW_LAYOUT`, `RECLAW_DENSITY`, `RECLAW_THEME`, `RECLAW_MOTION`, `RECLAW_KEYBOARD`, `RECLAW_SIM_KEYBOARD` | Push any build into any form factor, theme or motion setting without a device. See `reclaw-ui/src/shell/overrides.rs`. |
+| `SSL_CERT_FILE` | A PEM bundle of extra certificate authorities to trust when downloading artwork and READMEs (a network that re-signs HTTPS needs it). |
+| `FREYA_RENDERER=software\|opengl\|vulkan` | Force a graphics backend (the toolkit's own variable). `software` is the first thing to try if the window is black. |
+| `WINIT_UNIX_BACKEND=x11` | Run through XWayland instead of native Wayland (the windowing library's variable). |
+
+## Bazzite (Fedora Atomic, GNOME on Wayland)
+
+Bazzite's root is immutable, so Reclaw is built inside a **distrobox** container of the same Fedora release as the host. The binary
+it produces runs on the host.
+
+```sh
+scripts/bazzite-build.sh              # builds target-bazzite/release/examples/deck
+scripts/bazzite-build.sh --install    # also installs ~/.local/bin/reclaw-deck and the launcher entry
+```
+
+The script creates the container `reclaw-build` the first time, installs the development packages (`systemd-devel` for the
+gamepad reader's libudev, the Mesa EGL/GL/GLES headers, Wayland and xkbcommon, fontconfig, freetype), installs Rust with rustup
+if the container has none, and builds in release mode. Allow 10 GB of disk for the build: the graphics library (Skia) is large.
+
+Running, to try in this order if something is wrong:
+
+1. `reclaw-deck` (or `cargo run`). The window is Reclaw's own: a title bar with minimize, maximize and close, resize bands
+   along the edges, rounded corners.
+2. A black or missing window: `FREYA_RENDERER=software reclaw-deck`.
+3. GNOME shows no usable window, or corners are black: `RECLAW_WINDOW_FRAME=native reclaw-deck`.
+4. Still nothing, or input is odd: `WINIT_UNIX_BACKEND=x11 reclaw-deck`.
+
+GNOME's compositor leaves window decorations to the application (client-side decorations), so a window that asks for none has none, which is why Reclaw draws its own.
+The window's app id is `dev.reclaw.Reclaw`; GNOME groups windows and picks the icon by the launcher file of the same name
+(`packaging/dev.reclaw.Reclaw.desktop`).
+
+**Controllers.** The gamepad reader (the `gilrs` library) uses evdev and udev, so the logged-in user needs access to the controller's device, which desktop Linux normally grants. If Steam is running it can claim a pad for
+Steam Input; start Reclaw with Steam closed, or add Reclaw to Steam as a non-Steam game, where Steam's Guide button is left to
+Steam (`SteamGameId` is detected and the Guide button is unbound).
+
+**Bazzite's Steam Deck images.** Gaming mode runs gamescope, a single fullscreen compositor: Reclaw detects it (`GAMESCOPE_WAYLAND_DISPLAY`,
+`XDG_CURRENT_DESKTOP=gamescope`), starts in Deck mode, and offers no monitor or window-mode choices for games, because gamescope owns them.
+
+### Not verified on Bazzite
+
+Nobody has run Reclaw on Bazzite yet. What is known and what is not:
+
+| | |
+|---|---|
+| Verified (Ubuntu 24.04, X11 under Xvfb with openbox, software rendering) | The build, all tests, and `scripts/x11-smoke.sh`: the custom title bar's buttons, dragging, the resize bands, fullscreen in Deck mode and back, closing, and the window's size and place restored on the next start. |
+| Not verified | The Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; native Wayland under GNOME (window creation, dragging and resizing through the compositor, transparency and rounded corners, fractional scaling); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
+
+If one of those fails, the terminal output and whichever variable above got it working are the most useful report.
+
+## Debian and Ubuntu (what the tests ran on)
+
+```sh
+sudo apt install build-essential pkg-config libudev-dev libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev \
+  libwayland-dev libxkbcommon-dev libxkbcommon-x11-0 libfontconfig1-dev
+cargo test --workspace --features reclaw-ui/gamepad
+```
+
+`libxkbcommon-x11-0` is needed at run time on X11. To exercise the real window without a display, `scripts/x11-smoke.sh` runs the gallery
+under Xvfb with a window manager (it needs `xvfb openbox xdotool x11-utils`; see its header).
+
+## Windows and macOS
+
+Not built or run. The code avoids Unix-only paths outside the process supervisor (which is `cfg(unix)`), and the window module has
+Windows branches, but none of it has been compiled for those targets.
+
+## Disk space
+
+Every rebuild leaves the old test executables behind, about a gigabyte each. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media
+-p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime` removes Reclaw's own artifacts and keeps the compiled libraries,
+so the next build is fast.

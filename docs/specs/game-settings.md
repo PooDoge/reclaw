@@ -60,6 +60,11 @@ wins. A typed config value follows `ValueType` (`Auto`: `true`/`false` become bo
 | Monitor | Offered only with two or more monitors, never under gamescope; one choice per monitor, labeled `name (WxH)` |
 | Other keys | Offered everywhere |
 
+Where the environment comes from: the window layer reads winit's monitors once and `window::monitors::environment` builds the
+`DisplayEnvironment` (`docs/specs/window.md`); the UI never probes the system itself. A monitor's id is its connector name made unique,
+or `monitor-N` when the system gave none. What a game's saved Monitor choice shows after that monitor is unplugged is not covered by a
+test, and how many monitors Wayland compositors report to winit on a real Bazzite session is unverified.
+
 ## Config files
 
 `apply_edits(format, text, edits)` is pure: it returns the new text and leaves everything else as it was.
@@ -75,6 +80,15 @@ wins. A typed config value follows `ValueType` (`Auto`: `true`/`false` become bo
 Safety: `Bases::resolve` refuses an absolute path or any `..`. `write_atomic` writes a temporary file next to the target and renames
 it, and keeps the first original as `<name>.reclaw-orig`. `LaunchPlan::apply_config` stops at the first error and leaves that file
 untouched.
+
+## Known edges
+
+* **`.reclaw-orig` is only made when the file existed.** A file Reclaw creates has no original to keep (tested), so there is nothing to
+  restore it to except deleting it.
+* **A symlinked config file is replaced by a regular file.** `write_atomic` renames a temporary file onto the path, which replaces the
+  link and leaves its target as it was. Read from the code; no test covers it. A game whose config is a link into a shared folder will
+  stop following it after the first apply.
+* **Windows is unverified.** Replacing an open file with a rename behaves differently there.
 
 ## Not built
 
