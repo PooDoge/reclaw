@@ -86,6 +86,7 @@ impl DeckState {
             let outcome = menu.pick(level, index);
             self.after_menu(purpose, outcome, view, &mut fx);
         }
+        self.drain_nav(&mut fx);
         fx
     }
 

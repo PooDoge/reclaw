@@ -7,12 +7,14 @@ use freya::prelude::*;
 use freya_core::element::AppComponent;
 use freya_testing::prelude::*;
 use futures_util::StreamExt;
-use reclaw_input::{ActionMap, InputOwner};
+use reclaw_input::{ActionMap, InputOwner, UiMode};
 use reclaw_runtime::{LaunchSpec, RunState, SessionEvent, Supervisor};
 use reclaw_ui::{
-    deck::{ActionFeed, DeckApp},
+    deck::ActionFeed,
     effect::Effect,
+    nav::Route,
     prelude::*,
+    shell::{DevOverrides, MotionOverride, Shell},
     store::{AppAction, AppState, Store},
 };
 
@@ -45,7 +47,6 @@ fn play_guide_resume_stop_with_a_real_process() {
         move || {
             use_init_reclaw(ThemeKind::Midnight);
             let store = Store::use_scoped(AppState::sample);
-            store.install();
             let (_tx, feed) = ActionFeed::new();
 
             use_hook({
@@ -62,9 +63,12 @@ fn play_guide_resume_stop_with_a_real_process() {
             });
 
             let (log, supervisor) = (log.clone(), supervisor.clone());
-            DeckApp {
+            Shell {
                 store,
                 feed,
+                detected: UiMode::Deck,
+                dev: DevOverrides { motion: Some(MotionOverride::Reduced), theme: Some(ThemeKind::Midnight), ..DevOverrides::default() },
+                start: Route::Library {},
                 on_effect: EventHandler::new(move |effect: Effect| {
                     log.borrow_mut().push(effect.clone());
                     match effect {

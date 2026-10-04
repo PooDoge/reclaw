@@ -19,6 +19,7 @@ mod install;
 mod menus;
 mod nodes;
 mod reducer;
+mod route;
 mod scope;
 mod screens;
 mod settings_nav;
@@ -60,6 +61,8 @@ pub struct DeckState {
     drilled: bool,
     values: SettingsValues,
     install: InstallDraft,
+    /// Requests for the router made by the last action, handed out with its effects.
+    nav_requests: Vec<Effect>,
 }
 
 impl DeckState {
@@ -82,6 +85,7 @@ impl DeckState {
             drilled: false,
             values: SettingsValues::default(),
             install: InstallDraft::default(),
+            nav_requests: Vec::new(),
         };
         s.focus = s.default_focus(s.scope(), view);
         s.owner = s.input_owner(view);

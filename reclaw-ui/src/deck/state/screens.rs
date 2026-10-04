@@ -8,6 +8,7 @@ impl DeckState {
         self.stack.push(self.screen);
         self.screen = screen;
         self.enter_scope(view);
+        self.request_route();
     }
 
     /// Back to the previous page; Home when there is none.
@@ -15,6 +16,7 @@ impl DeckState {
         self.leave_scope();
         self.screen = self.stack.pop().unwrap_or(Screen::Home);
         self.enter_scope(view);
+        self.request_back();
     }
 
     /// Browse to a section's home page, forgetting the trail.
@@ -28,6 +30,7 @@ impl DeckState {
         self.screen = Screen::Home;
         self.section = section;
         self.enter_scope(view);
+        self.request_route();
     }
 
     /// Close any overlay without the return-to-the-game bookkeeping, so a page can be opened next.

@@ -4,14 +4,25 @@ use reclaw_input::{ActionMap, ControllerInfo, ControllerKind, FocusId};
 use super::text_boxes::TextBoxes;
 use crate::{
     activity::Activity,
-    deck::{DeckState, LastInput, settings::Schema},
+    deck::{
+        DeckState, LastInput,
+        settings::{Schema, SettingsTarget},
+    },
     model::GameEntry,
 };
 
-/// Everything one render needs, gathered once so the screen and overlay builders are plain
+/// A settings page's content: which page, its schema, and the text on its launch rows.
+#[derive(Clone, PartialEq)]
+pub struct SettingsShown {
+    pub target: SettingsTarget,
+    pub schema: Schema,
+    pub launch_text: std::collections::HashMap<reclaw_games::settings::SettingKey, String>,
+}
+
+/// Everything one render needs, gathered once so the page and overlay builders are plain
 /// functions of a single value.
 #[derive(Clone)]
-pub(super) struct Frame {
+pub struct Frame {
     pub state: DeckState,
     pub games: Vec<GameEntry>,
     pub downloads: Vec<Activity>,
@@ -24,10 +35,8 @@ pub(super) struct Frame {
     pub keyboard_inset: f32,
     pub map: ActionMap,
     pub texts: TextBoxes,
-    /// The settings schema of the open Settings page, if any.
-    pub schema: Option<Schema>,
-    /// The text on each launch row of that schema.
-    pub launch_text: std::collections::HashMap<reclaw_games::settings::SettingKey, String>,
+    /// The schema of the Settings page being shown, or of the one shown last.
+    pub settings: Option<SettingsShown>,
     /// The focused field's span in the page body, to keep above the keyboard.
     pub reveal: Option<(f32, f32)>,
     pub click: EventHandler<FocusId>,

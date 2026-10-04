@@ -68,8 +68,14 @@ pub(super) fn tile(shelf: usize, game: u32) -> FocusId {
     ids::tile(shelf, game)
 }
 
-/// Apply a sequence of actions, returning every effect in order.
+/// Apply a sequence of actions, returning every effect for the host in order. Requests to the router
+/// are left out: most tests are about what the host is asked, and `press_with_nav` keeps them.
 pub(super) fn press(s: &mut DeckState, f: &Fixture, actions: &[Action]) -> Vec<Effect> {
+    press_with_nav(s, f, actions).into_iter().filter(|e| !matches!(e, Effect::Navigate(_) | Effect::Back)).collect()
+}
+
+/// Like [`press`], with the requests to the router included.
+pub(super) fn press_with_nav(s: &mut DeckState, f: &Fixture, actions: &[Action]) -> Vec<Effect> {
     actions.iter().flat_map(|a| s.apply(*a, &f.view())).collect()
 }
 

@@ -98,6 +98,7 @@ impl DeckState {
                 self.stack.clear();
                 self.screen = Screen::Home;
                 self.enter_scope(view);
+                self.request_route();
                 fx.push(Effect::Uninstall(app));
             }
             _ => {}

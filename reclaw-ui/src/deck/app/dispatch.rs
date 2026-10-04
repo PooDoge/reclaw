@@ -9,6 +9,7 @@ use crate::{
         DeckState, DeckView, Effect, InstallDraft, LastInput, Screen,
         settings::{SettingsTarget, TextField},
     },
+    nav::Nav,
     settings::LaunchContext,
     store::Store,
 };
@@ -18,6 +19,7 @@ use crate::{
 #[derive(Clone)]
 pub(super) struct Dispatcher {
     pub store: Store,
+    pub nav: Nav,
     pub deck: State<DeckState>,
     pub texts: TextBoxes,
     pub root_focus: AccessibilityId,
@@ -70,6 +72,11 @@ impl Dispatcher {
                     let value = self.texts.finish(field);
                     self.on_effect.call(Effect::TextCommitted { app, field, value });
                     self.on_effect.call(Effect::EndTextEntry(field));
+                }
+                // The router is this layer's business: the host never hears of page changes.
+                Effect::Navigate(route) => self.nav.open(route),
+                Effect::Back => {
+                    self.nav.back();
                 }
                 other => self.on_effect.call(other),
             }

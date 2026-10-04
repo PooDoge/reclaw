@@ -9,6 +9,7 @@ impl DeckState {
         let mut fx = Vec::new();
         self.apply_inner(action, view, &mut fx);
         self.sync_owner(view, &mut fx);
+        self.drain_nav(&mut fx);
         fx
     }
 
@@ -26,6 +27,7 @@ impl DeckState {
             self.activate(id, view, &mut fx);
         }
         self.sync_owner(view, &mut fx);
+        self.drain_nav(&mut fx);
         fx
     }
 
@@ -39,6 +41,7 @@ impl DeckState {
             _ => self.close_overlay(view, &mut fx),
         }
         self.sync_owner(view, &mut fx);
+        self.drain_nav(&mut fx);
         fx
     }
 
@@ -55,6 +58,7 @@ impl DeckState {
             self.stack.clear();
             self.screen = Screen::Home;
             self.drilled = false;
+            self.request_route();
         }
         if self.overlay != Overlay::None && self.overlay_target_missing(view) {
             self.menu = None;
@@ -64,6 +68,7 @@ impl DeckState {
             self.focus = self.remembered(self.scope(), view);
         }
         self.sync_owner(view, &mut fx);
+        self.drain_nav(&mut fx);
         fx
     }
 
@@ -119,6 +124,7 @@ impl DeckState {
                 self.leave_scope();
                 self.section = self.section.step(action == Action::NextSection);
                 self.enter_scope(view);
+                self.request_route();
             }
             Action::Secondary | Action::Options if plain => self.open_options(view),
             Action::Tertiary => fx.push(Effect::Search),

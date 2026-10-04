@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use crate::common::*;
 use freya::prelude::*;
-use freya_testing::prelude::*;
 use reclaw_ui::{
     nav::Route,
     shell::{DevOverrides, MotionOverride},
@@ -14,44 +13,9 @@ fn motion(m: MotionOverride) -> DevOverrides {
     DevOverrides { motion: Some(m), ..DevOverrides::default() }
 }
 
-/// Markers that identify a page without depending on its layout: the Library has the Favorites
-/// chip; a Game page lists its platform; Settings is still a stand-in.
-impl Session {
-    fn on_library(&self) -> bool {
-        self.has_label("Favorites")
-    }
-
-    fn on_game(&self, platform: &str) -> bool {
-        self.has_label("Back") && self.has_label(platform)
-    }
-
-    fn open(&mut self, route: Route) {
-        self.open_route(route);
-        self.pump(30);
-        self.runner.sync_and_update();
-    }
-
-    fn mouse_button(&mut self, button: MouseButton) {
-        self.runner.send_event(PlatformEvent::Mouse { name: MouseEventName::MouseUp, cursor: (100., 100.).into(), button: Some(button) });
-        self.pump(30);
-        self.runner.sync_and_update();
-    }
-
-    fn alt(&mut self, key: NamedKey) {
-        self.runner.send_event(PlatformEvent::Keyboard {
-            name: KeyboardEventName::KeyDown,
-            key: Key::Named(key),
-            code: Code::Unidentified,
-            modifiers: Modifiers::ALT,
-        });
-        self.pump(30);
-        self.runner.sync_and_update();
-    }
-}
-
 #[test]
 fn the_host_can_open_a_page_and_the_old_one_is_gone_once_it_settles() {
-    let mut s = Mount::desktop().start();
+    let mut s = Mount::desktop().animated().start();
     assert!(s.on_library());
     s.open(Route::Game { id: 4 });
     s.pump(600);
@@ -62,7 +26,7 @@ fn the_host_can_open_a_page_and_the_old_one_is_gone_once_it_settles() {
 
 #[test]
 fn during_a_transition_both_pages_are_there() {
-    let mut s = Mount::desktop().start();
+    let mut s = Mount::desktop().animated().start();
     s.open(Route::Game { id: 4 });
     assert!(s.on_game("PlayStation 2") && s.on_library(), "{:?}", s.labels());
 }
@@ -112,7 +76,7 @@ fn a_page_opened_by_a_link_goes_up_when_there_is_no_history() {
 
 #[test]
 fn a_transition_ends_on_its_own() {
-    let mut s = Mount::desktop().start();
+    let mut s = Mount::desktop().animated().start();
     s.open(Route::Settings {});
     s.runner.poll(Duration::from_millis(16), Duration::from_millis(900));
     s.runner.sync_and_update();

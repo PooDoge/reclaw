@@ -7,13 +7,12 @@ mod app;
 mod frame;
 pub mod layout;
 mod pages;
-pub mod routes;
 pub use crate::settings;
 pub mod state;
 mod widgets;
 
 pub use crate::launch::{LaunchVerb, failure_message, launch_verb, shows_stop_pair};
-pub use app::{ActionFeed, DeckApp, TextBoxes};
+pub use app::{ActionFeed, DeckApp, TextBoxes, routes};
 pub use frame::DeckFrame;
 pub use pages::{DownloadsPage, EmptyPage, GamePage, HomePage, InstallBody, SettingsBody, install_footer};
 pub use settings::{SettingChange, SettingValue, SettingsTarget, SettingsValues, TextField};

@@ -22,7 +22,7 @@ use reclaw_ui::{
     nav::Route,
     prelude::*,
     sample::sample_games,
-    shell::{DevOverrides, Shell},
+    shell::{DevOverrides, MotionOverride, Shell},
     store::{AppAction, AppState, Store},
 };
 
@@ -64,6 +64,9 @@ pub struct Mount {
     pub dev: DevOverrides,
     pub keyboard: f32,
     pub theme: ThemeKind,
+    /// Play page transitions. Off by default: most tests assert on the page that has arrived, and
+    /// during a transition the old page is still there.
+    pub animated: bool,
 }
 
 impl Mount {
@@ -77,6 +80,7 @@ impl Mount {
             dev: DevOverrides::default(),
             keyboard: 0.,
             theme: ThemeKind::Midnight,
+            animated: false,
         }
     }
 
@@ -114,6 +118,12 @@ impl Mount {
         self
     }
 
+    /// Play the page transitions instead of cutting.
+    pub fn animated(mut self) -> Self {
+        self.animated = true;
+        self
+    }
+
     pub fn theme(mut self, theme: ThemeKind) -> Self {
         self.theme = theme;
         self
@@ -127,9 +137,10 @@ impl Mount {
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
-        let Mount { size, games, pad, script, mode, dev, keyboard, theme } = self;
+        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated } = self;
         // The theme is pinned, so the settings do not switch it under a snapshot.
-        let dev = DevOverrides { theme: dev.theme.or(Some(theme)), ..dev };
+        let motion = dev.motion.or((!animated).then_some(MotionOverride::Reduced));
+        let dev = DevOverrides { theme: dev.theme.or(Some(theme)), motion, ..dev };
 
         let app = {
             let (effects, stash) = (effects.clone(), stash.clone());
@@ -157,6 +168,45 @@ impl Mount {
         let mut session = Session { runner, effects, store: stash, feed: tx, size };
         session.settle();
         session
+    }
+}
+
+/// Moving around by routes and side buttons, for the tests of navigation.
+impl Session {
+    /// The Library, by its Favorites chip (desktop).
+    pub fn on_library(&self) -> bool {
+        self.has_label("Favorites")
+    }
+
+    /// A game page on the desktop, by its Back button and a platform line.
+    pub fn on_game(&self, platform: &str) -> bool {
+        self.has_label("Back") && self.has_label(platform)
+    }
+
+    /// Ask the app to show a page, as the host does for a deep link, and let it arrive.
+    pub fn open(&mut self, route: Route) {
+        self.open_route(route);
+        self.pump(30);
+        self.runner.sync_and_update();
+    }
+
+    /// Press and release a mouse button away from anything (the back and forward side buttons).
+    pub fn mouse_button(&mut self, button: MouseButton) {
+        self.runner.send_event(PlatformEvent::Mouse { name: MouseEventName::MouseUp, cursor: (100., 100.).into(), button: Some(button) });
+        self.pump(30);
+        self.runner.sync_and_update();
+    }
+
+    /// Press a key with Alt held.
+    pub fn alt(&mut self, key: NamedKey) {
+        self.runner.send_event(PlatformEvent::Keyboard {
+            name: KeyboardEventName::KeyDown,
+            key: Key::Named(key),
+            code: Code::Unidentified,
+            modifiers: Modifiers::ALT,
+        });
+        self.pump(30);
+        self.runner.sync_and_update();
     }
 }
 

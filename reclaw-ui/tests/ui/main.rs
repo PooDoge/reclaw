@@ -10,6 +10,7 @@
 mod common;
 mod deck_input;
 mod deck_lifecycle;
+mod deck_routes;
 mod deck_snapshots;
 mod deck_surfaces;
 mod desktop_pages;

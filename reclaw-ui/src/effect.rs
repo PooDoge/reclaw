@@ -89,6 +89,11 @@ pub enum Effect {
     /// Open a link (a project page, a release, a video) in the system browser or player.
     OpenUrl(String),
     SwitchToDesktop,
+    /// Show a page. Deck's reducer asks for this when it moves; the Deck frame hands it to the router
+    /// and the host never sees it.
+    Navigate(crate::nav::Route),
+    /// Go back one page, as the router sees it. Same path as `Navigate`.
+    Back,
     /// A launch setting changed: for one game (`app`) or the defaults (`None`). `value: None` clears
     /// the choice so the next level decides. The `Shell` has already applied it to the store, which
     /// saves it.
