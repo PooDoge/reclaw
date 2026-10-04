@@ -34,6 +34,10 @@ Lucide, through `freya_icons::lucide`, 16px in rows, 22px in rail and tabs, 18px
 
 There is no Reclaw mark yet. Set the name "Reclaw" in `Hanken Grotesk` 700; do not invent a symbol. Game art always comes from the catalog; when it is missing, show the striped placeholder with the art role in mono (CAPSULE 3:4, HERO 16:5), never a generated image.
 
+## Deck mode
+
+For handhelds and TVs the same system has a controller-first shell: big-art tiles on shelves, a focus ring with a glow, slide-in menu and Quick Access panels, glyph prompts that follow the controller in use, and a Play button that becomes Resume and Stop while an app runs. It is a mode on the same components, not a theme. Deck is dark only and uses the `deck-*` tokens (safe zone, tile and row sizes, type scale, `deck-bg`, `deck-scrim`, `focus-glow`). Over art, text may only be `ink` or `ink-muted`, set on `deck-scrim`. The design, its decisions and what is not built are in the Deck mode section; the machine-readable spec is `reclaw.freya.json`.
+
 ## Using this system with Freya
 
 Start from `freya/theme.rs.txt` (save as theme.rs) (generated from `tokens.json`) and the Freya handoff section. The machine-readable contract is `reclaw.freya.json`; where it disagrees with this text, the JSON wins.

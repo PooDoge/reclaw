@@ -1,0 +1,1 @@
+Reference compositions of Deck mode at 1280x800 (a Steam Deck's resolution). On a TV the same layout scales with the user's UI scale (1.0, 1.25, 1.5) inside the 48x32 safe zone. Real renders from the Rust crate are in `reclaw-ui/target/snapshots/deck-*.png` after `cargo test`.

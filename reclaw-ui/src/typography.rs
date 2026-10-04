@@ -18,6 +18,12 @@ pub enum TypeStyle {
     /// Uppercase section labels and top-nav items; the text is uppercased here.
     Eyebrow,
     Mono,
+    DeckTitle,
+    DeckHeading,
+    DeckBody,
+    DeckLabel,
+    DeckMeta,
+    DeckHint,
 }
 
 impl TypeStyle {
@@ -32,6 +38,12 @@ impl TypeStyle {
             Self::Meta => (12., FontWeight::NORMAL, FONT_SANS),
             Self::Eyebrow => (11., FontWeight::BOLD, FONT_SANS),
             Self::Mono => (12., FontWeight::NORMAL, FONT_MONO),
+            Self::DeckTitle => (40., FontWeight::BOLD, FONT_SANS),
+            Self::DeckHeading => (24., FontWeight::SEMI_BOLD, FONT_SANS),
+            Self::DeckBody => (20., FontWeight::NORMAL, FONT_SANS),
+            Self::DeckLabel => (18., FontWeight::SEMI_BOLD, FONT_SANS),
+            Self::DeckMeta => (16., FontWeight::NORMAL, FONT_SANS),
+            Self::DeckHint => (16., FontWeight::SEMI_BOLD, FONT_SANS),
         }
     }
 

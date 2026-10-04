@@ -36,6 +36,44 @@ Hanken Grotesk and JetBrains Mono are open-licence families but are not bundled.
 - Catalog art: capsule 3:4 and hero 16:5 are the two crop ratios the design assumes.
 - Gamepad focus order is specified as a ring only; the traversal order per screen is not designed yet.
 
+## Deck mode handover
+
+The full machine-readable spec is `reclaw.freya.json` (`decisions`, `modes`, `input`, `focus`, `lifecycle`, deck `components`, `verification`, `notBuilt`). Rust lives in three workspace crates:
+
+| crate | holds | tested by |
+| --- | --- | --- |
+| `reclaw-input` | `ActionMap`, `InputMapper` (repeat, stick hysteresis, input ownership), `ControllerKind` and glyph faces, `next_focus`, `detect_environment`, optional `backend` (gilrs) | 26 unit tests |
+| `reclaw-runtime` | `Supervisor` (own process group, graceful stop, force on second press), `RunState`, `Outcome`, `InputProfile`, `SdlMapping` | 14 tests with real processes, including killing children and ignoring SIGTERM |
+| `reclaw-ui::deck` | `DeckState` reducer (pure), `launch_verb`, deck components, `DeckApp` | 25 unit, 5 snapshot, 1 end-to-end lifecycle test |
+
+### Deck component map
+
+| contract | Rust | built from |
+| --- | --- | --- |
+| DeckTile | `deck::DeckTile` | custom `rect`, `FocusFrame` |
+| Shelf | `deck::Shelf` | clipped `rect` + `offset_x` |
+| ButtonGlyph, HintBar, SectionTabs | `deck::{ButtonGlyph, HintBar, SectionTabs}` | custom `rect`, Lucide icons for PlayStation shapes |
+| SlidePanel, MainMenu, QuickAccess | `deck::{SlidePanel, MainMenu, QuickAccess}` | absolute `rect` on `Layer::Overlay`, `use_animation_transition` |
+| LaunchButton, NowPlayingBanner | `deck::{LaunchButton, NowPlayingBanner}` | `ActionButton` in `FocusFrame` |
+| Backdrop | `deck::Backdrop` | `ImageViewer` + `blur`, `LinearGradient` wash |
+| DeckApp | `deck::DeckApp` | root `rect`, `on_sized`, `on_global_key_down`, a task draining `ActionFeed` |
+
+### Wiring recipe
+
+1. Host root: `use_init_reclaw`, own `State<Vec<GameEntry>>`, `State<Vec<Download>>`, `State<Option<ControllerInfo>>`.
+2. `backend::spawn(map)` for the pad (feature `gamepad`); forward `InputMessage::Action` into `ActionFeed::sender()` and connection messages into the controller state.
+3. `Supervisor::new(grace)`; on `SessionEvent` write `supervisor.state(app)` into the game's `run`.
+4. Pass an `on_effect` handler: `Launch` and `Stop` go to the supervisor, `InputOwner` goes to the pad handle, the rest (`Resume`, `BringLauncherToFront`, `Install`...) are window and installer work for the host. `examples/deck.rs` is the reference.
+5. Under Steam, `map.unbind(Button::Guide)` (see `detect_environment`).
+
+### Deck API notes (0.5.0-rc.8)
+
+- Animation lives in `freya::animation::*`, not the prelude.
+- Absolute children are positioned from their **parent's origin**; give an overlay root `Position::new_absolute().top(0).left(0)` and its own size, or it lands after the previous sibling.
+- Overlays need `.layer(Layer::Overlay)` or page content paints over them.
+- `TestingRunner::press_key` and `poll` make keyboard-driven and animated components testable headlessly; `poll` is real time.
+- `EventHandler` props never compare equal across renders, so components that receive one re-render with their parent.
+
 ## 0.4 to 0.5 differences found while building
 
 - `Input` layout theme: `inner_margin` is now `padding`.

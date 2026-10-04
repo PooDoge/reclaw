@@ -23,8 +23,10 @@ pub enum ButtonSize {
     Md,
     /// The hero action.
     Lg,
-    /// Touch and controller density, 48px.
+    /// Touch density, 48px.
     Touch,
+    /// Deck mode: 56px, 18px label.
+    Controller,
 }
 
 impl ButtonSize {
@@ -33,13 +35,25 @@ impl ButtonSize {
             Self::Md => 32.,
             Self::Lg => 44.,
             Self::Touch => 48.,
+            Self::Controller => DECK_TARGET_MIN,
         }
     }
 
     fn icon(self) -> f32 {
         match self {
             Self::Md => 16.,
-            _ => 18.,
+            Self::Lg | Self::Touch => 18.,
+            Self::Controller => 22.,
+        }
+    }
+
+    /// The regular-weight button size for a density; `hero` picks the big one at pointer density.
+    pub fn for_density(density: Density, hero: bool) -> Self {
+        match (density, hero) {
+            (Density::Controller, _) => Self::Controller,
+            (Density::Touch, _) => Self::Touch,
+            (Density::Pointer, true) => Self::Lg,
+            (Density::Pointer, false) => Self::Md,
         }
     }
 }
@@ -140,16 +154,17 @@ impl Component for ActionButton {
             ..Default::default()
         };
 
+        let label_style = if self.size == ButtonSize::Controller {
+            TypeStyle::DeckLabel
+        } else {
+            TypeStyle::Label
+        };
         let content = rect()
             .horizontal()
             .cross_align(Alignment::Center)
             .spacing(SPACE_2)
             .maybe_child(self.icon.map(|name| icon(name, self.size.icon(), fg)))
-            .maybe_child(
-                self.label
-                    .clone()
-                    .map(|text| TypeStyle::Label.text(text, fg)),
-            );
+            .maybe_child(self.label.clone().map(|text| label_style.text(text, fg)));
 
         Button::new()
             .filled()

@@ -1,0 +1,15 @@
+[package]
+name = "reclaw-input"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[features]
+default = []
+# Real hardware backend (reads gamepads on a dedicated thread). Off by default so the pure logic
+# builds and tests without libudev.
+gilrs-backend = ["dep:gilrs", "dep:futures-channel"]
+
+[dependencies]
+gilrs = { version = "0.11", optional = true }
+futures-channel = { version = "0.3", optional = true }

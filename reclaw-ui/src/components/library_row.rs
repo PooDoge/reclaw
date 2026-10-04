@@ -61,6 +61,7 @@ impl Component for LibraryRow {
         let text_style = match self.density {
             Density::Pointer => TypeStyle::Body,
             Density::Touch => TypeStyle::BodyTouch,
+            Density::Controller => TypeStyle::DeckBody,
         };
 
         let row = rect()

@@ -1,0 +1,1 @@
+Section strip with the bumper glyphs at each end. Rust: `reclaw_ui::deck::SectionTabs`. Not a focus target: PrevSection and NextSection move it and wrap around. Selected tab is `ink` with a 4px accent underline; others `ink-muted`.

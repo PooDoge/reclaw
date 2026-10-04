@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Reclaw","components":[{"name":"Button"},{"name":"Chip"},{"name":"StatusBadge"},{"name":"Switch"},{"name":"SearchField"},{"name":"GameCapsule"},{"name":"LibraryRow"},{"name":"HeroHeader"},{"name":"DownloadItem"},{"name":"Nav"},{"name":"InstallDialog"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Reclaw","components":[{"name":"Button"},{"name":"Chip"},{"name":"StatusBadge"},{"name":"Switch"},{"name":"SearchField"},{"name":"GameCapsule"},{"name":"LibraryRow"},{"name":"HeroHeader"},{"name":"DownloadItem"},{"name":"Nav"},{"name":"InstallDialog"},{"name":"DeckTile"},{"name":"ButtonGlyph"},{"name":"HintBar"},{"name":"LaunchButton"},{"name":"NowPlayingBanner"},{"name":"SectionTabs"},{"name":"DeckPanel"}]} */
 (function () {
   var R = window.React, h = R.createElement;
   var cx = function () { return Array.prototype.filter.call(arguments, Boolean).join(" "); };
@@ -11,9 +11,9 @@
     library: "M4 4h6v16H4zM14 4h6v7h-6zM14 15h6v5h-6z", catalog: "M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4m0 0l8-4m-8 4v10",
     mods: "M10 4h4v3a2 2 0 104 0V4h2v6h-3a2 2 0 100 4h3v6h-6v-3a2 2 0 10-4 0v3H4v-6h3a2 2 0 100-4H4V4z",
     queue: "M12 4v12m0 0l-4-4m4 4l4-4M5 20h14", settings: "M12 15a3 3 0 100-6 3 3 0 000 6zM4 12h2m12 0h2M12 4v2m0 12v2",
-    folder: "M3 6h6l2 2h10v11H3z", chevron: "M9 6l6 6-6 6", refresh: "M20 11a8 8 0 10-2.3 5.7M20 4v7h-7", file: "M6 3h8l4 4v14H6zM14 3v4h4"
+    folder: "M3 6h6l2 2h10v11H3z", chevron: "M9 6l6 6-6 6", refresh: "M20 11a8 8 0 10-2.3 5.7M20 4v7h-7", file: "M6 3h8l4 4v14H6zM14 3v4h4", stop: "M6 6h12v12H6z", circle: "M12 4a8 8 0 100 16 8 8 0 000-16z"
   };
-  var LUCIDE = { play: "play", download: "download", check: "check", alert: "triangle-alert", x: "x", search: "search", library: "library-big", catalog: "store", mods: "puzzle", queue: "arrow-down-to-line", settings: "settings", folder: "folder-open", chevron: "chevron-right", refresh: "refresh-cw", file: "file" };
+  var LUCIDE = { play: "play", download: "download", check: "check", alert: "triangle-alert", x: "x", search: "search", library: "library-big", catalog: "store", mods: "puzzle", queue: "arrow-down-to-line", settings: "settings", folder: "folder-open", chevron: "chevron-right", refresh: "refresh-cw", file: "file", stop: "square", circle: "circle" };
   function Icon(p) {
     var s = p.size || 16;
     return h("svg", { className: "rc-icon", width: s, height: s, viewBox: "0 0 24 24", fill: p.fill ? "currentColor" : "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, "data-lucide": LUCIDE[p.name] }, h("path", { d: ICONS[p.name] || ICONS.file }));
@@ -111,5 +111,89 @@
       h(Nav, { mode: "bottom", active: "library" }));
   }
 
-  window.Reclaw = { Button: Button, Chip: Chip, StatusBadge: StatusBadge, Switch: Switch, SearchField: SearchField, GameCapsule: GameCapsule, LibraryRow: LibraryRow, HeroHeader: HeroHeader, DownloadItem: DownloadItem, ProgressBar: ProgressBar, Nav: Nav, InstallDialog: InstallDialog, Icon: Icon, Art: Art, LibraryScreen: LibraryScreen };
+  /* ---- Deck mode stand-ins. Rust: reclaw_ui::deck. Glyph faces mirror reclaw_input::ControllerKind::glyph. ---- */
+  var GLYPHS = {
+    xbox: { confirm: "A", back: "B", secondary: "X", prev: "LB", next: "RB", quick: "View", menu: "Guide" },
+    playstation: { confirm: "x", back: "o", secondary: "sq", prev: "L1", next: "R1", quick: "Create", menu: "PS" },
+    nintendo: { confirm: "B", back: "A", secondary: "Y", prev: "L", next: "R", quick: "-", menu: "Home" },
+    steamdeck: { confirm: "A", back: "B", secondary: "X", prev: "L1", next: "R1", quick: "View", menu: "Steam" },
+    keyboard: { confirm: "Enter", back: "Esc", secondary: "", prev: "[", next: "]", quick: "Shift+Tab", menu: "Tab" }
+  };
+  var PS = { x: "x", o: "circle", sq: "stop" };
+  function ButtonGlyph(p) {
+    var face = p.face, key = p.keyboard;
+    var inner = !key && p.kind === "playstation" && PS[face] ? h(Icon, { name: PS[face] === "stop" ? "stop" : PS[face], size: 16 }) : face;
+    return h("span", { className: cx("dk dk-glyph", key && "key") }, inner);
+  }
+  function HintBar(p) {
+    var set = GLYPHS[p.kind || "xbox"], kb = p.kind === "keyboard";
+    return h("div", { className: "dk dk-hints" }, (p.hints || [["confirm", "Select"], ["prev", "Previous"], ["next", "Next"], ["quick", "Quick access"], ["menu", "Menu"]]).map(function (x) {
+      if (kb && !set[x[0]]) return null;
+      return h("span", { key: x[0], className: "h" }, h(ButtonGlyph, { face: set[x[0]], kind: p.kind, keyboard: kb }), x[1]);
+    }));
+  }
+  function DeckTile(p) {
+    var g = p.game, badge = p.running ? h(StatusBadge, { kind: "installed", label: "Running" }) : h(StatusBadge, { kind: g.status, label: g.status === "needsfile" ? "Needs game file" : undefined });
+    return h("div", { className: "dk dk-tile" }, h("div", { className: cx("art", "dk-art", p.focused && "dk-focus") }, h("span", null, "CAPSULE 3:4")),
+      h("div", { className: "capt" }, h("div", { className: "t" }, g.title), (p.focused || p.running) && badge));
+  }
+  /* Same table as deck::launch::launch_verb. */
+  var VERBS = {
+    install: ["Install", "download", "install"], installing: ["Installing", "queue", "install", true], update: ["Update", "download", "install"],
+    play: ["Play", "play", "install"], starting: ["Starting", "queue", "install", true], resume: ["Resume", "play", "install"],
+    stop: ["Stop", "stop", "danger"], force: ["Force quit", "stop", "danger"], retry: ["Retry", "refresh", "install"]
+  };
+  function LaunchButton(p) {
+    var v = VERBS[p.verb];
+    return h("div", { className: "dk" }, h("div", { style: { display: "flex", gap: 16, alignItems: "center" } },
+      h("span", { className: cx("dk-btn", v[2], v[3] && "off", p.focus && "focus") }, h(Icon, { name: v[1], size: 22 }), v[0]),
+      p.pair && h("span", { className: "dk-btn danger" }, h(Icon, { name: "stop", size: 22 }), "Stop")),
+      p.message && h("div", { className: "dk-msg" }, p.message));
+  }
+  function NowPlayingBanner(p) {
+    return h("div", { className: "dk dk-banner" }, h(StatusBadge, { kind: "installed", label: "Running" }),
+      h("div", { style: { flex: 1 } }, h("div", { style: { font: "600 18px/24px var(--font-sans)" } }, p.title), h("div", { style: { font: "400 16px/22px var(--font-sans)", color: "var(--ink-muted)" } }, "Running for 12 min")),
+      h("span", { className: cx("dk-btn install", p.focus === "resume" && "focus") }, h(Icon, { name: "play", size: 22 }), "Resume"),
+      h("span", { className: cx("dk-btn danger", p.focus === "stop" && "focus") }, h(Icon, { name: "stop", size: 22 }), "Stop"));
+  }
+  function SectionTabs(p) {
+    var kind = p.kind || "xbox", set = GLYPHS[kind];
+    return h("div", { className: "dk dk-tabs" }, h(ButtonGlyph, { face: set.prev, kind: kind }),
+      ["Library", "Catalog", "Downloads", "Mods"].map(function (t) { return h("div", { key: t, className: cx("dk-tab", t === (p.current || "Library") && "on") }, t); }),
+      h(ButtonGlyph, { face: set.next, kind: kind }));
+  }
+  /* A slide-in panel with its content: side "left" is the main menu, "right" is Quick access. */
+  function DeckPanel(p) {
+    if (p.side === "left") {
+      var items = [["library", "Library"], ["catalog", "Catalog"], ["queue", "Downloads"], ["mods", "Mods"], ["settings", "Settings"], ["library", "Switch to desktop mode"]];
+      return h("div", { className: "dk dk-panel left" }, h("div", { className: "dk-head" }, "Reclaw"),
+        items.map(function (it, i) { return h("div", { key: i, className: cx("dk-row", i === (p.focus || 0) && "focus", i === 0 && "cur") }, h(Icon, { name: it[0], size: 24 }), it[1]); }));
+    }
+    return h("div", { className: "dk dk-panel right" }, h("div", { className: "dk-head" }, "Quick access"),
+      p.running && h("div", null, h("div", { className: "dk-eyebrow" }, "Now playing"),
+        h("div", { style: { padding: "0 24px" } }, h("div", { style: { font: "600 18px/24px var(--font-sans)" } }, "Starfall 64"), h("div", { style: { font: "400 16px/22px var(--font-sans)", color: "var(--ink-muted)", marginBottom: 12 } }, "Running for 12 min"),
+          h("div", { style: { display: "flex", gap: 16 } }, h("span", { className: "dk-btn install focus" }, h(Icon, { name: "play", size: 22 }), "Resume"), h("span", { className: "dk-btn danger" }, h(Icon, { name: "stop", size: 22 }), "Stop")))),
+      h("div", { className: "dk-eyebrow" }, "Controller"), h("div", { style: { padding: "0 24px", font: "400 20px/28px var(--font-sans)" } }, "Xbox Wireless Controller", h("div", { style: { font: "400 16px/22px var(--font-sans)", color: "var(--ink-muted)" } }, "Battery 82%")),
+      h("div", { className: "dk-eyebrow" }, "Downloads"), h("div", { className: "dk-row" }, h(Icon, { name: "queue", size: 24 }), "Open the download queue"));
+  }
+  var DGAMES = [["Starfall 64", "installed"], ["Skyward Quest", "update"], ["Tide Racer", "installed"], ["Kart Ruins", "needsfile"], ["Dino Rush", "available"]];
+  function DeckScreen(p) {
+    var v = p.view || "home";
+    var tiles = function (list, focusIdx, running) { return h("div", { style: { display: "flex", gap: 24, padding: "24px 24px 0" } }, list.map(function (g, i) { return h(DeckTile, { key: i, game: { title: g[0], status: g[1] }, focused: i === focusIdx, running: running && i === 0 }); })); };
+    var page = v === "game"
+      ? h("div", { style: { padding: "32px 0 0", width: 720 } }, h("div", { className: "rc-eyebrow", style: { color: "var(--accent)" } }, "N64Recomp"), h("div", { style: { font: "700 40px/44px var(--font-sans)", margin: "16px 0" } }, "Starfall 64"),
+          h("div", { style: { display: "flex", gap: 16, alignItems: "center", marginBottom: 40 } }, h(StatusBadge, { kind: "installed", label: p.running ? "Running" : undefined }), h("span", { className: "rc-mono" }, "v1.4.2")),
+          h(LaunchButton, { verb: p.running ? "resume" : "play", pair: p.running, focus: true }),
+          h("div", { style: { display: "flex", gap: 16, marginTop: 24 } }, h("span", { className: "dk-btn secondary" }, h(Icon, { name: "folder", size: 22 }), "Open folder"), h("span", { className: "dk-btn secondary" }, h(Icon, { name: "settings", size: 22 }), "Manage")))
+      : h("div", null, p.running && h("div", { style: { marginBottom: 24 } }, h(NowPlayingBanner, { title: "Starfall 64", focus: "resume" })),
+          h("div", { className: "dk dk-shelf-title" }, "Continue"), tiles([DGAMES[0], DGAMES[1], DGAMES[2]], p.running ? -1 : 0, p.running),
+          h("div", { className: "dk dk-shelf-title", style: { marginTop: 32 } }, "All apps"));
+    return h("div", { className: "dk dk-room", style: { width: 1280, height: 800 } }, h("div", { className: "dk-wash" }),
+      h("div", { style: { position: "absolute", inset: 0, padding: "32px 48px", display: "flex", flexDirection: "column" } },
+        h(SectionTabs, null), h("div", { style: { flex: 1, paddingTop: 16, overflow: "hidden" } }, page),
+        h(HintBar, { hints: v === "game" ? [["confirm", "Select"], ["back", "Library"], ["secondary", "Manage"], ["quick", "Quick access"]] : p.panel ? [["confirm", "Select"], ["back", "Close"]] : null })),
+      p.panel && h("div", { className: "dk-scrim" }), p.panel && h(DeckPanel, { side: p.panel, running: p.running }));
+  }
+
+  window.Reclaw = { Button: Button, Chip: Chip, StatusBadge: StatusBadge, Switch: Switch, SearchField: SearchField, GameCapsule: GameCapsule, LibraryRow: LibraryRow, HeroHeader: HeroHeader, DownloadItem: DownloadItem, ProgressBar: ProgressBar, Nav: Nav, InstallDialog: InstallDialog, Icon: Icon, Art: Art, LibraryScreen: LibraryScreen, DeckTile: DeckTile, ButtonGlyph: ButtonGlyph, HintBar: HintBar, LaunchButton: LaunchButton, NowPlayingBanner: NowPlayingBanner, SectionTabs: SectionTabs, DeckPanel: DeckPanel, DeckScreen: DeckScreen };
 })();

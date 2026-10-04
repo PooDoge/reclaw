@@ -1,8 +1,8 @@
-//! Token values, generated from design-system/tokens.json. Regenerate, do not hand-edit.
+//! GENERATED from design-system/tokens.json. Edit the tokens and regenerate, not this file.
 use freya::prelude::*;
 
 /// Every Reclaw token, including the ones ColorsSheet has no slot for (install green,
-/// status fills, bg_deep). Read it with `use_reclaw()`.
+/// status fills, bg_deep). Provide it with use_provide_context next to use_init_theme.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Reclaw {
     pub bg_deep: Color,
@@ -30,6 +30,9 @@ pub struct Reclaw {
     pub info: Color,
     pub info_bg: Color,
     pub scrim: Color,
+    pub deck_bg: Color,
+    pub deck_scrim: Color,
+    pub focus_glow: Color,
 }
 
 pub fn midnight() -> Reclaw {
@@ -59,6 +62,9 @@ pub fn midnight() -> Reclaw {
         info: Color::from_rgb(102, 192, 244),
         info_bg: Color::from_rgb(18, 48, 63),
         scrim: Color::from_argb(179, 5, 8, 12),
+        deck_bg: Color::from_rgb(10, 14, 20),
+        deck_scrim: Color::from_argb(209, 10, 14, 20),
+        focus_glow: Color::from_argb(115, 102, 192, 244),
     }
 }
 
@@ -89,6 +95,9 @@ pub fn daylight() -> Reclaw {
         info: Color::from_rgb(11, 106, 168),
         info_bg: Color::from_rgb(216, 236, 248),
         scrim: Color::from_argb(166, 11, 16, 23),
+        deck_bg: Color::from_rgb(10, 14, 20),
+        deck_scrim: Color::from_argb(209, 10, 14, 20),
+        focus_glow: Color::from_argb(115, 102, 192, 244),
     }
 }
 
@@ -113,6 +122,43 @@ pub(crate) fn sheet(t: &Reclaw, base: ColorsSheet) -> ColorsSheet {
         text_inverse: t.on_accent,
         overlay: t.scrim,
         ..base
+    }
+}
+
+impl Reclaw {
+    /// Look a token up by its design-system name (`"bg-panel"`). Used by the drift test.
+    pub fn get(&self, name: &str) -> Option<Color> {
+        Some(match name {
+            "bg-deep" => self.bg_deep,
+            "bg-nav" => self.bg_nav,
+            "bg-base" => self.bg_base,
+            "bg-panel" => self.bg_panel,
+            "bg-raised" => self.bg_raised,
+            "line" => self.line,
+            "line-strong" => self.line_strong,
+            "ink" => self.ink,
+            "ink-muted" => self.ink_muted,
+            "ink-subtle" => self.ink_subtle,
+            "accent" => self.accent,
+            "accent-hover" => self.accent_hover,
+            "on-accent" => self.on_accent,
+            "install" => self.install,
+            "install-hover" => self.install_hover,
+            "on-install" => self.on_install,
+            "ok" => self.ok,
+            "ok-bg" => self.ok_bg,
+            "warn" => self.warn,
+            "warn-bg" => self.warn_bg,
+            "danger" => self.danger,
+            "danger-bg" => self.danger_bg,
+            "info" => self.info,
+            "info-bg" => self.info_bg,
+            "scrim" => self.scrim,
+            "deck-bg" => self.deck_bg,
+            "deck-scrim" => self.deck_scrim,
+            "focus-glow" => self.focus_glow,
+            _ => return None,
+        })
     }
 }
 

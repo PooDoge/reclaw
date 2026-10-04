@@ -17,6 +17,7 @@ pub fn sample_games() -> Vec<GameEntry> {
         source,
         status,
         tags: tags.iter().map(|t| (*t).into()).collect(),
+        run: RunState::Idle,
     };
     vec![
         g(

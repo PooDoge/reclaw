@@ -1,0 +1,1 @@
+Running-app strip at the top of Deck Home. Rust: `reclaw_ui::deck::NowPlayingBanner`. Title, elapsed whole minutes, and Resume and Stop as two focus targets (default focus is Resume). While Stopping, Stop reads Force quit.

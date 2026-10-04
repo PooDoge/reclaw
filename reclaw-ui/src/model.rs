@@ -1,6 +1,8 @@
 //! Data shapes from the contract's `dataModel`. Pure data: no Freya types except the art source.
 use std::borrow::Cow;
 
+pub use reclaw_runtime::RunState;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AppStatus {
     Installed,
@@ -55,6 +57,8 @@ pub struct GameEntry {
     pub source: Source,
     pub status: AppStatus,
     pub tags: Vec<Cow<'static, str>>,
+    /// Whether the app is running right now. Independent of `status`, which is install state.
+    pub run: RunState,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

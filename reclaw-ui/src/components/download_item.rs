@@ -10,6 +10,8 @@ use crate::{metrics::*, prelude::*, typography::TypeStyle};
 pub struct DownloadItem {
     download: Download,
     on_cancel: Option<PressHandler>,
+    controller: bool,
+    cancel_focused: bool,
     key: DiffKey,
 }
 
@@ -24,8 +26,17 @@ impl DownloadItem {
         Self {
             download,
             on_cancel: None,
+            controller: false,
+            cancel_focused: false,
             key: DiffKey::None,
         }
+    }
+
+    /// Deck mode: larger text and padding, and the Cancel button shows the focus frame.
+    pub fn controller(mut self, controller: bool, cancel_focused: bool) -> Self {
+        self.controller = controller;
+        self.cancel_focused = cancel_focused;
+        self
     }
 
     pub fn on_cancel(mut self, handler: impl Into<PressHandler>) -> Self {
@@ -68,10 +79,14 @@ impl Component for DownloadItem {
                     .width(Size::fill())
                     .child(
                         rect().width(Size::flex(1.)).child(
-                            TypeStyle::Label
-                                .text(d.title.clone(), t.ink)
-                                .max_lines(1)
-                                .text_overflow(TextOverflow::Ellipsis),
+                            (if self.controller {
+                                TypeStyle::DeckLabel
+                            } else {
+                                TypeStyle::Label
+                            })
+                            .text(d.title.clone(), t.ink)
+                            .max_lines(1)
+                            .text_overflow(TextOverflow::Ellipsis),
                         ),
                     )
                     .child(
@@ -103,7 +118,11 @@ impl Component for DownloadItem {
             .cross_align(Alignment::Center)
             .spacing(SPACE_4)
             .width(Size::fill())
-            .padding(Gaps::new(SPACE_3, SPACE_4, SPACE_3, SPACE_4))
+            .padding(if self.controller {
+                Gaps::new(SPACE_4, SPACE_5, SPACE_4, SPACE_5)
+            } else {
+                Gaps::new(SPACE_3, SPACE_4, SPACE_3, SPACE_4)
+            })
             .background(t.bg_panel)
             .border(
                 Border::new()
@@ -114,11 +133,17 @@ impl Component for DownloadItem {
             .corner_radius(RADIUS_MD)
             .child(ArtPlaceholder::thumb(92., 43.))
             .child(text_column)
-            .child(
+            .child(crate::deck::FocusFrame::new(
                 ActionButton::new(ButtonVariant::Ghost)
                     .icon(IconName::X)
+                    .size(if self.controller {
+                        ButtonSize::Controller
+                    } else {
+                        ButtonSize::Md
+                    })
                     .map(self.on_cancel.clone(), |b, h| b.on_press(h)),
-            )
+                self.cancel_focused,
+            ))
     }
 
     fn render_key(&self) -> DiffKey {

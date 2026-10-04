@@ -5,9 +5,20 @@ Freya components for the Reclaw installer and launcher, generated from the desig
 crates.io; there is no final 0.5.0 yet), pinned exactly in `Cargo.toml`.
 
 ```
-cargo run --example gallery          # RECLAW_THEME=daylight  RECLAW_DENSITY=touch
-cargo test                           # writes target/snapshots/*.png (headless Skia renders)
+cargo run -p reclaw-ui --example gallery                       # desktop; RECLAW_THEME=daylight RECLAW_DENSITY=touch
+cargo run -p reclaw-ui --example deck --features gamepad       # Deck mode with a real pad and real processes
+cargo test --workspace                                         # writes target/snapshots/*.png (headless Skia renders)
 ```
+
+Workspace crates:
+
+| crate | what |
+| --- | --- |
+| `reclaw-input` | gamepad actions, repeat and stick hysteresis, input ownership, controller kinds and glyphs, spatial focus, mode detection, gilrs backend (feature `gilrs-backend`) |
+| `reclaw-runtime` | `Supervisor` (own process group, graceful stop then force), `RunState`, SDL controller profile for launched apps |
+| `reclaw-ui` | desktop components, and `deck::*` for Deck mode (`DeckState` reducer, tiles, shelves, panels, `DeckApp`) |
+
+Deck mode is specified in `../design-system/reclaw.freya.json` (see `decisions`, `input`, `focus`, `lifecycle`) and `../design-system/deck-mode.md`. Building needs libudev (`libudev-dev`) for the gamepad feature and GL libraries to link tests.
 
 | contract component | Rust | Freya built-in |
 | --- | --- | --- |

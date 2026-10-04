@@ -23,6 +23,21 @@ pub const CAPSULE_W: f32 = 168.;
 pub const CAPSULE_H: f32 = 224.;
 pub const HERO_H: f32 = 280.;
 
+pub const DECK_SAFE_X: f32 = 48.;
+pub const DECK_SAFE_Y: f32 = 32.;
+pub const DECK_TILE_W: f32 = 220.;
+pub const DECK_TILE_H: f32 = 293.;
+pub const DECK_TILE_GAP: f32 = 24.;
+pub const DECK_CAPTION_H: f32 = 72.;
+pub const DECK_ROW_H: f32 = 64.;
+pub const DECK_TARGET_MIN: f32 = 56.;
+pub const DECK_HINT_H: f32 = 56.;
+pub const DECK_TABS_H: f32 = 64.;
+pub const DECK_PANEL_W: f32 = 420.;
+pub const DECK_FOCUS_SCALE: f32 = 1.06;
+pub const DECK_BUTTON_SCALE: f32 = 1.04;
+pub const DECK_FOCUS_RING: f32 = 3.;
+
 pub const BP_WIDE: f32 = 1100.;
 pub const BP_COMPACT: f32 = 720.;
 
@@ -61,6 +76,8 @@ pub enum Density {
     #[default]
     Pointer,
     Touch,
+    /// Gamepad-first (Deck mode): 56-64px targets, 20px body, focus-driven.
+    Controller,
 }
 
 impl Density {
@@ -68,6 +85,7 @@ impl Density {
         match self {
             Self::Pointer => ROW_H,
             Self::Touch => ROW_H_TOUCH,
+            Self::Controller => DECK_ROW_H,
         }
     }
 
@@ -75,6 +93,7 @@ impl Density {
         match self {
             Self::Pointer => 32.,
             Self::Touch => 48.,
+            Self::Controller => DECK_TARGET_MIN,
         }
     }
 
@@ -82,6 +101,7 @@ impl Density {
         match self {
             Self::Pointer => 14.,
             Self::Touch => 16.,
+            Self::Controller => 20.,
         }
     }
 }

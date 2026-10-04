@@ -1,0 +1,12 @@
+[package]
+name = "reclaw-runtime"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+futures-channel = "0.3"
+thiserror = "2"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

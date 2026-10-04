@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod components;
+pub mod deck;
 pub mod icon;
 pub mod metrics;
 pub mod model;

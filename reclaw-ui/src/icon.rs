@@ -20,6 +20,11 @@ pub enum IconName {
     Chevron,
     Refresh,
     File,
+    Stop,
+    Circle,
+    Square,
+    Triangle,
+    Desktop,
 }
 
 impl IconName {
@@ -40,6 +45,11 @@ impl IconName {
             Self::Chevron => ("chevron-right", lucide::chevron_right()),
             Self::Refresh => ("refresh-cw", lucide::refresh_cw()),
             Self::File => ("file", lucide::file()),
+            Self::Stop => ("square", lucide::square()),
+            Self::Circle => ("circle", lucide::circle()),
+            Self::Square => ("square", lucide::square()),
+            Self::Triangle => ("triangle", lucide::triangle()),
+            Self::Desktop => ("monitor", lucide::monitor()),
         }
     }
 }

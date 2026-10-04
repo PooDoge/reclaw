@@ -47,6 +47,7 @@ impl Component for SearchField {
         let vertical = match self.density {
             Density::Pointer => SPACE_2,
             Density::Touch => SPACE_4,
+            Density::Controller => SPACE_4,
         };
         let layout = InputLayoutThemePartial {
             corner_radius: Some(CornerRadius::new_all(RADIUS_MD).into()),
