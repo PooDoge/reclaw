@@ -105,10 +105,10 @@ impl Component for DesktopFrame {
         };
         // With no native border the window's title bar is ours. It is part of the desktop interface only:
         // Deck mode fills the screen and has no use for window buttons.
-        let titlebar = (shell.host_window.frame == Frame::Custom).then(|| {
+        let titlebar = (shell.services.window.frame == Frame::Custom).then(|| {
             let on_effect = shell.on_effect.clone();
             let page = nav.current().label();
-            Titlebar::new(EventHandler::new(move |command| on_effect.call(Effect::Window(command))), shell.host_window.attached, page)
+            Titlebar::new(EventHandler::new(move |command| on_effect.call(Effect::Window(command))), shell.services.window.attached, page)
                 .into_element()
         });
         rect()

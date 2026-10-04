@@ -11,6 +11,7 @@ pub mod effect;
 
 pub mod icon;
 pub mod launch;
+pub mod media;
 pub mod metrics;
 pub mod model;
 pub mod nav;
@@ -27,6 +28,8 @@ pub mod theme;
 mod tokens;
 pub mod typography;
 pub mod window;
+
+pub mod readme;
 
 pub mod prelude {
     pub use crate::components::*;

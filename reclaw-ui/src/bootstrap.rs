@@ -1,13 +1,34 @@
 //! Opening the shared store at startup: find the settings file, read it, make the process-wide store
 //! and start saving changes to it. The examples and the real app all begin here.
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use reclaw_config::{AppDirs, PrefsFile, PrefsWriter};
+use reclaw_media::{DiskStore, HttpFetcher, MediaCache, MediaHub, Policy};
 
 use crate::store::{AppState, Store};
 
 /// How long a change waits for others before the settings file is written.
 const SAVE_DELAY: Duration = Duration::from_millis(400);
+
+/// Pictures and documents are fetched this many at a time.
+const MEDIA_WORKERS: usize = 4;
+/// A request that has not finished in this long has failed.
+const MEDIA_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// Start fetching and caching artwork and READMEs, in the cache folder. `None` when there is no
+/// folder to cache in, or the system would not start the worker threads: the app then shows
+/// placeholders, which is how it looks offline anyway.
+pub fn open_media(dirs: Option<&AppDirs>) -> Option<MediaHub> {
+    let dirs = dirs?;
+    let cache = MediaCache::new(DiskStore::new(dirs.media_cache()), Arc::new(HttpFetcher::new(MEDIA_TIMEOUT)), Policy::default());
+    match MediaHub::start(cache, MEDIA_WORKERS) {
+        Ok(hub) => Some(hub),
+        Err(e) => {
+            eprintln!("reclaw: artwork will not be downloaded: {e}");
+            None
+        }
+    }
+}
 
 /// What [`open_store`] made.
 pub struct Opened {

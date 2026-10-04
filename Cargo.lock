@@ -4502,6 +4502,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "reclaw-media"
+version = "0.1.0"
+dependencies = [
+ "futures-channel",
+ "pulldown-cmark",
+ "reqwest",
+ "tempfile",
+ "thiserror 2.0.21",
+ "url",
+]
+
+[[package]]
 name = "reclaw-runtime"
 version = "0.1.0"
 dependencies = [
@@ -4525,6 +4537,7 @@ dependencies = [
  "reclaw-config",
  "reclaw-games",
  "reclaw-input",
+ "reclaw-media",
  "reclaw-runtime",
  "serde_json",
  "tempfile",

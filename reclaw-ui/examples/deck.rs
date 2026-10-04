@@ -18,12 +18,12 @@ use reclaw_input::{
 use reclaw_runtime::{InputProfile, LaunchSpec, RunState, SessionEvent, Supervisor};
 use reclaw_ui::notices::hold_rules;
 use reclaw_ui::{
-    bootstrap::open_store,
+    bootstrap::{open_media, open_store},
     deck::ActionFeed,
     effect::Effect,
     nav::Route,
     prelude::*,
-    shell::{DevOverrides, Shell},
+    shell::{DevOverrides, Services, Shell},
     store::{AppAction, AppState, Store},
     window::{Frame, WindowHost, detect_server, launch::launch_config},
 };
@@ -31,6 +31,7 @@ use reclaw_ui::{
 #[derive(Clone, PartialEq)]
 struct Host {
     frame: Frame,
+    media: Option<reclaw_media::MediaHub>,
     store: Store,
     feed: ActionFeed,
     map: ActionMap,
@@ -132,7 +133,7 @@ impl App for Host {
             on_effect,
             detected: self.env.mode,
             dev,
-            host_window: WindowHost::attached(self.frame),
+            services: Services::new(WindowHost::attached(self.frame), self.media.clone()),
             start: Route::Library {},
             script: vec![],
         }
@@ -167,5 +168,6 @@ fn main() {
     let (_tx, feed) = ActionFeed::new();
     let frame = Frame::from_env(|k| std::env::var(k).ok());
     let server = detect_server(|k| std::env::var(k).ok());
-    launch(launch_config(Host { frame, store, feed, map, env }, store, frame, server));
+    let media = open_media(opened.dirs.as_ref());
+    launch(launch_config(Host { frame, media, store, feed, map, env }, store, frame, server));
 }

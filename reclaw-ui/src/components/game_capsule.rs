@@ -1,6 +1,6 @@
 use freya::prelude::*;
 
-use super::{ArtPlaceholder, PressHandler, StatusBadge, hoverable, pointer_cursor};
+use super::{ArtPlaceholder, PressHandler, RemoteArt, StatusBadge, hoverable, pointer_cursor};
 use crate::{metrics::*, prelude::*, typography::TypeStyle};
 
 /// Steam-style library tile: 3:4 art, title, project, status badge. Hover draws an accent border
@@ -71,7 +71,7 @@ impl Component for GameCapsule {
 
         let art = rect()
             .width(Size::fill())
-            .child(ArtPlaceholder::capsule(Size::fill()))
+            .child(RemoteArt::new(self.game.art.capsule.clone(), ArtPlaceholder::capsule(Size::fill()), Size::fill(), Size::px(CAPSULE_H)))
             .child(
                 rect()
                     .position(Position::new_absolute().top(SPACE_2).left(SPACE_2))

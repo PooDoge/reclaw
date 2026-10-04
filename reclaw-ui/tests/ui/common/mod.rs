@@ -3,6 +3,8 @@
 //!
 //! Each test crate uses a subset, hence `allow(dead_code)`.
 #![allow(dead_code)]
+pub mod web;
+
 use std::{
     cell::RefCell,
     path::PathBuf,
@@ -11,7 +13,7 @@ use std::{
 };
 
 use freya::prelude::*;
-use freya_core::element::AppComponent;
+use freya_core::{element::AppComponent, elements::image::Image};
 use freya_testing::prelude::*;
 use futures_channel::mpsc::UnboundedSender;
 use reclaw_input::{Action, ActionMap, ControllerInfo, UiMode};
@@ -22,7 +24,7 @@ use reclaw_ui::{
     nav::Route,
     prelude::*,
     sample::sample_games,
-    shell::{DevOverrides, MotionOverride, Shell},
+    shell::{DevOverrides, MotionOverride, Services, Shell},
     store::{AppAction, AppState, Store},
     window::{Frame, WindowHost},
 };
@@ -69,7 +71,9 @@ pub struct Mount {
     /// during a transition the old page is still there.
     pub animated: bool,
     /// The window behind the UI. Detached by default; a test of the title bar draws one (`frame`).
-    pub host_window: WindowHost,
+    pub window: WindowHost,
+    /// The means of fetching pictures. None by default: artwork stays a placeholder.
+    pub media: Option<reclaw_media::MediaHub>,
 }
 
 impl Mount {
@@ -84,7 +88,8 @@ impl Mount {
             keyboard: 0.,
             theme: ThemeKind::Midnight,
             animated: false,
-            host_window: WindowHost::DETACHED,
+            window: WindowHost::DETACHED,
+            media: None,
         }
     }
 
@@ -128,9 +133,15 @@ impl Mount {
         self
     }
 
+    /// Fetch pictures and READMEs through this hub (see `web::Rig`).
+    pub fn media(mut self, hub: reclaw_media::MediaHub) -> Self {
+        self.media = Some(hub);
+        self
+    }
+
     /// Draw the custom frame's title bar. Still no real window: its commands only show up as effects.
     pub fn frame(mut self, frame: Frame) -> Self {
-        self.host_window = WindowHost { frame, attached: false };
+        self.window = WindowHost { frame, attached: false };
         self
     }
 
@@ -147,7 +158,7 @@ impl Mount {
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
-        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated, host_window } = self;
+        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated, window, media } = self;
         // The theme is pinned, so the settings do not switch it under a snapshot.
         let motion = dev.motion.or((!animated).then_some(MotionOverride::Reduced));
         let dev = DevOverrides { theme: dev.theme.or(Some(theme)), motion, ..dev };
@@ -169,7 +180,7 @@ impl Mount {
                     on_effect: EventHandler::new(move |e| sink.borrow_mut().push(e)),
                     detected: mode,
                     dev,
-                    host_window,
+                    services: Services { window, media: media.clone() },
                     start: start.clone(),
                     script: script.clone(),
                 }
@@ -393,6 +404,23 @@ impl Session {
     /// Every label's text, for failure messages.
     pub fn labels(&self) -> Vec<String> {
         self.runner.find_many(|_, element| Label::try_downcast(element).map(|l| l.text.to_string()))
+    }
+
+    /// The text of every paragraph on screen: how prose from the markdown viewer shows up, since it
+    /// draws paragraphs and not labels.
+    pub fn prose(&self) -> Vec<String> {
+        self.runner.find_many(|_, element| {
+            Paragraph::try_downcast(element).map(|p| p.spans.iter().map(|s| s.text.to_string()).collect::<String>())
+        })
+    }
+
+    pub fn has_prose(&self, text: &str) -> bool {
+        self.prose().iter().any(|p| p.contains(text))
+    }
+
+    /// How many decoded pictures are on screen.
+    pub fn pictures(&self) -> usize {
+        self.runner.find_many(|_, element| Image::try_downcast(element).map(|_| ())).len()
     }
 
     pub fn snapshot(&mut self, name: &str) {

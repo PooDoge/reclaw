@@ -3,7 +3,7 @@ use reclaw_games::project::Media;
 
 use super::ctx::Ctx;
 use crate::{
-    components::{hoverable, pointer_cursor},
+    components::{ArtPlaceholder, RemoteArt, hoverable, pointer_cursor},
     desktop::pages::common::heading,
     metrics::*,
     prelude::*,
@@ -14,8 +14,8 @@ const TILE_W: f32 = 256.;
 const TILE_H: f32 = 144.;
 
 /// Screenshots and videos in one strip that scrolls sideways. A video opens in the system player or
-/// browser; Freya 0.5 has no video widget. Remote art is a placeholder until the catalog cache
-/// supplies files (see `ArtPlaceholder`).
+/// browser; Freya 0.5 has no video widget. Pictures are fetched in the background and stay
+/// placeholders until they arrive (see `RemoteArt`).
 pub(super) fn view(c: &Ctx) -> Option<Element> {
     let project = c.view.project.as_ref().filter(|p| !p.media.is_empty())?;
     let open = c.open_url();
@@ -62,32 +62,38 @@ impl Component for MediaTile {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         let hovering = use_state(|| false);
-        let (caption, tag, link) = match &self.media {
-            Media::Screenshot { url, caption } => (caption.clone().unwrap_or_default(), "SCREENSHOT", url.clone()),
-            Media::Video { url, title, .. } => (title.clone().unwrap_or_else(|| "Video".to_string()), "VIDEO", url.clone()),
+        let (caption, tag, link, picture) = match &self.media {
+            Media::Screenshot { url, caption } => (caption.clone().unwrap_or_default(), "SCREENSHOT", url.clone(), Some(url.clone())),
+            Media::Video { url, title, thumbnail } => {
+                (title.clone().unwrap_or_else(|| "Video".to_string()), "VIDEO", url.clone(), thumbnail.clone())
+            }
         };
         let is_video = matches!(self.media, Media::Video { .. });
         let open = self.open.clone();
 
+        // A screenshot is its own picture; a video shows its thumbnail with a play mark over it.
+        let play = rect()
+            .position(Position::new_absolute().top((TILE_H - 44.) / 2.).left((TILE_W - 44.) / 2.))
+            .width(Size::px(44.))
+            .height(Size::px(44.))
+            .center()
+            .corner_radius(22.)
+            .background(t.bg_base)
+            .child(icon(IconName::Play, 20., t.ink));
         let art = rect()
             .width(Size::px(TILE_W))
             .height(Size::px(TILE_H))
             .background(t.bg_raised)
             .border(Border::new().fill(if hovering() { t.accent } else { t.line }).width(1.).alignment(BorderAlignment::Inner))
             .corner_radius(RADIUS_MD)
-            .center()
-            .child(if is_video {
-                rect()
-                    .width(Size::px(44.))
-                    .height(Size::px(44.))
-                    .center()
-                    .corner_radius(22.)
-                    .background(t.bg_base)
-                    .child(icon(IconName::Play, 20., t.ink))
-                    .into_element()
-            } else {
-                TypeStyle::Mono.text(tag, t.ink_subtle).into_element()
-            });
+            .overflow(Overflow::Clip)
+            .child(RemoteArt::new(
+                picture,
+                ArtPlaceholder::new(tag, Size::px(TILE_W), Size::px(TILE_H)),
+                Size::px(TILE_W),
+                Size::px(TILE_H),
+            ))
+            .maybe(is_video, |el| el.child(play));
         let tile = rect()
             .vertical()
             .spacing(SPACE_1)

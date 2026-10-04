@@ -18,6 +18,7 @@ pub fn sample_games() -> Vec<GameEntry> {
         tags: tags.iter().map(|t| (*t).into()).collect(),
         // The sample library names the system in its tags, as an app added by hand would.
         platform: tags.iter().find_map(|t| Platform::from_tag(t)).unwrap_or(Platform::Other),
+        art: Art::default(),
         run: RunState::Idle,
     };
     vec![

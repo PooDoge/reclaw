@@ -32,9 +32,9 @@ impl AppDirs {
         self.config.join("settings.toml")
     }
 
-    /// Fetched images live here, one file per URL (see `reclaw-ui`'s image cache).
-    pub fn image_cache(&self) -> PathBuf {
-        self.cache.join("images")
+    /// Fetched artwork and READMEs live here, one file per address (see the `reclaw-media` crate).
+    pub fn media_cache(&self) -> PathBuf {
+        self.cache.join("media")
     }
 }
 
@@ -46,7 +46,7 @@ mod tests {
     fn reclaw_home_puts_everything_under_one_root() {
         let dirs = AppDirs::locate(|k| (k == "RECLAW_HOME").then(|| "/tmp/portable".to_string())).expect("dirs");
         assert_eq!(dirs.prefs_file(), PathBuf::from("/tmp/portable/config/settings.toml"));
-        assert_eq!(dirs.image_cache(), PathBuf::from("/tmp/portable/cache/images"));
+        assert_eq!(dirs.media_cache(), PathBuf::from("/tmp/portable/cache/media"));
     }
 
     #[test]

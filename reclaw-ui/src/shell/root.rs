@@ -3,6 +3,7 @@ use freya::{prelude::*, router::*};
 use reclaw_input::{Action, ActionMap, UiMode};
 
 use super::{
+    Services,
     ctx::ShellCtx,
     model::{ShellModel, keyboard_height, pref_from_settings},
     overrides::{DevOverrides, KeyboardStart},
@@ -13,7 +14,7 @@ use crate::{
     nav::{Route, transition::TransitionConfig},
     store::{AppAction, AppChannel, Store, ui_action, use_channel},
     theme::ThemeKind,
-    window::{WindowHost, run_command, use_window_driver},
+    window::{run_command, use_window_driver},
 };
 
 /// The root. Keys that work in both interfaces, for testing without a device: **F10** switches
@@ -31,8 +32,8 @@ pub struct Shell {
     /// The interface to start in, from `reclaw_input::detect_environment`.
     pub detected: UiMode,
     pub dev: DevOverrides,
-    /// How the window is framed and whether a real one stands behind the UI.
-    pub host_window: WindowHost,
+    /// The window behind the UI, and the means of fetching pictures.
+    pub services: Services,
     /// The page to open first: `Route::Library {}`, or what a `--open` argument named.
     pub start: Route,
     /// Actions applied once when Deck mode opens (gallery and snapshot scenarios).
@@ -42,7 +43,8 @@ pub struct Shell {
 impl Component for Shell {
     fn render(&self) -> impl IntoElement {
         let store = self.store;
-        let host_window = self.host_window;
+        let services = self.services.clone();
+        let attached = services.window.attached;
         store.install();
         let mut window = use_state(|| (1280.0f32, 800.0f32));
         let mut model = use_state({
@@ -82,7 +84,7 @@ impl Component for Shell {
             EventHandler::new(move |effect: Effect| {
                 model.write().on_effect(&effect, window().1);
                 // Window commands are carried out here; the host still hears of them.
-                if let (Effect::Window(command), true) = (&effect, host_window.attached) {
+                if let (Effect::Window(command), true) = (&effect, attached) {
                     run_command(command, store);
                 }
                 // State the UI owns changes here; the host still hears about it.
@@ -95,12 +97,12 @@ impl Component for Shell {
         // The context is created once, on the first render; everything in it is a stable handle.
         use_provide_context({
             let (feed, map, dev, script, on_effect) = (self.feed.clone(), self.map.clone(), self.dev, self.script.clone(), on_effect);
-            move || ShellCtx { store, feed, map, on_effect, dev, host_window, script, model, transitions, window }
+            move || ShellCtx { store, feed, map, on_effect, dev, services, script, model, transitions, window }
         });
 
         // Keeps the window in step: monitors, remembered geometry, Deck fullscreen, UI scale.
         let server = use_hook(|| crate::window::detect_server(|k| std::env::var(k).ok()));
-        use_window_driver(store, model, server, host_window.attached);
+        use_window_driver(store, model, server, attached);
 
         let start = self.start.clone();
         rect()

@@ -15,7 +15,7 @@ pub struct ShellCtx {
     /// Commands for the host. The shell has already handled the ones that are its own.
     pub on_effect: EventHandler<Effect>,
     pub dev: DevOverrides,
-    pub host_window: crate::window::WindowHost,
+    pub services: super::Services,
     /// Actions applied once when Deck mode opens (gallery and snapshot scenarios).
     pub script: Vec<Action>,
     pub model: State<ShellModel>,
@@ -27,6 +27,12 @@ pub struct ShellCtx {
 #[track_caller]
 pub fn use_shell() -> ShellCtx {
     use_consume::<ShellCtx>()
+}
+
+/// The shell's context if there is one. A component shown on its own (a preview, a test of one
+/// widget) has none; it should then fall back to what it can do alone.
+pub fn try_shell() -> Option<ShellCtx> {
+    try_consume_context::<ShellCtx>()
 }
 
 /// The shared state's handle, for dispatching from handlers.

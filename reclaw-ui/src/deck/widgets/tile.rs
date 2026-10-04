@@ -48,7 +48,12 @@ impl Component for DeckTile {
             .height(Size::px(DECK_TILE_H))
             .corner_radius(RADIUS_MD)
             .overflow(Overflow::Clip)
-            .child(ArtPlaceholder::new("CAPSULE 3:4", Size::fill(), Size::fill()))
+            .child(RemoteArt::new(
+                self.game.art.capsule.clone(),
+                ArtPlaceholder::new("CAPSULE 3:4", Size::fill(), Size::fill()),
+                Size::px(DECK_TILE_W),
+                Size::px(DECK_TILE_H),
+            ))
             .child(
                 rect()
                     .position(Position::new_absolute().top(SPACE_3).right(SPACE_3))

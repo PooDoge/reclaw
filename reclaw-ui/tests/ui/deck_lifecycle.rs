@@ -68,7 +68,7 @@ fn play_guide_resume_stop_with_a_real_process() {
                 feed,
                 detected: UiMode::Deck,
                 dev: DevOverrides { motion: Some(MotionOverride::Reduced), theme: Some(ThemeKind::Midnight), ..DevOverrides::default() },
-                host_window: reclaw_ui::window::WindowHost::DETACHED,
+                services: reclaw_ui::shell::Services::headless(),
                 start: Route::Library {},
                 on_effect: EventHandler::new(move |effect: Effect| {
                     log.borrow_mut().push(effect.clone());

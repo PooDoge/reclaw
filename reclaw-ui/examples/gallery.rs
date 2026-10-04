@@ -15,11 +15,11 @@
 use freya::prelude::*;
 use reclaw_input::{ActionMap, detect_environment};
 use reclaw_ui::{
-    bootstrap::open_store,
+    bootstrap::{open_media, open_store},
     deck::ActionFeed,
     nav::Route,
     prelude::*,
-    shell::{DevOverrides, Shell},
+    shell::{DevOverrides, Services, Shell},
     store::{AppState, Store},
     window::{Frame, WindowHost, detect_server, launch::launch_config},
 };
@@ -30,6 +30,7 @@ struct Gallery {
     store: Store,
     start: Route,
     frame: Frame,
+    media: Option<reclaw_media::MediaHub>,
 }
 
 impl App for Gallery {
@@ -45,7 +46,7 @@ impl App for Gallery {
             on_effect: EventHandler::new(|effect| eprintln!("effect: {effect:?}")),
             detected: detect_environment(get).mode,
             dev,
-            host_window: WindowHost::attached(self.frame),
+            services: Services::new(WindowHost::attached(self.frame), self.media.clone()),
             start: self.start.clone(),
             script: vec![],
         }
@@ -85,5 +86,6 @@ fn main() {
     // RECLAW_WINDOW_FRAME=native keeps the window manager's border and title bar.
     let frame = Frame::from_env(|k| std::env::var(k).ok());
     let server = detect_server(|k| std::env::var(k).ok());
-    launch(launch_config(Gallery { feed, store, start: start_route(), frame }, store, frame, server));
+    let media = open_media(opened.dirs.as_ref());
+    launch(launch_config(Gallery { feed, store, start: start_route(), frame, media }, store, frame, server));
 }

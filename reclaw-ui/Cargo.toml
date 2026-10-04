@@ -23,6 +23,7 @@ reclaw-input = { path = "../reclaw-input" }
 reclaw-runtime = { path = "../reclaw-runtime" }
 reclaw-games = { path = "../reclaw-games" }
 reclaw-config = { path = "../reclaw-config" }
+reclaw-media = { path = "../reclaw-media" }
 
 [dev-dependencies]
 tempfile = "3"

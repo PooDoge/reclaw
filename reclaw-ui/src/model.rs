@@ -5,6 +5,13 @@ use reclaw_games::project::{Platform, ProjectInfo, RepoHost};
 
 pub use reclaw_runtime::RunState;
 
+/// Where a game's pictures are on the internet. A missing one leaves a placeholder.
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
+pub struct Art {
+    pub capsule: Option<String>,
+    pub hero: Option<String>,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AppStatus {
     Installed,
@@ -61,6 +68,7 @@ pub struct GameEntry {
     pub tags: Vec<Cow<'static, str>>,
     /// The system the game was recompiled from, for the badge and for browsing by system.
     pub platform: Platform,
+    pub art: Art,
     /// Whether the app is running right now. Independent of `status`, which is install state.
     pub run: RunState,
 }
@@ -80,6 +88,7 @@ impl GameEntry {
             status: AppStatus::Available,
             tags: project.tags.iter().cloned().map(Cow::Owned).collect(),
             platform: project.platform,
+            art: Art { capsule: project.capsule_url.clone(), hero: project.hero_url.clone() },
             run: RunState::Idle,
         }
     }

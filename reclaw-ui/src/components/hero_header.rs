@@ -1,6 +1,6 @@
 use freya::prelude::*;
 
-use super::{ArtPlaceholder, PressHandler, StatusBadge, pointer_cursor};
+use super::{ArtPlaceholder, PressHandler, RemoteArt, StatusBadge, pointer_cursor};
 use crate::{
     launch::{LaunchVerb, launch_verb},
     metrics::*,
@@ -123,13 +123,14 @@ impl Component for HeroHeader {
         let banner = rect()
             .width(Size::fill())
             .map(self.on_open.clone(), |el, h| pointer_cursor(el).on_press(h))
-            .child(
-                rect()
-                    .width(Size::fill())
-                    .height(Size::px(art_height))
-                    .overflow(Overflow::Clip)
-                    .child(rect().width(Size::fill()).height(Size::fill()).scale(banner_zoom).child(ArtPlaceholder::hero(art_height))),
-            )
+            .child(rect().width(Size::fill()).height(Size::px(art_height)).overflow(Overflow::Clip).child(
+                rect().width(Size::fill()).height(Size::fill()).scale(banner_zoom).child(RemoteArt::new(
+                    self.game.art.hero.clone(),
+                    ArtPlaceholder::hero(art_height),
+                    Size::fill(),
+                    Size::px(art_height),
+                )),
+            ))
             .child(
                 // The title sits on a solid strip so it holds 4.5:1 over any banner image.
                 // Absolute `bottom` does not anchor as CSS does in torin, so place by `top` with a fixed height.

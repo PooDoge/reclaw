@@ -3,7 +3,7 @@
 //!
 //! * `ctx`: everything the sections share, built once per render
 //! * `hero`: the banner and the actions (install or play, favorite, settings); `about`, `media`,
-//!   `updates`, `facts`, `mods`: one section each
+//!   `updates`, `facts`, `mods`, `readme`: one section each
 //!
 //! Pure data comes from `crate::catalog::GameView`; nothing here decides, it only lays out.
 mod about;
@@ -12,6 +12,7 @@ mod facts;
 mod hero;
 mod media;
 mod mods;
+mod readme;
 mod updates;
 
 use freya::prelude::*;
@@ -53,7 +54,13 @@ impl Component for GamePage {
         };
 
         let wide = env.class == LayoutClass::Wide;
-        let main = [section(0, about::view(&c)), section(1, media::view(&c)), section(2, updates::view(&c)), section(3, mods::view(&c))];
+        let main = [
+            section(0, about::view(&c)),
+            section(1, media::view(&c)),
+            section(2, updates::view(&c)),
+            section(3, mods::view(&c)),
+            section(4, readme::view(&c)),
+        ];
         let side = [section(1, facts::details(&c)), section(2, facts::requirements(&c)), section(3, facts::links(&c))];
 
         let body = if wide {
@@ -65,13 +72,13 @@ impl Component for GamePage {
                 .child(rect().vertical().spacing(SPACE_5).width(Size::flex(1.)).children(main.into_iter().flatten()))
                 .child(rect().vertical().spacing(SPACE_5).width(Size::px(300.)).children(side.into_iter().flatten()))
         } else {
-            let [about, media, updates, mods] = main;
+            let [about, media, updates, mods, readme] = main;
             let [details, requirements, links] = side;
             rect()
                 .vertical()
                 .spacing(SPACE_5)
                 .width(Size::fill())
-                .children([about, media, updates, details, requirements, mods, links].into_iter().flatten())
+                .children([about, media, updates, details, requirements, mods, readme, links].into_iter().flatten())
         };
 
         let narrow = env.class != LayoutClass::Wide;

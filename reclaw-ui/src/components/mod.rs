@@ -10,6 +10,7 @@ mod indicator;
 mod install_dialog;
 mod library_row;
 mod nav;
+mod remote_art;
 mod search_field;
 mod status_badge;
 mod system_badge;
@@ -25,6 +26,7 @@ pub use indicator::{IndicatorBadge, indicator_look, progress_strip};
 pub use install_dialog::InstallDialog;
 pub use library_row::LibraryRow;
 pub use nav::{Nav, NavMode, NavTarget};
+pub use remote_art::RemoteArt;
 pub use search_field::SearchField;
 
 pub use status_badge::{StatusBadge, status_tone};

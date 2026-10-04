@@ -31,6 +31,7 @@ pub const KEY_CONSOLE_STYLE: &str = "motion_console_style";
 pub const KEY_CONSOLE_PAGE_STYLES: &str = "motion_console_pages";
 pub const KEY_UI_SCALE: &str = "ui_scale";
 pub const KEY_LIBRARY_SORT: &str = "library_sort";
+pub const KEY_REMOTE_MEDIA: &str = "remote_media";
 pub const KEY_DECK_FULLSCREEN: &str = "deck_fullscreen";
 pub const KEY_DECK_DISPLAY: &str = "deck_display";
 
@@ -202,6 +203,8 @@ fn global_sections(displays: &DisplayEnvironment) -> Schema {
                         choice(KEY_LIBRARY_SORT, "Sort games by", SORT_OPTIONS, 0)
                             .described("Added is the order they joined. System groups by console, oldest first."),
                         toggle("check_on_launch", "Check for updates when Reclaw starts", true),
+                        toggle(KEY_REMOTE_MEDIA, "Download artwork and READMEs", true)
+                            .described("Off keeps everything offline; pictures stay placeholders."),
                     ]),
                     Group::new(vec![Row::new(
                         "default_location",
