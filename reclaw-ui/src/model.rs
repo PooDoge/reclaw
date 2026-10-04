@@ -86,40 +86,6 @@ impl GameEntry {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum DownloadStage {
-    FetchingRelease,
-    VerifyingHash,
-    CheckingGameFile,
-    Building,
-    Extracting,
-}
-
-impl DownloadStage {
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::FetchingRelease => "Fetching release",
-            Self::VerifyingHash => "Verifying hash",
-            Self::CheckingGameFile => "Checking your game file",
-            Self::Building => "Building",
-            Self::Extracting => "Extracting",
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct Download {
-    pub app_id: u32,
-    pub title: Cow<'static, str>,
-    pub stage: DownloadStage,
-    /// 0.0 to 100.0
-    pub progress: f32,
-    pub detail: Cow<'static, str>,
-    pub speed: Option<Cow<'static, str>>,
-    /// Present when the download failed; shown instead of `detail`.
-    pub error: Option<Cow<'static, str>>,
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum ModProvider {
     Thunderstore,

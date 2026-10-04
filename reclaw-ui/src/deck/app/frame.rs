@@ -3,8 +3,9 @@ use reclaw_input::{ActionMap, ControllerInfo, ControllerKind, FocusId};
 
 use super::text_boxes::TextBoxes;
 use crate::{
+    activity::Activity,
     deck::{DeckState, LastInput, settings::Schema},
-    model::{Download, GameEntry},
+    model::GameEntry,
 };
 
 /// Everything one render needs, gathered once so the screen and overlay builders are plain
@@ -13,7 +14,7 @@ use crate::{
 pub(super) struct Frame {
     pub state: DeckState,
     pub games: Vec<GameEntry>,
-    pub downloads: Vec<Download>,
+    pub downloads: Vec<Activity>,
     pub pad: Option<ControllerInfo>,
     pub kind: ControllerKind,
     /// Last input with the connected pad's kind filled in, for glyph choice.

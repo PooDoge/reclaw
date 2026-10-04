@@ -44,14 +44,23 @@ pub(super) fn hero(c: &Ctx, game: GameEntry, narrow: bool) -> HeroHeader {
         .on_manage(move |e: Event<PressEventData>| dialogs.manage(&menu_game, press_point(&e, (320., 160.))))
 }
 
-pub(super) fn downloads_list(c: &Ctx) -> Rect {
+/// The jobs still running or failed, in the main column. Finished ones are in the Updates section and the Downloads tab.
+pub(super) fn downloads_list(c: &Ctx) -> Option<Rect> {
     let t = c.t;
-    rect()
-        .vertical()
-        .spacing(SPACE_2)
-        .width(Size::fill())
-        .child(TypeStyle::Eyebrow.text("Downloads", t.ink_subtle))
-        .children(c.downloads.iter().cloned().map(|d| DownloadItem::new(d).into_element()))
+    let open: Vec<_> =
+        c.activity.queue().into_iter().filter(|a| !matches!(a.outcome, crate::activity::Outcome::Finished)).cloned().collect();
+    if open.is_empty() {
+        return None;
+    }
+    Some(rect().vertical().spacing(SPACE_2).width(Size::fill()).child(TypeStyle::Eyebrow.text("Downloads", t.ink_subtle)).children(
+        open.into_iter().map(|d| {
+            let (id, running, on_effect) = (d.id, d.is_running(), c.on_effect.clone());
+            DownloadItem::new(d)
+                .on_cancel(move |_| on_effect.call(if running { Effect::CancelActivity(id) } else { Effect::DismissActivity(id) }))
+                .key(id)
+                .into_element()
+        }),
+    ))
 }
 
 /// Capsule grid in fixed-column rows of fluid capsules, so the last row keeps its column width.

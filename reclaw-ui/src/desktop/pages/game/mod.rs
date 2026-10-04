@@ -18,7 +18,15 @@ use freya::prelude::*;
 
 use self::ctx::Ctx;
 use super::common::{BackBar, NotFound, page_scroll};
-use crate::{catalog::GameView, desktop::use_desktop_ui, metrics::*, nav::use_nav, nav::use_page_motion, prelude::*, shell::use_shell};
+use crate::{
+    catalog::GameView,
+    desktop::use_desktop_ui,
+    metrics::*,
+    nav::{use_nav, use_page_motion},
+    prelude::*,
+    shell::use_shell,
+    store::{use_games, use_mods, use_projects},
+};
 
 #[derive(PartialEq)]
 pub struct GamePage {
@@ -31,7 +39,8 @@ impl Component for GamePage {
         let (shell, ui, nav) = (use_shell(), use_desktop_ui(), use_nav());
         let motion = use_page_motion();
         let env = *ui.env.read();
-        let view = GameView::resolve(self.id, &shell.host.games.read(), &shell.host.projects.read(), &shell.host.mods.read());
+        let (games, projects, mods) = (use_games(), use_projects(), use_mods());
+        let view = GameView::resolve(self.id, &games, &projects, &mods);
         let Some(view) = view else {
             return NotFound { what: "game", id: self.id.to_string() }.into_element();
         };

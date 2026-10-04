@@ -10,6 +10,7 @@ use crate::{
     nav::{Route, RouteStage, Section, use_nav},
     prelude::*,
     shell::use_shell,
+    store::{use_activity, use_games, use_keyboard_inset},
     typography::TypeStyle,
 };
 
@@ -42,14 +43,10 @@ impl Component for DesktopFrame {
         let config = *shell.transitions.read();
         let mode = shell.model.read().mode;
 
+        let (games, activity, keyboard_inset) = (use_games(), use_activity(), use_keyboard_inset());
         let window = *shell.window.read();
         let class = shell.dev.layout.unwrap_or_else(|| LayoutClass::from_width(window.0));
-        let measured = DesktopEnv {
-            class,
-            density: shell.dev.density.unwrap_or_else(|| class.default_density()),
-            window,
-            keyboard_inset: *shell.host.keyboard_inset.read(),
-        };
+        let measured = DesktopEnv { class, density: shell.dev.density.unwrap_or_else(|| class.default_density()), window, keyboard_inset };
         let mut env = use_state(|| measured);
         env.set_if_modified(measured);
 
@@ -65,7 +62,7 @@ impl Component for DesktopFrame {
         let active = target_for(&nav.current(), *last.peek());
         last.set_if_modified(active);
 
-        let downloads = shell.host.downloads.read().len() as u32;
+        let downloads = activity.counts().running as u32;
         let on_select = EventHandler::new(move |target: NavTarget| nav.open(route_for(target)));
         let bar = |mode: NavMode| NavBar::new(mode, active).downloads(downloads).on_select(on_select.clone());
 
@@ -78,7 +75,6 @@ impl Component for DesktopFrame {
                     .label("Deck mode")
                     .size(ButtonSize::Md)
                     .on_press(move |_| toggle.write().toggle_mode());
-                let games = shell.host.games.read();
                 let updates = games.iter().filter(|g| g.status == AppStatus::UpdateReady).count();
                 let status = rect()
                     .horizontal()

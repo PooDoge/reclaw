@@ -12,7 +12,7 @@ impl Component for DeckFrame {
     fn render(&self) -> impl IntoElement {
         let shell = use_shell();
         DeckApp {
-            host: shell.host,
+            store: shell.store,
             feed: shell.feed.clone(),
             on_effect: shell.on_effect.clone(),
             map: shell.map.clone(),

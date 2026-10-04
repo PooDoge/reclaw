@@ -1,7 +1,9 @@
 use freya::prelude::*;
 
 use super::common::{empty_state, page_scroll};
-use crate::{desktop::use_desktop_ui, effect::Effect, metrics::*, prelude::*, shell::use_shell, typography::TypeStyle};
+use crate::{
+    desktop::use_desktop_ui, effect::Effect, metrics::*, prelude::*, shell::use_shell, store::use_activity, typography::TypeStyle,
+};
 
 /// The download queue: progress, errors, and a way to cancel.
 #[derive(PartialEq)]
@@ -12,7 +14,8 @@ impl Component for DownloadsPage {
         let t = use_reclaw();
         let (shell, ui) = (use_shell(), use_desktop_ui());
         let env = *ui.env.read();
-        let downloads = shell.host.downloads.read().clone();
+        let board = use_activity();
+        let downloads: Vec<_> = board.queue().into_iter().cloned().collect();
         let summary = match downloads.len() {
             0 => "Nothing downloading".to_string(),
             1 => "1 item".to_string(),
@@ -26,8 +29,12 @@ impl Component for DownloadsPage {
                 .spacing(SPACE_2)
                 .width(Size::fill())
                 .children(downloads.into_iter().map(|d| {
-                    let (app, on_effect) = (d.app_id, shell.on_effect.clone());
-                    DownloadItem::new(d).on_cancel(move |_| on_effect.call(Effect::CancelDownload(app))).into_element()
+                    // A running job is cancelled by the host; an ended one is just removed from the list.
+                    let (id, running, on_effect) = (d.id, d.is_running(), shell.on_effect.clone());
+                    DownloadItem::new(d)
+                        .on_cancel(move |_| on_effect.call(if running { Effect::CancelActivity(id) } else { Effect::DismissActivity(id) }))
+                        .key(id)
+                        .into_element()
                 }))
                 .into_element()
         };

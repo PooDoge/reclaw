@@ -2,14 +2,14 @@ use freya::prelude::*;
 use reclaw_input::{Action, ActionMap};
 
 use super::{model::ShellModel, overrides::DevOverrides};
-use crate::{deck::ActionFeed, effect::Effect, host::HostState, nav::transition::TransitionConfig};
+use crate::{deck::ActionFeed, effect::Effect, nav::transition::TransitionConfig, store::Store};
 
 /// What the shell hands to everything under the router. Pages and frames read it from context
 /// instead of taking it as props, because a route's component is built by the router from its path
 /// alone and cannot be given anything else.
 #[derive(Clone)]
 pub struct ShellCtx {
-    pub host: HostState,
+    pub store: Store,
     pub feed: ActionFeed,
     pub map: ActionMap,
     /// Commands for the host. The shell has already handled the ones that are its own.
@@ -26,4 +26,10 @@ pub struct ShellCtx {
 #[track_caller]
 pub fn use_shell() -> ShellCtx {
     use_consume::<ShellCtx>()
+}
+
+/// The shared state's handle, for dispatching from handlers.
+#[track_caller]
+pub fn use_store() -> Store {
+    use_shell().store
 }

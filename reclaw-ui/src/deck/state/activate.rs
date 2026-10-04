@@ -30,8 +30,10 @@ impl DeckState {
         if let Some(index) = ids::menu_index(id) {
             return self.activate_main_menu(MAIN_MENU.get(index).copied(), view, fx);
         }
-        if let Some(app) = ids::cancel_app(id) {
-            return fx.push(Effect::CancelDownload(app));
+        if let Some(job) = ids::cancel_activity(id) {
+            // A running job is cancelled by the host; an ended row is just removed from the list.
+            let running = view.downloads.iter().find(|a| a.id == job).is_some_and(|a| a.is_running());
+            return fx.push(if running { Effect::CancelActivity(job) } else { Effect::DismissActivity(job) });
         }
         if id == ids::QA_DOWNLOADS {
             return self.go_to_section(Section::Downloads, view);

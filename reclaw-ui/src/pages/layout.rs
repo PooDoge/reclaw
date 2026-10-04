@@ -6,6 +6,7 @@ use crate::{
     desktop::DesktopFrame,
     nav::{Nav, NavInputExt},
     shell::use_shell,
+    store::{AppAction, AppChannel, use_channel},
 };
 
 /// The persistent shell around every page: the navigation handle, the input that goes back and
@@ -18,12 +19,12 @@ impl Component for AppLayout {
     fn render(&self) -> impl IntoElement {
         let nav = Nav::use_provide();
         let shell = use_shell();
-        let mut open = shell.host.open;
-        // The host asks for a page by writing it here; take it, clear it, go.
+        let (store, mailbox) = (shell.store, use_channel(AppChannel::Mailbox));
+        // The host asks for a page by putting it in the mailbox; take it, clear it, go.
         use_side_effect(move || {
-            let requested = open.read().clone();
+            let requested = mailbox.read().mailbox.open.clone();
             if let Some(route) = requested {
-                open.set(None);
+                store.dispatch(AppAction::Open(None));
                 nav.open(route);
             }
         });

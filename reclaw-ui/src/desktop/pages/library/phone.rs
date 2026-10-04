@@ -1,7 +1,7 @@
 //! Phone layout: a two-column capsule grid. A capsule opens the game's page.
 use freya::prelude::*;
 
-use super::{ctx::Ctx, parts::*};
+use super::{ctx::Ctx, parts::*, updates};
 use crate::{metrics::*, typography::TypeStyle};
 
 pub(super) fn layout(c: &Ctx) -> Element {
@@ -20,6 +20,7 @@ pub(super) fn layout(c: &Ctx) -> Element {
                     .child(TypeStyle::Eyebrow.text("Library", t.ink_muted))
                     .child(search_row(c))
                     .child(chips(c))
+                    .maybe_child(updates::section(c))
                     .child(grid(c, 2)),
             ),
         )

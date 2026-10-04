@@ -17,17 +17,18 @@ use reclaw_input::{
 };
 use reclaw_runtime::{InputProfile, LaunchSpec, RunState, SessionEvent, Supervisor};
 use reclaw_ui::{
+    bootstrap::open_store,
     deck::ActionFeed,
     effect::Effect,
-    host::HostState,
     nav::Route,
     prelude::*,
-    sample::{sample_downloads, sample_games, sample_mods, sample_projects},
     shell::{DevOverrides, Shell},
+    store::{AppAction, AppState, Store},
 };
 
 #[derive(Clone, PartialEq)]
 struct Host {
+    store: Store,
     feed: ActionFeed,
     map: ActionMap,
     env: reclaw_input::Environment,
@@ -37,8 +38,7 @@ impl App for Host {
     fn render(&self) -> impl IntoElement {
         let dev = DevOverrides::from_env(|k| std::env::var(k).ok());
         use_init_reclaw(dev.theme.unwrap_or(ThemeKind::Midnight));
-        let host = HostState::use_new(sample_games(), sample_downloads(), sample_projects(), sample_mods());
-        let (mut games, mut controller) = (host.games, host.controller);
+        let store = self.store;
 
         // Everything long-lived is created once.
         let (supervisor, input) = use_hook({
@@ -56,8 +56,8 @@ impl App for Host {
                             InputMessage::Action(a) => {
                                 let _ = tx.unbounded_send(a);
                             }
-                            InputMessage::Connected(info) => controller.set(Some(info)),
-                            InputMessage::Disconnected { .. } => controller.set(None),
+                            InputMessage::Connected(info) => store.dispatch(AppAction::SetController(Some(info))),
+                            InputMessage::Disconnected { .. } => store.dispatch(AppAction::SetController(None)),
                             InputMessage::Unavailable(why) => {
                                 eprintln!("gamepad unavailable: {why}")
                             }
@@ -72,9 +72,7 @@ impl App for Host {
                         let app = match event {
                             SessionEvent::Started { app, .. } | SessionEvent::Ended { app, .. } => app,
                         };
-                        if let Some(game) = games.write().iter_mut().find(|g| g.id == app) {
-                            game.run = watched.state(app);
-                        }
+                        store.dispatch(AppAction::SetRun { id: app, run: watched.state(app) });
                     }
                 });
                 (supervisor, input)
@@ -83,21 +81,21 @@ impl App for Host {
 
         let on_effect = EventHandler::new(move |effect: Effect| match effect {
             Effect::Launch(id) => {
-                set_run(&mut games, id, RunState::Starting);
+                set_run(store, id, RunState::Starting);
                 let mut spec = LaunchSpec::new("sh").arg("-c").arg("echo started; while true; do sleep 1; done");
                 InputProfile { allow_background_events: true, ..Default::default() }.apply(&mut spec);
                 match supervisor.start(id, spec) {
-                    Ok(_) => set_run(&mut games, id, supervisor.state(id)),
+                    Ok(_) => set_run(store, id, supervisor.state(id)),
                     Err(e) => {
                         eprintln!("launch failed: {e}");
-                        set_run(&mut games, id, RunState::Idle);
+                        set_run(store, id, RunState::Idle);
                     }
                 }
             }
             // Stop twice to force: the supervisor treats the second call as SIGKILL.
             Effect::Stop(id) => {
                 if supervisor.stop(id).is_ok() {
-                    set_run(&mut games, id, supervisor.state(id));
+                    set_run(store, id, supervisor.state(id));
                 }
             }
             Effect::InputOwner(owner) => input.set_owner(owner),
@@ -105,14 +103,21 @@ impl App for Host {
             other => eprintln!("effect for the host to handle: {other:?}"),
         });
 
-        Shell { host, feed: self.feed.clone(), map: self.map.clone(), on_effect, detected: self.env.mode, dev, script: vec![] }
+        Shell {
+            store,
+            feed: self.feed.clone(),
+            map: self.map.clone(),
+            on_effect,
+            detected: self.env.mode,
+            dev,
+            start: Route::Library {},
+            script: vec![],
+        }
     }
 }
 
-fn set_run(games: &mut State<Vec<GameEntry>>, id: u32, run: RunState) {
-    if let Some(game) = games.write().iter_mut().find(|g| g.id == id) {
-        game.run = run;
-    }
+fn set_run(store: Store, id: u32, run: RunState) {
+    store.dispatch(AppAction::SetRun { id, run });
 }
 
 fn main() {
@@ -122,10 +127,31 @@ fn main() {
     if env.guide_owner == GuideOwner::Steam {
         map.unbind(Button::Guide);
     }
+    let opened = open_store(
+        |k| std::env::var(k).ok(),
+        |state| {
+            let sample = AppState::sample();
+            state.games = sample.games;
+            state.projects = sample.projects;
+            state.mods = sample.mods;
+            state.activity = sample.activity;
+        },
+    );
+    if let Some(warning) = &opened.warning {
+        eprintln!("deck example: {warning}");
+    }
+    let store = opened.store;
     let (_tx, feed) = ActionFeed::new();
     launch(
         LaunchConfig::new().with_window(
-            WindowConfig::new_app(Host { feed, map, env }).with_title("Reclaw").with_size(1280., 800.).with_min_size(640., 400.),
+            WindowConfig::new_app(Host { store, feed, map, env })
+                .with_title("Reclaw")
+                .with_size(1280., 800.)
+                .with_min_size(640., 400.)
+                .with_on_close(move |_, _| {
+                    store.flush();
+                    CloseDecision::Close
+                }),
         ),
     );
 }

@@ -1,6 +1,9 @@
 //! Sample data for the gallery and the headless snapshots. Not a catalog; real data comes from
 //! the install/launch backend.
-use crate::model::*;
+use crate::{
+    activity::{ActivityBoard, ActivityEvent, Kind, Stage},
+    model::*,
+};
 
 pub fn sample_games() -> Vec<GameEntry> {
     let g = |id, title: &'static str, project: &'static str, version: &'static str, source, status, tags: &[&'static str]| GameEntry {
@@ -23,27 +26,45 @@ pub fn sample_games() -> Vec<GameEntry> {
     ]
 }
 
-pub fn sample_downloads() -> Vec<Download> {
-    vec![
-        Download {
-            app_id: 2,
+/// Two updates (one downloading, one failed) and a mod downloading, as the host would report them.
+pub fn sample_activity() -> ActivityBoard {
+    let mut board = ActivityBoard::new();
+    let events = [
+        ActivityEvent::Started {
+            id: 1,
+            game_id: 2,
+            kind: Kind::Update,
             title: "Skyward Quest v0.9.2".into(),
-            stage: DownloadStage::FetchingRelease,
-            progress: 34.,
-            detail: "21 MB of 61 MB".into(),
-            speed: Some("7.4 MB/s".into()),
-            error: None,
+            bytes_total: Some(61_000_000),
         },
-        Download {
-            app_id: 5,
-            title: "Moon Garden v2.0.1".into(),
-            stage: DownloadStage::FetchingRelease,
-            progress: 48.,
-            detail: "".into(),
-            speed: None,
-            error: Some("Release asset not found. Check the repository or choose another version.".into()),
+        ActivityEvent::Progress {
+            id: 1,
+            stage: Stage::Downloading,
+            bytes_done: 21_000_000,
+            bytes_total: Some(61_000_000),
+            rate: Some(7_400_000),
         },
-    ]
+        ActivityEvent::Started { id: 2, game_id: 5, kind: Kind::Update, title: "Moon Garden v2.0.1".into(), bytes_total: None },
+        ActivityEvent::Failed { id: 2, reason: "Release asset not found. Check the repository or choose another version.".into() },
+        ActivityEvent::Started {
+            id: 3,
+            game_id: 6,
+            kind: Kind::Mod { provider: ModProvider::Thunderstore, id: "ghost-data".into() },
+            title: "Ghost Data Pack".into(),
+            bytes_total: Some(2_000_000),
+        },
+        ActivityEvent::Progress {
+            id: 3,
+            stage: Stage::Downloading,
+            bytes_done: 800_000,
+            bytes_total: Some(2_000_000),
+            rate: Some(500_000),
+        },
+    ];
+    for event in events {
+        board.apply(event);
+    }
+    board
 }
 
 pub fn sample_projects() -> Vec<reclaw_games::project::ProjectInfo> {

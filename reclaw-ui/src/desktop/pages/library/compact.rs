@@ -1,7 +1,7 @@
 //! Compact layout: search, chips, the hero and a four-column capsule grid.
 use freya::prelude::*;
 
-use super::{ctx::Ctx, parts::*};
+use super::{ctx::Ctx, parts::*, updates};
 use crate::metrics::*;
 
 pub(super) fn layout(c: &Ctx) -> Element {
@@ -19,6 +19,7 @@ pub(super) fn layout(c: &Ctx) -> Element {
                     .width(Size::fill())
                     .padding(SPACE_4)
                     .child(chips(c))
+                    .maybe_child(updates::section(c))
                     .maybe_child(c.current.clone().map(|g| hero(c, g, true)))
                     .child(grid(c, 4)),
             ),

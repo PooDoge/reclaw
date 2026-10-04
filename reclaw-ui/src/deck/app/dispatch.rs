@@ -9,15 +9,14 @@ use crate::{
         DeckState, DeckView, Effect, InstallDraft, LastInput, Screen,
         settings::{SettingsTarget, TextField},
     },
-    model::{Download, GameEntry},
+    store::Store,
 };
 
 /// Everything needed to react to input. All handles are `Copy` states or cheap clones, so a
 /// dispatcher can move into any closure.
 #[derive(Clone)]
 pub(super) struct Dispatcher {
-    pub games: State<Vec<GameEntry>>,
-    pub downloads: State<Vec<Download>>,
+    pub store: Store,
     pub deck: State<DeckState>,
     pub texts: TextBoxes,
     pub root_focus: AccessibilityId,
@@ -28,11 +27,15 @@ impl Dispatcher {
     /// Run `f` on the state with a fresh view of the host's data, then forward its effects.
     pub fn run(&self, f: impl FnOnce(&mut DeckState, &DeckView) -> Vec<Effect>) {
         let effects = {
-            let (g, d) = (self.games.read(), self.downloads.read());
-            let view = DeckView { games: &g, downloads: &d };
             let mut deck = self.deck;
-            let mut state = deck.write();
-            f(&mut state, &view)
+            self.store.with(|s| {
+                let queue: Vec<_> = s.activity.queue().into_iter().cloned().collect();
+                let view = DeckView { games: &s.games, downloads: &queue };
+                let mut state = deck.write();
+                // The settings live in the store, which both interfaces share; the reducer works on a copy.
+                state.sync_values(&s.settings);
+                f(&mut state, &view)
+            })
         };
         self.forward(effects);
     }

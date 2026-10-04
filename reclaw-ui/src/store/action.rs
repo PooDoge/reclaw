@@ -1,0 +1,68 @@
+use reclaw_games::{
+    project::ProjectInfo,
+    settings::{DisplayEnvironment, SettingKey, SettingValue},
+};
+use reclaw_input::ControllerInfo;
+use reclaw_runtime::RunState;
+
+use crate::{
+    activity::ActivityEvent,
+    model::{AppStatus, GameEntry, ModEntry, ModProvider, ModStatus},
+    nav::Route,
+    notices::NoticeId,
+    settings::{SettingChange, TextField},
+};
+use reclaw_config::WindowPrefs;
+
+/// Every way the shared state can change. `Send`: the supervisor, a downloader or the gamepad
+/// thread can build one and hand it to the [`StoreFeed`](super::StoreFeed).
+#[derive(Clone, PartialEq, Debug)]
+pub enum AppAction {
+    // What the host reports.
+    SetGames(Vec<GameEntry>),
+    SetProjects(Vec<ProjectInfo>),
+    SetMods(Vec<ModEntry>),
+    SetRun {
+        id: u32,
+        run: RunState,
+    },
+    SetStatus {
+        id: u32,
+        status: AppStatus,
+    },
+    SetModStatus {
+        provider: ModProvider,
+        id: String,
+        status: ModStatus,
+    },
+    Activity(ActivityEvent),
+    SetController(Option<ControllerInfo>),
+    SetKeyboardInset(f32),
+    SetDisplay(DisplayEnvironment),
+    /// A page the host wants shown (a deep link, a clicked notification). The UI takes it with `Open(None)`.
+    Open(Option<Route>),
+    /// The file the user picked for an install. The UI takes it with `ChosenFile(None)`.
+    ChosenFile(Option<String>),
+
+    // What the user changed.
+    ToggleFavorite(u32),
+    Setting(SettingChange),
+    SettingText {
+        app: Option<u32>,
+        field: TextField,
+        value: String,
+    },
+    /// Set or (`None`) clear a launch setting, for a game or the defaults.
+    LaunchSetting {
+        app: Option<u32>,
+        key: SettingKey,
+        value: Option<SettingValue>,
+    },
+    MarkModInstalling {
+        provider: ModProvider,
+        id: String,
+    },
+    DismissNotice(NoticeId),
+    DismissAllNotices,
+    Window(WindowPrefs),
+}

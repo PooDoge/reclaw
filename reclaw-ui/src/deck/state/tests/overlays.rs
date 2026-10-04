@@ -29,8 +29,8 @@ fn quick_access_shortcut_opens_downloads_and_cancel_is_an_effect() {
     let mut s = f.state();
     press(&mut s, &f, &[QuickAccess, Confirm]);
     assert_eq!(s.section(), Section::Downloads);
-    assert_eq!(s.focus(), ids::download_cancel(2));
-    assert_eq!(s.apply(Confirm, &f.view()), vec![Effect::CancelDownload(2)]);
+    assert_eq!(s.focus(), ids::download_cancel(1), "the first row in the queue, by activity id");
+    assert_eq!(s.apply(Confirm, &f.view()), vec![Effect::CancelActivity(1)]);
 }
 
 #[test]

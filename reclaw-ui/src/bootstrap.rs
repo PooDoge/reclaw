@@ -1,0 +1,102 @@
+//! Opening the shared store at startup: find the settings file, read it, make the process-wide store
+//! and start saving changes to it. The examples and the real app all begin here.
+use std::time::Duration;
+
+use reclaw_config::{AppDirs, PrefsFile, PrefsWriter};
+
+use crate::store::{AppState, Store};
+
+/// How long a change waits for others before the settings file is written.
+const SAVE_DELAY: Duration = Duration::from_millis(400);
+
+/// What [`open_store`] made.
+pub struct Opened {
+    pub store: Store,
+    pub dirs: Option<AppDirs>,
+    /// Something the user should be told once: the file was damaged, or from a newer Reclaw.
+    pub warning: Option<String>,
+}
+
+/// Read the settings and create the store. `get` reads environment variables (`RECLAW_HOME` moves
+/// every Reclaw folder, for portable installs and for trying things without touching a profile).
+/// `seed` fills in what does not come from the settings file: the library, the catalog.
+///
+/// Not a hook: call it in `main`, before `launch`. If no folder can be found, or the file came from
+/// a newer Reclaw, the app still starts, with settings that are not saved.
+pub fn open_store(get: impl Fn(&str) -> Option<String>, seed: impl FnOnce(&mut AppState)) -> Opened {
+    let dirs = AppDirs::locate(get);
+    let file = dirs.as_ref().map(|d| PrefsFile::at(d.prefs_file()));
+    let (mut state, read_only, mut warning) = match &file {
+        Some(file) => {
+            let loaded = file.load();
+            (AppState::from_prefs(loaded.prefs), loaded.read_only, loaded.warning)
+        }
+        None => (AppState::default(), true, Some("No folder for Reclaw's settings was found, so they will not be saved.".to_string())),
+    };
+    seed(&mut state);
+    state.settings_warning = warning.clone();
+    let store = Store::create_global(state);
+    if let (Some(file), false) = (file, read_only) {
+        let writer = PrefsWriter::spawn(file, SAVE_DELAY, |e| eprintln!("reclaw: could not save settings: {e}"));
+        if writer.is_running() {
+            store.attach_persistence(writer);
+        } else {
+            warning.get_or_insert_with(|| "Settings could not be saved: the writer thread did not start.".to_string());
+        }
+    }
+    Opened { store, dirs, warning }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        settings::{SettingChange, SettingValue},
+        store::AppAction,
+    };
+
+    fn home(dir: &tempfile::TempDir) -> impl Fn(&str) -> Option<String> {
+        let root = dir.path().display().to_string();
+        move |k| (k == "RECLAW_HOME").then(|| root.clone())
+    }
+
+    #[test]
+    fn a_change_is_saved_and_the_next_start_reads_it() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        {
+            let opened = open_store(home(&dir), |s| *s = AppState { games: crate::sample::sample_games(), ..s.clone() });
+            assert!(opened.warning.is_none());
+            opened.store.dispatch(AppAction::ToggleFavorite(2));
+            opened.store.dispatch(AppAction::Setting(SettingChange { app: None, key: "rumble", value: SettingValue::Bool(false) }));
+            opened.store.flush();
+        }
+        let again = open_store(home(&dir), |_| {});
+        let state = again.store.snapshot();
+        assert!(state.favorites.contains(&2));
+        assert!(!state.settings.toggle(crate::settings::SettingsTarget::Global, "rumble", true));
+    }
+
+    #[test]
+    fn a_damaged_file_is_set_aside_with_a_warning_and_the_app_still_starts() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config = dir.path().join("config");
+        std::fs::create_dir_all(&config).expect("mkdir");
+        std::fs::write(config.join("settings.toml"), "= not toml =").expect("write");
+        let opened = open_store(home(&dir), |_| {});
+        assert!(opened.warning.as_deref().is_some_and(|w| w.contains("could not be read")), "{:?}", opened.warning);
+        assert!(config.join("settings.toml.bad").exists());
+    }
+
+    #[test]
+    fn a_file_from_a_newer_reclaw_is_never_overwritten() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config = dir.path().join("config");
+        std::fs::create_dir_all(&config).expect("mkdir");
+        std::fs::write(config.join("settings.toml"), "version = 99\nfavorites = [5]\n").expect("write");
+        let opened = open_store(home(&dir), |_| {});
+        opened.store.dispatch(AppAction::ToggleFavorite(5));
+        opened.store.flush();
+        let text = std::fs::read_to_string(config.join("settings.toml")).expect("read");
+        assert!(text.contains("version = 99"), "left alone: {text}");
+    }
+}

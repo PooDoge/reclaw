@@ -22,8 +22,10 @@ futures-util = { version = "0.3", default-features = false }
 reclaw-input = { path = "../reclaw-input" }
 reclaw-runtime = { path = "../reclaw-runtime" }
 reclaw-games = { path = "../reclaw-games" }
+reclaw-config = { path = "../reclaw-config" }
 
 [dev-dependencies]
+tempfile = "3"
 serde_json = "1"
 freya-testing = "=0.5.0-rc.8"
 freya-core = "=0.5.0-rc.8"

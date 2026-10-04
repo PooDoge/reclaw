@@ -1,7 +1,7 @@
 use freya::prelude::*;
 
 use super::common::{ModRow, empty_state, page_scroll, tab_header};
-use crate::{catalog::mods_matching, desktop::use_desktop_ui, metrics::*, model::ModProvider, prelude::*, shell::use_shell};
+use crate::{catalog::mods_matching, desktop::use_desktop_ui, metrics::*, model::ModProvider, prelude::*, store::use_mods};
 
 /// Mods from the sites Reclaw knows, filtered by provider and the search box. A row opens the
 /// mod's page; its button installs or removes without opening it.
@@ -11,9 +11,9 @@ pub struct ModsPage {}
 impl Component for ModsPage {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
-        let (shell, ui) = (use_shell(), use_desktop_ui());
+        let ui = use_desktop_ui();
         let env = *ui.env.read();
-        let mods = shell.host.mods.read();
+        let mods = use_mods();
         let mut provider = ui.provider;
         let current = *provider.read();
 

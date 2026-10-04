@@ -1,7 +1,13 @@
 use freya::prelude::*;
 
 use super::Slot;
-use crate::{components::InstallDialog, desktop::use_desktop_ui, effect::Effect, shell::use_shell};
+use crate::{
+    components::InstallDialog,
+    desktop::use_desktop_ui,
+    effect::Effect,
+    shell::use_shell,
+    store::{AppAction, AppChannel, use_channel, use_games},
+};
 
 /// The install form, over whichever page opened it. Owns the form's fields.
 #[derive(Clone, PartialEq)]
@@ -18,19 +24,18 @@ impl Component for InstallSheet {
         let mut game_file = use_state(|| None::<String>);
         let shortcut = use_state(|| true);
         let prerelease = use_state(|| false);
-        let mut chosen = shell.host.chosen_file;
+        let (store, mailbox, games) = (shell.store, use_channel(AppChannel::Mailbox), use_games());
 
-        // The host answers `ChooseFile` by writing the path here; take it for the open form.
+        // The host answers `ChooseFile` by putting the path in the mailbox; take it for the open form.
         use_side_effect(move || {
-            let picked = chosen.read().clone();
+            let picked = mailbox.read().mailbox.chosen_file.clone();
             if let (Some(path), Some(_)) = (picked, open.peek()) {
-                chosen.set(None);
+                store.dispatch(AppAction::ChosenFile(None));
                 game_file.set(Some(path));
             }
         });
 
         let id = open.get();
-        let games = shell.host.games.read();
         let game = id.and_then(|id| games.iter().find(|g| g.id == id));
         let title = game.map(|g| g.title.to_string()).unwrap_or_default();
 

@@ -5,8 +5,9 @@ pub(super) use reclaw_runtime::RunState;
 
 pub(super) use crate::deck::state::*;
 use crate::{
-    model::{Download, GameEntry},
-    sample::{sample_downloads, sample_games},
+    activity::Activity,
+    model::GameEntry,
+    sample::{sample_activity, sample_games},
 };
 
 pub(super) fn running() -> RunState {
@@ -16,12 +17,12 @@ pub(super) fn running() -> RunState {
 /// The sample library and queue, with helpers to build a view and change an app's run state.
 pub(super) struct Fixture {
     pub games: Vec<GameEntry>,
-    pub downloads: Vec<Download>,
+    pub downloads: Vec<Activity>,
 }
 
 impl Fixture {
     pub fn new() -> Self {
-        Self { games: sample_games(), downloads: sample_downloads() }
+        Self { games: sample_games(), downloads: sample_activity().queue().into_iter().cloned().collect() }
     }
 
     pub fn view(&self) -> DeckView<'_> {

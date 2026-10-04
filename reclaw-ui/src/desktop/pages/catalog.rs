@@ -6,7 +6,7 @@ use crate::{
     desktop::use_desktop_ui,
     metrics::*,
     prelude::*,
-    shell::use_shell,
+    store::{use_games, use_projects},
 };
 
 /// Every known recompilation project, filtered by platform and the search box. A card opens the
@@ -17,9 +17,9 @@ pub struct CatalogPage {}
 impl Component for CatalogPage {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
-        let (shell, ui) = (use_shell(), use_desktop_ui());
+        let ui = use_desktop_ui();
         let env = *ui.env.read();
-        let (games, projects) = (shell.host.games.read(), shell.host.projects.read());
+        let (games, projects) = (use_games(), use_projects());
         let mut platform = ui.platform;
         let current = *platform.read();
 

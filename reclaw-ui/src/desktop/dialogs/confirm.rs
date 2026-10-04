@@ -6,6 +6,7 @@ use crate::{
     desktop::use_desktop_ui,
     prelude::*,
     shell::use_shell,
+    store::use_games,
     surface::{Dialog, DialogAction, SurfaceKind},
     typography::TypeStyle,
 };
@@ -21,9 +22,9 @@ impl Component for UninstallConfirm {
         let t = use_reclaw();
         let (shell, ui) = (use_shell(), use_desktop_ui());
         let env = *ui.env.read();
+        let games = use_games();
         let confirm = self.confirm;
         let Some(id) = confirm.get() else { return rect().into_element() };
-        let games = shell.host.games.read();
         let Some(game) = games.iter().find(|g| g.id == id) else { return rect().into_element() };
 
         let on_effect = shell.on_effect.clone();

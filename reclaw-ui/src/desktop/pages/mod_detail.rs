@@ -8,6 +8,7 @@ use crate::{
     nav::{Route, use_nav},
     prelude::*,
     shell::use_shell,
+    store::{use_games, use_mods, use_projects},
     typography::TypeStyle,
 };
 
@@ -22,20 +23,18 @@ impl Component for ModDetailPage {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         let (shell, ui, nav) = (use_shell(), use_desktop_ui(), use_nav());
+        let (mods, games, projects) = (use_mods(), use_games(), use_projects());
         let env = *ui.env.read();
-        let entry = ModProvider::from_slug(&self.provider)
-            .and_then(|_| shell.host.mods.read().iter().find(|m| m.matches(&self.provider, &self.mod_id)).cloned());
+        let entry =
+            ModProvider::from_slug(&self.provider).and_then(|_| mods.iter().find(|m| m.matches(&self.provider, &self.mod_id)).cloned());
         let Some(entry) = entry else {
             return NotFound { what: "mod", id: format!("{}/{}", self.provider, self.mod_id) }.into_element();
         };
-        let game = shell
-            .host
-            .games
-            .read()
+        let game = games
             .iter()
             .find(|g| g.id == entry.game_id)
             .map(|g| g.title.to_string())
-            .or_else(|| shell.host.projects.read().iter().find(|p| p.id == entry.game_id).map(|p| p.title.clone()));
+            .or_else(|| projects.iter().find(|p| p.id == entry.game_id).map(|p| p.title.clone()));
 
         let line = |name: &'static str, value: String| {
             rect()

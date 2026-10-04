@@ -6,9 +6,10 @@ use reclaw_input::InputOwner;
 use reclaw_games::settings::{SettingKey, SettingValue};
 
 use crate::{
-    deck::settings::{SettingChange, TextField},
+    activity::ActivityId,
     model::ModProvider,
-    nav::transition::TransitionConfig,
+    notices::NoticeId,
+    settings::{SettingChange, TextField},
 };
 
 /// The interface the user asked for in Settings.
@@ -52,7 +53,12 @@ pub enum Effect {
         name: &'static str,
     },
     NewCollection(u32),
-    CancelDownload(u32),
+    /// Stop a download or install. The host answers with an `ActivityEvent::Cancelled`.
+    CancelActivity(ActivityId),
+    /// Remove a finished or failed row from the Downloads list.
+    DismissActivity(ActivityId),
+    DismissNotice(NoticeId),
+    DismissAllNotices,
     Search,
     InstallMod {
         provider: ModProvider,
@@ -66,15 +72,13 @@ pub enum Effect {
     OpenUrl(String),
     SwitchToDesktop,
     /// A launch setting changed: for one game (`app`) or the defaults (`None`). `value: None` clears
-    /// the choice so the next level decides. The `Shell` has already applied it to `HostState`; the
-    /// host persists it.
+    /// the choice so the next level decides. The `Shell` has already applied it to the store, which
+    /// saves it.
     LaunchSetting {
         app: Option<u32>,
         key: SettingKey,
         value: Option<SettingValue>,
     },
-    /// Page transition settings changed (already applied by the `Shell`); persist them.
-    Transitions(TransitionConfig),
     /// The Interface choice in Settings changed.
     SetMode(ModePref),
     /// A toggle or choice changed; persist it.

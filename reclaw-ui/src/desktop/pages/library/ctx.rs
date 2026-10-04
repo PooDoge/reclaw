@@ -4,6 +4,7 @@ use freya::prelude::*;
 
 use super::filter::Filter;
 use crate::{
+    activity::{ActivityBoard, SidebarEntry},
     desktop::{DesktopEnv, GameDialogs},
     effect::Effect,
     nav::Nav,
@@ -16,7 +17,9 @@ pub(super) struct Ctx {
     pub t: Reclaw,
     pub env: DesktopEnv,
     pub games: Vec<GameEntry>,
-    pub downloads: Vec<Download>,
+    pub activity: ActivityBoard,
+    /// Games with an update waiting, work in progress, or a result from this run.
+    pub updates_section: Vec<SidebarEntry>,
     /// After the filter chips and the search box.
     pub visible: Vec<GameEntry>,
     pub current: Option<GameEntry>,

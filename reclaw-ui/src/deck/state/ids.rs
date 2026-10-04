@@ -37,8 +37,9 @@ pub fn menu(index: usize) -> FocusId {
     FocusId(MENU | index as u32)
 }
 
-pub fn download_cancel(app: u32) -> FocusId {
-    FocusId(DOWNLOAD | app)
+/// The button of one Downloads row, by activity id (ids past 2^28 would collide with the tag bits).
+pub fn download_cancel(activity: u64) -> FocusId {
+    FocusId(DOWNLOAD | (activity as u32 & 0x0FFF_FFFF))
 }
 
 pub fn settings_nav(section: usize) -> FocusId {
@@ -62,8 +63,8 @@ pub fn menu_index(id: FocusId) -> Option<usize> {
     (id.0 & KIND_MASK == MENU).then_some((id.0 & 0xFFFF) as usize)
 }
 
-pub fn cancel_app(id: FocusId) -> Option<u32> {
-    (id.0 & KIND_MASK == DOWNLOAD).then_some(id.0 & 0x0FFF_FFFF)
+pub fn cancel_activity(id: FocusId) -> Option<u64> {
+    (id.0 & KIND_MASK == DOWNLOAD).then_some(u64::from(id.0 & 0x0FFF_FFFF))
 }
 
 pub fn nav_section(id: FocusId) -> Option<usize> {
@@ -84,7 +85,7 @@ mod tests {
         assert_eq!(tile_game(tile(1, 42)), Some(42));
         assert_eq!(tile_shelf(tile(1, 42)), Some(1));
         assert_eq!(menu_index(menu(5)), Some(5));
-        assert_eq!(cancel_app(download_cancel(9)), Some(9));
+        assert_eq!(cancel_activity(download_cancel(9)), Some(9));
         assert_eq!(nav_section(settings_nav(3)), Some(3));
         assert_eq!(row_of(settings_row(2, 7)), Some((2, 7)));
     }

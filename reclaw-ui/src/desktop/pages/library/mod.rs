@@ -9,13 +9,22 @@ mod ctx;
 mod filter;
 mod parts;
 mod phone;
+mod updates;
 mod wide;
 
 use freya::prelude::*;
 
 use self::ctx::Ctx;
 pub use self::filter::Filter;
-use crate::{desktop::use_desktop_ui, metrics::*, nav::use_nav, prelude::*, shell::use_shell};
+use crate::{
+    activity::sidebar_entries,
+    desktop::use_desktop_ui,
+    metrics::*,
+    nav::use_nav,
+    prelude::*,
+    shell::use_shell,
+    store::{use_activity, use_games},
+};
 
 #[derive(PartialEq)]
 pub struct LibraryPage {}
@@ -25,9 +34,9 @@ impl Component for LibraryPage {
         let t = use_reclaw();
         let (shell, ui, nav) = (use_shell(), use_desktop_ui(), use_nav());
         let env = *ui.env.read();
-        let games = shell.host.games.read().clone();
-        let downloads = shell.host.downloads.read().clone();
+        let (games, activity) = (use_games(), use_activity());
         let selected = ui.selected;
+        let updates_section = sidebar_entries(&activity, &games);
 
         let ctx = Ctx {
             t,
@@ -37,7 +46,8 @@ impl Component for LibraryPage {
             installed: games.iter().filter(|g| g.status.is_installed()).count() as u32,
             updates: games.iter().filter(|g| g.status == AppStatus::UpdateReady).count() as u32,
             games,
-            downloads,
+            updates_section,
+            activity,
             selected,
             filter: ui.filter,
             search: ui.search,

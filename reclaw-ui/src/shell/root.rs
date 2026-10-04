@@ -7,7 +7,12 @@ use super::{
     model::{ShellModel, keyboard_height},
     overrides::{DevOverrides, KeyboardStart},
 };
-use crate::{deck::ActionFeed, effect::Effect, host::HostState, nav::Route};
+use crate::{
+    deck::ActionFeed,
+    effect::Effect,
+    nav::Route,
+    store::{AppAction, Store, ui_action},
+};
 
 /// The root. Keys that work in both interfaces, for testing without a device: **F10** switches
 /// between desktop and Deck mode; **F9** shows or hides a simulated on-screen keyboard so keyboard
@@ -16,7 +21,7 @@ use crate::{deck::ActionFeed, effect::Effect, host::HostState, nav::Route};
 /// It mounts the router once; mode switches happen below it, so the current page survives them.
 #[derive(Clone, PartialEq)]
 pub struct Shell {
-    pub host: HostState,
+    pub store: Store,
     pub feed: ActionFeed,
     pub map: ActionMap,
     /// Commands for the host. The shell handles mode changes itself and passes everything on.
@@ -32,7 +37,8 @@ pub struct Shell {
 
 impl Component for Shell {
     fn render(&self) -> impl IntoElement {
-        let host = self.host;
+        let store = self.store;
+        store.install();
         let mut window = use_state(|| (1280.0f32, 800.0f32));
         let mut model = use_state({
             let (detected, dev) = (self.detected, self.dev);
@@ -46,25 +52,24 @@ impl Component for Shell {
                 m
             }
         });
-        let mut transitions = use_state({
+        let transitions = use_state({
             let dev = self.dev;
             move || dev.transitions()
         });
 
-        // Both interfaces read the keyboard height from the shared host state.
+        // Both interfaces read the keyboard height from the shared store.
         use_side_effect(move || {
             let height = model.read().keyboard;
-            let mut inset = host.keyboard_inset;
-            inset.set_if_modified(height);
+            store.dispatch(AppAction::SetKeyboardInset(height));
         });
 
         let on_effect = {
             let host_handler = self.on_effect.clone();
             EventHandler::new(move |effect: Effect| {
                 model.write().on_effect(&effect, window().1);
-                host.apply(&effect);
-                if let Effect::Transitions(config) = &effect {
-                    transitions.set(*config);
+                // State the UI owns changes here; the host still hears about it.
+                if let Some(action) = ui_action(&effect) {
+                    store.dispatch(action);
                 }
                 host_handler.call(effect);
             })
@@ -72,7 +77,7 @@ impl Component for Shell {
         // The context is created once, on the first render; everything in it is a stable handle.
         use_provide_context({
             let (feed, map, dev, script, on_effect) = (self.feed.clone(), self.map.clone(), self.dev, self.script.clone(), on_effect);
-            move || ShellCtx { host, feed, map, on_effect, dev, script, model, transitions, window }
+            move || ShellCtx { store, feed, map, on_effect, dev, script, model, transitions, window }
         });
 
         let start = self.start.clone();

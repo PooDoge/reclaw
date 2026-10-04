@@ -8,7 +8,7 @@ mod frame;
 pub mod layout;
 mod pages;
 pub mod routes;
-pub mod settings;
+pub use crate::settings;
 pub mod state;
 mod widgets;
 

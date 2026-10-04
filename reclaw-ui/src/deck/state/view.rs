@@ -2,11 +2,12 @@
 //! derived from it.
 use reclaw_input::Rect;
 
-use crate::{metrics::*, model::*};
+use crate::{activity::Activity, metrics::*, model::*};
 
 pub struct DeckView<'a> {
     pub games: &'a [GameEntry],
-    pub downloads: &'a [Download],
+    /// The Downloads list: running jobs first, then failed, then finished.
+    pub downloads: &'a [Activity],
 }
 
 impl DeckView<'_> {

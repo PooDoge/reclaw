@@ -92,7 +92,7 @@ impl DeckState {
                 .downloads
                 .iter()
                 .enumerate()
-                .map(|(i, d)| node(ids::download_cancel(d.app_id), 0., i as f32 * 96., DECK_TARGET_MIN, DECK_TARGET_MIN))
+                .map(|(i, d)| node(ids::download_cancel(d.id), 0., i as f32 * 96., DECK_TARGET_MIN, DECK_TARGET_MIN))
                 .collect(),
             Scope::Home(_) => Vec::new(),
         }

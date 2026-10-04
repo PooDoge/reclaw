@@ -33,6 +33,9 @@ pub enum IconName {
     /// The star with its inside painted: a favorite.
     StarFilled,
     External,
+    /// Files here, being made ready.
+    Package,
+    Clock,
 }
 
 impl IconName {
@@ -65,6 +68,8 @@ impl IconName {
             Self::Star => ("star", lucide::star()),
             Self::StarFilled => ("star-filled", filled(lucide::star())),
             Self::External => ("external-link", lucide::external_link()),
+            Self::Package => ("package", lucide::package()),
+            Self::Clock => ("clock", lucide::clock()),
         }
     }
 }

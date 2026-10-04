@@ -161,6 +161,13 @@ impl DeckState {
     }
 
     /// Seed persisted settings.
+    /// Replace the working copy with the store's, which both interfaces share.
+    pub fn sync_values(&mut self, values: &SettingsValues) {
+        if self.values != *values {
+            self.values = values.clone();
+        }
+    }
+
     pub fn values_mut(&mut self) -> &mut SettingsValues {
         &mut self.values
     }

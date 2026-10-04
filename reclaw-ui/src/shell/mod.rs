@@ -8,7 +8,7 @@ mod model;
 mod overrides;
 mod root;
 
-pub use ctx::{ShellCtx, use_shell};
+pub use ctx::{ShellCtx, use_shell, use_store};
 pub use model::{SIM_KEYBOARD_SHARE, ShellModel, keyboard_height, other, resolve};
 pub use overrides::{DevOverrides, KeyboardStart, MotionOverride};
 pub use root::Shell;

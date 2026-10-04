@@ -21,17 +21,17 @@ pub use text_boxes::TextBoxes;
 
 use crate::{
     deck::{DeckState, DeckView, Effect, LastInput, ids},
-    host::HostState,
     prelude::*,
+    store::{AppChannel, Store, use_activity, use_channel, use_controller, use_games, use_keyboard_inset, use_settings},
 };
 use dispatch::Dispatcher;
 use frame::Frame;
 
-/// Deck mode root. The host owns the data (`HostState`) and the processes; this component only
-/// reads them, so a run state change from the supervisor shows up the moment the host writes it.
+/// Deck mode root. The host owns the processes and reports what they do to the store; this component
+/// only reads it, so a run state change from the supervisor shows up the moment the host reports it.
 #[derive(Clone, PartialEq)]
 pub struct DeckApp {
-    pub host: HostState,
+    pub store: Store,
     pub feed: ActionFeed,
     pub on_effect: EventHandler<Effect>,
     pub map: ActionMap,
@@ -43,15 +43,19 @@ impl Component for DeckApp {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         use_provide_context(|| ManagedFocus);
-        let HostState { games, downloads, controller, keyboard_inset, mut chosen_file, .. } = self.host;
+        let store = self.store;
+        let (games, activity, controller, keyboard_inset) = (use_games(), use_activity(), use_controller(), use_keyboard_inset());
+        let settings = use_settings();
+        let (games_changed, activity_changed, mailbox) =
+            (use_channel(AppChannel::Games), use_channel(AppChannel::Activity), use_channel(AppChannel::Mailbox));
         let texts = TextBoxes::use_new();
         let root_focus = use_a11y();
 
         let deck = {
-            let script = self.script.clone();
+            let (script, games, activity) = (self.script.clone(), games.clone(), activity.clone());
             use_state(move || {
-                let (g, d) = (games.read(), downloads.read());
-                let view = DeckView { games: &g, downloads: &d };
+                let queue: Vec<_> = activity.queue().into_iter().cloned().collect();
+                let view = DeckView { games: &games, downloads: &queue };
                 let mut state = DeckState::new(&view);
                 for action in script {
                     state.apply(action, &view);
@@ -60,8 +64,8 @@ impl Component for DeckApp {
             })
         };
         let mut window = use_state(|| (1280.0f32, 800.0f32));
-        let mut was_active = use_state(|| games.read().iter().any(|g| g.run.is_active()));
-        let dispatcher = Dispatcher { games, downloads, deck, texts, root_focus, on_effect: self.on_effect.clone() };
+        let mut was_active = use_state(|| games.iter().any(|g| g.run.is_active()));
+        let dispatcher = Dispatcher { store, deck, texts, root_focus, on_effect: self.on_effect.clone() };
 
         // Gamepad actions: drained by one task for the lifetime of the app.
         use_hook({
@@ -70,7 +74,7 @@ impl Component for DeckApp {
                 spawn(async move {
                     let Some(mut rx) = feed.take() else { return };
                     while let Some(action) = rx.next().await {
-                        let kind = controller.read().as_ref().map_or(ControllerKind::Generic, |c| c.kind);
+                        let kind = store.with(|s| s.controller.as_ref().map_or(ControllerKind::Generic, |c| c.kind));
                         dispatcher.run(|state, view| {
                             state.set_last_input(LastInput::Gamepad(kind));
                             state.apply(action, view)
@@ -85,14 +89,14 @@ impl Component for DeckApp {
         use_side_effect({
             let dispatcher = dispatcher.clone();
             move || {
-                let active = games.read().iter().any(|g| g.run.is_active());
-                downloads.read();
+                let active = games_changed.read().games.iter().any(|g| g.run.is_active());
+                activity_changed.read();
                 let ended = *was_active.peek() && !active;
                 was_active.set_if_modified(active);
                 // Reading subscribes to the host's answer; clearing it re-runs this once, harmlessly.
-                let picked = chosen_file.read().clone();
+                let picked = mailbox.read().mailbox.chosen_file.clone();
                 if let Some(path) = picked {
-                    chosen_file.set(None);
+                    store.dispatch(crate::store::AppAction::ChosenFile(None));
                     let mut deck = deck;
                     deck.write().set_install_file(path);
                 }
@@ -117,10 +121,11 @@ impl Component for DeckApp {
             EventHandler::new(move |(level, index): (usize, usize)| d.run(|state, view| state.pick_menu(level, index, view)))
         };
 
-        let state = deck.read().clone();
+        let mut state = deck.read().clone();
+        state.sync_values(&settings);
         let typing_now = state.text_entry().is_some();
-        let (g, d) = (games.read().clone(), downloads.read().clone());
-        let pad = controller.read().clone();
+        let (g, d) = (games.clone(), activity.queue().into_iter().cloned().collect::<Vec<_>>());
+        let pad = controller.clone();
         let kind = pad.as_ref().map_or(ControllerKind::Generic, |c| c.kind);
         let (schema, reveal) = {
             let view = DeckView { games: &g, downloads: &d };
@@ -133,7 +138,7 @@ impl Component for DeckApp {
                 other => other,
             },
             window: window(),
-            keyboard_inset: *keyboard_inset.read(),
+            keyboard_inset,
             map: self.map.clone(),
             texts,
             schema,
