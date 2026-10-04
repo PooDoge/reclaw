@@ -36,6 +36,8 @@ pub trait Fetch: Send + Sync {
 /// blocking client must not be created or dropped inside an async runtime, and the UI thread may be in one.
 pub struct HttpFetcher {
     timeout: Duration,
+    /// Certificate authorities to trust besides the built-in ones, as PEM (a company proxy's, say).
+    extra_roots: Option<Vec<u8>>,
     client: OnceLock<Result<Client, String>>,
 }
 
@@ -43,7 +45,15 @@ const MAX_REDIRECTS: usize = 4;
 
 impl HttpFetcher {
     pub fn new(timeout: Duration) -> Self {
-        Self { timeout, client: OnceLock::new() }
+        Self { timeout, extra_roots: None, client: OnceLock::new() }
+    }
+
+    /// Also trust the certificate authorities in this PEM bundle. Without them only the public
+    /// ones built into the program are trusted, so a network that re-signs traffic (a company
+    /// proxy) needs this. Hosts usually pass the file `SSL_CERT_FILE` names, if it is set.
+    pub fn with_extra_roots(mut self, pem: Vec<u8>) -> Self {
+        self.extra_roots = Some(pem);
+        self
     }
 
     fn client(&self) -> Result<&Client, FetchError> {
@@ -58,13 +68,19 @@ impl HttpFetcher {
                     attempt.follow()
                 }
             });
-            Client::builder()
+            let mut builder = Client::builder()
                 .user_agent(concat!("Reclaw/", env!("CARGO_PKG_VERSION")))
                 .timeout(self.timeout)
                 .connect_timeout(Duration::from_secs(8))
-                .redirect(redirects)
-                .build()
-                .map_err(|e| e.to_string())
+                .redirect(redirects);
+            if let Some(pem) = &self.extra_roots {
+                let roots =
+                    reqwest::Certificate::from_pem_bundle(pem).map_err(|e| format!("the extra certificates are not valid PEM: {e}"))?;
+                for root in roots {
+                    builder = builder.add_root_certificate(root);
+                }
+            }
+            builder.build().map_err(|e| e.to_string())
         });
         built.as_ref().map_err(|e| FetchError::Network(e.clone()))
     }

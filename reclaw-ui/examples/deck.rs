@@ -168,6 +168,6 @@ fn main() {
     let (_tx, feed) = ActionFeed::new();
     let frame = Frame::from_env(|k| std::env::var(k).ok());
     let server = detect_server(|k| std::env::var(k).ok());
-    let media = open_media(opened.dirs.as_ref());
+    let media = open_media(opened.dirs.as_ref(), |k| std::env::var(k).ok());
     launch(launch_config(Host { frame, media, store, feed, map, env }, store, frame, server));
 }

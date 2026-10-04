@@ -18,9 +18,19 @@ const MEDIA_TIMEOUT: Duration = Duration::from_secs(20);
 /// Start fetching and caching artwork and READMEs, in the cache folder. `None` when there is no
 /// folder to cache in, or the system would not start the worker threads: the app then shows
 /// placeholders, which is how it looks offline anyway.
-pub fn open_media(dirs: Option<&AppDirs>) -> Option<MediaHub> {
+///
+/// `get` reads environment variables: `SSL_CERT_FILE`, when it names a readable PEM bundle, adds those
+/// certificate authorities to the trusted ones (a network that re-signs HTTPS traffic needs it).
+pub fn open_media(dirs: Option<&AppDirs>, get: impl Fn(&str) -> Option<String>) -> Option<MediaHub> {
     let dirs = dirs?;
-    let cache = MediaCache::new(DiskStore::new(dirs.media_cache()), Arc::new(HttpFetcher::new(MEDIA_TIMEOUT)), Policy::default());
+    let mut fetcher = HttpFetcher::new(MEDIA_TIMEOUT);
+    if let Some(path) = get("SSL_CERT_FILE").filter(|p| !p.is_empty()) {
+        match std::fs::read(&path) {
+            Ok(pem) => fetcher = fetcher.with_extra_roots(pem),
+            Err(e) => eprintln!("reclaw: SSL_CERT_FILE {path} could not be read, so it is not used: {e}"),
+        }
+    }
+    let cache = MediaCache::new(DiskStore::new(dirs.media_cache()), Arc::new(fetcher), Policy::default());
     match MediaHub::start(cache, MEDIA_WORKERS) {
         Ok(hub) => Some(hub),
         Err(e) => {
