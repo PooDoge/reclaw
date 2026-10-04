@@ -1,20 +1,16 @@
 use std::time::Duration;
 
-/// How long each held button must be held. Long enough that nobody triggers it by accident while
-/// pressing the button for its normal job, short enough not to feel like a chore.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct HoldTimes {
-    /// Show more about the notification.
-    pub details: Duration,
-    /// Dismiss every notification.
-    pub dismiss_all: Duration,
-}
+use reclaw_input::{Button, HoldRule};
 
-impl Default for HoldTimes {
-    fn default() -> Self {
-        Self { details: Duration::from_millis(900), dismiss_all: Duration::from_millis(1200) }
-    }
-}
+/// Hold X to open the notification's details.
+pub const DETAILS_BUTTON: Button = Button::West;
+/// Hold Y to dismiss every notification.
+pub const DISMISS_ALL_BUTTON: Button = Button::North;
+
+/// How long each is held. Long enough that nobody triggers it while pressing the button for its
+/// ordinary job (X is Options, Y is Search), short enough not to feel like a chore.
+pub const DETAILS_AFTER: Duration = Duration::from_millis(900);
+pub const DISMISS_ALL_AFTER: Duration = Duration::from_millis(1200);
 
 /// What a completed hold asks for.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -23,96 +19,51 @@ pub enum HoldAction {
     DismissAll,
 }
 
-/// Where a hold is, for drawing the ring around the button glyph.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum HoldPhase {
-    Idle,
-    /// Held for part of the time; `progress` is 0 to 1.
-    Holding {
-        action: HoldAction,
-        progress: f32,
-    },
+impl HoldAction {
+    /// The action for a button whose hold completed, if it is one of ours.
+    pub fn of(button: Button) -> Option<Self> {
+        match button {
+            DETAILS_BUTTON => Some(Self::Details),
+            DISMISS_ALL_BUTTON => Some(Self::DismissAll),
+            _ => None,
+        }
+    }
+
+    pub fn button(self) -> Button {
+        match self {
+            Self::Details => DETAILS_BUTTON,
+            Self::DismissAll => DISMISS_ALL_BUTTON,
+        }
+    }
+
+    pub fn after(self) -> Duration {
+        match self {
+            Self::Details => DETAILS_AFTER,
+            Self::DismissAll => DISMISS_ALL_AFTER,
+        }
+    }
 }
 
-/// A press-and-hold on a button, as a state machine. The caller passes the time in (`elapsed` since
-/// some fixed start) so the logic is exact in tests and the UI can drive it from a frame timer.
-///
-/// A short press is not a hold: [`release`](Self::release) tells the caller so, and the button's
-/// ordinary action should then run. That is why the ordinary action must wait for the release while
-/// a notification is on screen.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub struct Hold {
-    times: HoldTimes,
-    held: Option<(HoldAction, Duration)>,
-    fired: bool,
+/// The rules to give the gamepad reader: which buttons can be held while a notification shows.
+pub fn hold_rules() -> Vec<HoldRule> {
+    [HoldAction::Details, HoldAction::DismissAll].into_iter().map(|a| HoldRule { button: a.button(), after: a.after() }).collect()
 }
 
-/// What releasing the button means.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Released {
-    /// Released early: it was a tap, run the button's normal action.
-    Tap,
-    /// The hold had already completed; nothing more to do.
-    AfterHold,
-    /// The button was not being held (a stray release).
-    Nothing,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl Hold {
-    pub fn new(times: HoldTimes) -> Self {
-        Self { times, held: None, fired: false }
-    }
-
-    fn needed(&self, action: HoldAction) -> Duration {
-        match action {
-            HoldAction::Details => self.times.details,
-            HoldAction::DismissAll => self.times.dismiss_all,
+    #[test]
+    fn each_hold_button_maps_to_its_action_and_back() {
+        for action in [HoldAction::Details, HoldAction::DismissAll] {
+            assert_eq!(HoldAction::of(action.button()), Some(action));
         }
+        assert_eq!(HoldAction::of(Button::South), None);
     }
 
-    /// The button went down at `now`. A second press while one is held is ignored.
-    pub fn press(&mut self, action: HoldAction, now: Duration) {
-        if self.held.is_none() {
-            self.held = Some((action, now));
-            self.fired = false;
-        }
-    }
-
-    /// Advance to `now`. Returns the action exactly once, the moment the hold completes.
-    pub fn tick(&mut self, now: Duration) -> Option<HoldAction> {
-        let (action, since) = self.held?;
-        if !self.fired && now.saturating_sub(since) >= self.needed(action) {
-            self.fired = true;
-            return Some(action);
-        }
-        None
-    }
-
-    pub fn release(&mut self) -> Released {
-        match self.held.take() {
-            None => Released::Nothing,
-            Some(_) if self.fired => Released::AfterHold,
-            Some(_) => Released::Tap,
-        }
-    }
-
-    /// Abandon the hold without a tap (the notification went away, the window lost focus).
-    pub fn cancel(&mut self) {
-        self.held = None;
-        self.fired = false;
-    }
-
-    pub fn is_held(&self) -> bool {
-        self.held.is_some()
-    }
-
-    pub fn phase(&self, now: Duration) -> HoldPhase {
-        match self.held {
-            None => HoldPhase::Idle,
-            Some((action, since)) => {
-                let needed = self.needed(action).as_secs_f32().max(f32::EPSILON);
-                HoldPhase::Holding { action, progress: (now.saturating_sub(since).as_secs_f32() / needed).clamp(0., 1.) }
-            }
-        }
+    #[test]
+    fn dismissing_everything_takes_longer_than_looking_closer() {
+        assert!(DISMISS_ALL_AFTER > DETAILS_AFTER, "the destructive one needs the longer hold");
+        assert_eq!(hold_rules().len(), 2);
     }
 }

@@ -1,9 +1,12 @@
 //! Runs actions through the reducer and sends the resulting effects on. A few effects are
 //! finished here because only this layer holds the text boxes: the Install submit becomes a full
 //! request, and leaving a text box reports what was typed.
-use freya::prelude::*;
+use std::time::{Duration, Instant};
 
-use super::text_boxes::TextBoxes;
+use freya::prelude::*;
+use reclaw_input::{Action, Button};
+
+use super::{key_holds::KeyHolds, text_boxes::TextBoxes};
 use crate::{
     deck::{
         DeckState, DeckView, Effect, InstallDraft, LastInput, Screen,
@@ -23,6 +26,8 @@ pub(super) struct Dispatcher {
     pub deck: State<DeckState>,
     pub texts: TextBoxes,
     pub root_focus: AccessibilityId,
+    /// X and Y held on a keyboard.
+    pub holds: State<KeyHolds>,
     pub on_effect: EventHandler<Effect>,
 }
 
@@ -34,7 +39,7 @@ impl Dispatcher {
             self.store.with(|s| {
                 let queue: Vec<_> = s.activity.queue().into_iter().cloned().collect();
                 let launch = LaunchContext { env: &s.display, projects: &s.projects, prefs: &s.launch };
-                let view = DeckView { games: &s.games, downloads: &queue, launch: Some(launch) };
+                let view = DeckView { games: &s.games, downloads: &queue, launch: Some(launch), notices: Some(&s.notices) };
                 let mut state = deck.write();
                 // The settings live in the store, which both interfaces share; the reducer works on a copy.
                 state.sync_values(&s.settings);
@@ -73,6 +78,16 @@ impl Dispatcher {
                     self.on_effect.call(Effect::TextCommitted { app, field, value });
                     self.on_effect.call(Effect::EndTextEntry(field));
                 }
+                // The keyboard's holds follow the pad reader's: on while a toast is up. The host hears
+                // it too, for the pad.
+                Effect::NoticeHolds(on) => {
+                    let mut holds = self.holds;
+                    let cancelled = holds.write().set_enabled(on);
+                    if let Some(action) = cancelled {
+                        self.apply_all(vec![action]);
+                    }
+                    self.on_effect.call(Effect::NoticeHolds(on));
+                }
                 // The router is this layer's business: the host never hears of page changes.
                 Effect::Navigate(route) => self.nav.open(route),
                 Effect::Back => {
@@ -81,5 +96,49 @@ impl Dispatcher {
                 other => self.on_effect.call(other),
             }
         }
+    }
+
+    /// Apply keyboard-originated actions in order, as one step.
+    fn apply_all(&self, actions: Vec<Action>) {
+        if actions.is_empty() {
+            return;
+        }
+        self.run(|state, view| {
+            state.set_last_input(LastInput::Keyboard);
+            actions.into_iter().flat_map(|action| state.apply(action, view)).collect()
+        });
+    }
+
+    /// X or Y went down on the keyboard. With a toast up this starts a hold and a timer to finish it;
+    /// without one it is the button's ordinary tap.
+    pub fn key_down(&self, button: Button) {
+        let mut holds = self.holds;
+        let actions = holds.write().down(button, Instant::now());
+        let started = actions.iter().any(|a| matches!(a, Action::Hold(_, reclaw_input::HoldPhase::Started)));
+        self.apply_all(actions);
+        if started {
+            self.tick_hold();
+        }
+    }
+
+    pub fn key_up(&self, button: Button) {
+        let mut holds = self.holds;
+        let actions = holds.write().release(button);
+        self.apply_all(actions);
+    }
+
+    /// Check the held key against the clock until it completes or is let go.
+    fn tick_hold(&self) {
+        let this = self.clone();
+        spawn(async move {
+            while this.holds.peek().waiting() {
+                timer(Duration::from_millis(30)).await;
+                let mut holds = this.holds;
+                let done = holds.write().tick(Instant::now());
+                if let Some(action) = done {
+                    this.apply_all(vec![action]);
+                }
+            }
+        });
     }
 }

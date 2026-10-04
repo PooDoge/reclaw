@@ -1,7 +1,10 @@
+use std::{collections::HashMap, rc::Rc};
+
 use freya::prelude::*;
 use reclaw_input::FocusId;
 
 use crate::{
+    activity::Indicator,
     deck::{DeckView, NowPlayingBanner, Shelf, ShelfSpec, ids, shelf_top, shelves},
     prelude::*,
 };
@@ -11,6 +14,7 @@ use crate::{
 #[derive(Clone, PartialEq)]
 pub struct HomePage {
     games: Vec<GameEntry>,
+    indicators: Rc<HashMap<u32, Indicator>>,
     focus: FocusId,
     ring_visible: bool,
     viewport_w: f32,
@@ -18,14 +22,21 @@ pub struct HomePage {
 }
 
 impl HomePage {
-    pub fn new(games: Vec<GameEntry>, focus: FocusId, ring_visible: bool, viewport_w: f32, on_click: EventHandler<FocusId>) -> Self {
-        Self { games, focus, ring_visible, viewport_w, on_click }
+    pub fn new(
+        games: Vec<GameEntry>,
+        indicators: Rc<HashMap<u32, Indicator>>,
+        focus: FocusId,
+        ring_visible: bool,
+        viewport_w: f32,
+        on_click: EventHandler<FocusId>,
+    ) -> Self {
+        Self { games, indicators, focus, ring_visible, viewport_w, on_click }
     }
 }
 
 impl Component for HomePage {
     fn render(&self) -> impl IntoElement {
-        let view = DeckView { games: &self.games, downloads: &[], launch: None };
+        let view = DeckView { games: &self.games, downloads: &[], launch: None, notices: None };
         let active = view.active_game().cloned();
         let banner = active.is_some();
         let specs: Vec<ShelfSpec> = shelves(&view);
@@ -38,7 +49,10 @@ impl Component for HomePage {
 
         let shelf_elements = specs.iter().enumerate().map(|(i, spec)| {
             let games: Vec<GameEntry> = spec.games.iter().filter_map(|id| self.games.iter().find(|g| g.id == *id).cloned()).collect();
-            Shelf::new(spec.title, i, games, self.focus, self.ring_visible, self.viewport_w, self.on_click.clone()).key(i).into_element()
+            Shelf::new(spec.title, i, games, self.focus, self.ring_visible, self.viewport_w, self.on_click.clone())
+                .indicators(self.indicators.clone())
+                .key(i)
+                .into_element()
         });
 
         rect().width(Size::fill()).height(Size::fill()).overflow(Overflow::Clip).child(

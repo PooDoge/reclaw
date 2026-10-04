@@ -1,6 +1,9 @@
 use std::time::{Duration, Instant};
 
-use crate::action::{Action, ActionMap, Axis, Button, Direction, RawEvent};
+use crate::{
+    action::{Action, ActionMap, Axis, Button, Direction, RawEvent},
+    hold::{HoldPhase, HoldRule, HoldTracker, Released},
+};
 
 /// Who currently receives the gamepad. While an app runs, the launcher must not navigate its own
 /// menus from the same button presses; only Guide is allowed through so the user can get back.
@@ -40,6 +43,9 @@ pub struct InputMapper {
     stick_dir: Option<Direction>,
     /// Direction currently repeating and when it fires next.
     repeating: Option<(Direction, Instant)>,
+    holds: HoldTracker,
+    /// Whether the hold rules apply. Off, every button acts on press as usual.
+    holds_on: bool,
 }
 
 fn index(dir: Direction) -> usize {
@@ -62,6 +68,8 @@ impl InputMapper {
             stick: (0., 0.),
             stick_dir: None,
             repeating: None,
+            holds: HoldTracker::new(Vec::new()),
+            holds_on: false,
         }
     }
 
@@ -80,12 +88,30 @@ impl InputMapper {
         self.map = map;
     }
 
+    /// Which buttons can be held, and for how long. They only act as holds while
+    /// [`set_holds_on`](Self::set_holds_on) is true: a held button acts on release (a tap runs its
+    /// ordinary action then) instead of on press, so it is only worth doing while something on screen
+    /// offers the hold.
+    pub fn set_hold_rules(&mut self, rules: Vec<HoldRule>) {
+        self.holds = HoldTracker::new(rules);
+    }
+
+    /// Turn the hold rules on or off. Turning them off while a button is held clears its ring.
+    pub fn set_holds_on(&mut self, on: bool) -> Vec<Action> {
+        self.holds_on = on;
+        if on {
+            return Vec::new();
+        }
+        self.holds.cancel().map(|b| vec![Action::Hold(b, HoldPhase::Cancelled)]).unwrap_or_default()
+    }
+
     fn reset(&mut self) {
         self.dpad = [false; 4];
         self.dpad_last = None;
         self.stick = (0., 0.);
         self.stick_dir = None;
         self.repeating = None;
+        self.holds.cancel();
     }
 
     pub fn handle(&mut self, event: RawEvent, now: Instant) -> Vec<Action> {
@@ -120,6 +146,9 @@ impl InputMapper {
             return self.sync_direction(now);
         }
 
+        if self.holds_on && self.owner == InputOwner::Launcher && self.holds.rule(button).is_some() {
+            return self.held_button(button, pressed, now);
+        }
         if !pressed {
             return Vec::new();
         }
@@ -127,6 +156,22 @@ impl InputMapper {
             (_, Some(Action::MainMenu)) => vec![Action::MainMenu],
             (InputOwner::Launcher, Some(action)) => vec![action],
             _ => Vec::new(),
+        }
+    }
+
+    /// A button with a hold rule: nothing on press but the ring starting; a tap on release does the
+    /// button's ordinary action; a completed hold does nothing more.
+    fn held_button(&mut self, button: Button, pressed: bool, now: Instant) -> Vec<Action> {
+        if pressed {
+            return if self.holds.press(button, now) { vec![Action::Hold(button, HoldPhase::Started)] } else { Vec::new() };
+        }
+        match self.holds.release(button) {
+            Released::Tap => {
+                let mut out = vec![Action::Hold(button, HoldPhase::Cancelled)];
+                out.extend(self.map.action_for(button));
+                out
+            }
+            Released::AfterHold | Released::Nothing => Vec::new(),
         }
     }
 
@@ -177,118 +222,19 @@ impl InputMapper {
     }
 
     pub fn tick(&mut self, now: Instant) -> Vec<Action> {
+        let mut out: Vec<Action> = self.holds.tick(now).map(|b| Action::Hold(b, HoldPhase::Completed)).into_iter().collect();
         let Some((dir, due)) = self.repeating else {
-            return Vec::new();
+            return out;
         };
         if now < due {
-            return Vec::new();
+            return out;
         }
         // Emit once per tick even after a long stall, so a hitch never causes a burst of moves.
         self.repeating = Some((dir, now + self.config.repeat_interval));
-        vec![Action::Navigate(dir)]
+        out.push(Action::Navigate(dir));
+        out
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn mapper() -> (InputMapper, Instant) {
-        (InputMapper::new(ActionMap::default(), MapperConfig::default()), Instant::now())
-    }
-
-    fn press(button: Button) -> RawEvent {
-        RawEvent::Button { button, pressed: true }
-    }
-
-    fn release(button: Button) -> RawEvent {
-        RawEvent::Button { button, pressed: false }
-    }
-
-    #[test]
-    fn face_buttons_map_on_press_only() {
-        let (mut m, t) = mapper();
-        assert_eq!(m.handle(press(Button::South), t), vec![Action::Confirm]);
-        assert!(m.handle(release(Button::South), t).is_empty());
-    }
-
-    #[test]
-    fn dpad_moves_then_repeats_after_the_delay() {
-        let (mut m, t) = mapper();
-        assert_eq!(m.handle(press(Button::DPadRight), t), vec![Action::Navigate(Direction::Right)]);
-        assert!(m.tick(t + Duration::from_millis(399)).is_empty());
-        assert_eq!(m.tick(t + Duration::from_millis(400)), vec![Action::Navigate(Direction::Right)]);
-        assert!(m.tick(t + Duration::from_millis(450)).is_empty());
-        assert_eq!(m.tick(t + Duration::from_millis(510)), vec![Action::Navigate(Direction::Right)]);
-    }
-
-    #[test]
-    fn releasing_stops_the_repeat() {
-        let (mut m, t) = mapper();
-        m.handle(press(Button::DPadDown), t);
-        m.handle(release(Button::DPadDown), t + Duration::from_millis(100));
-        assert!(m.tick(t + Duration::from_secs(2)).is_empty());
-    }
-
-    #[test]
-    fn stall_does_not_burst() {
-        let (mut m, t) = mapper();
-        m.handle(press(Button::DPadUp), t);
-        assert_eq!(m.tick(t + Duration::from_secs(5)).len(), 1);
-    }
-
-    #[test]
-    fn newest_dpad_direction_wins_and_falls_back() {
-        let (mut m, t) = mapper();
-        m.handle(press(Button::DPadUp), t);
-        assert_eq!(m.handle(press(Button::DPadLeft), t), vec![Action::Navigate(Direction::Left)]);
-        // Letting go of Left falls back to the still-held Up.
-        assert_eq!(m.handle(release(Button::DPadLeft), t), vec![Action::Navigate(Direction::Up)]);
-    }
-
-    #[test]
-    fn stick_has_hysteresis() {
-        let (mut m, t) = mapper();
-        let x = |value| RawEvent::Axis { axis: Axis::LeftX, value };
-        assert!(m.handle(x(0.5), t).is_empty(), "below enter threshold");
-        assert_eq!(m.handle(x(0.7), t), vec![Action::Navigate(Direction::Right)]);
-        assert!(m.handle(x(0.5), t).is_empty(), "between exit and enter keeps the direction, no new move");
-        assert!(m.handle(x(0.3), t).is_empty(), "released");
-        assert!(m.tick(t + Duration::from_secs(1)).is_empty(), "and no repeat after release");
-        assert_eq!(m.handle(x(0.7), t), vec![Action::Navigate(Direction::Right)]);
-    }
-
-    #[test]
-    fn stick_up_is_positive_y() {
-        let (mut m, t) = mapper();
-        let y = RawEvent::Axis { axis: Axis::LeftY, value: 0.9 };
-        assert_eq!(m.handle(y, t), vec![Action::Navigate(Direction::Up)]);
-    }
-
-    #[test]
-    fn app_ownership_swallows_everything_but_guide() {
-        let (mut m, t) = mapper();
-        m.set_owner(InputOwner::App);
-        assert!(m.handle(press(Button::South), t).is_empty());
-        assert!(m.handle(press(Button::DPadRight), t).is_empty());
-        assert!(m.tick(t + Duration::from_secs(1)).is_empty());
-        assert_eq!(m.handle(press(Button::Guide), t), vec![Action::MainMenu]);
-    }
-
-    #[test]
-    fn switching_owner_clears_held_directions() {
-        let (mut m, t) = mapper();
-        m.handle(press(Button::DPadRight), t);
-        m.set_owner(InputOwner::App);
-        m.set_owner(InputOwner::Launcher);
-        assert!(m.tick(t + Duration::from_secs(1)).is_empty(), "no phantom repeat after returning");
-    }
-
-    #[test]
-    fn disconnect_clears_state() {
-        let (mut m, t) = mapper();
-        m.handle(press(Button::DPadRight), t);
-        m.handle(RawEvent::Disconnected, t);
-        assert!(m.tick(t + Duration::from_secs(1)).is_empty());
-    }
-}
+mod tests;

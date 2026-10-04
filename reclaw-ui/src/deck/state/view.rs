@@ -2,7 +2,7 @@
 //! derived from it.
 use reclaw_input::Rect;
 
-use crate::{activity::Activity, metrics::*, model::*, settings::LaunchContext};
+use crate::{activity::Activity, metrics::*, model::*, notices::Notices, settings::LaunchContext};
 
 pub struct DeckView<'a> {
     pub games: &'a [GameEntry],
@@ -11,11 +11,18 @@ pub struct DeckView<'a> {
     /// What launch-setting rows need (the display, the catalog, the saved choices). `None` where a
     /// view is only used for the Home shelves.
     pub launch: Option<LaunchContext<'a>>,
+    /// The notifications waiting; `None` where a view does not need them.
+    pub notices: Option<&'a Notices>,
 }
 
 impl DeckView<'_> {
     pub fn game(&self, id: u32) -> Option<&GameEntry> {
         self.games.iter().find(|g| g.id == id)
+    }
+
+    /// The notification on screen, if any: the newest.
+    pub fn top_notice(&self) -> Option<&crate::notices::Notice> {
+        self.notices.and_then(Notices::top)
     }
 
     /// The app shown in the Now Playing banner: the first one that is starting, running or stopping.

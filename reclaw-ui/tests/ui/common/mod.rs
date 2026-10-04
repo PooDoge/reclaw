@@ -210,6 +210,36 @@ impl Session {
     }
 }
 
+/// Keys held down, for the press-and-hold gestures: a down now and an up later.
+impl Session {
+    pub fn key_down_char(&mut self, c: &str) {
+        self.key_event(KeyboardEventName::KeyDown, c);
+    }
+
+    pub fn key_up_char(&mut self, c: &str) {
+        self.key_event(KeyboardEventName::KeyUp, c);
+    }
+
+    fn key_event(&mut self, name: KeyboardEventName, c: &str) {
+        self.runner.send_event(PlatformEvent::Keyboard {
+            name,
+            key: Key::Character(c.into()),
+            code: Code::Unidentified,
+            modifiers: Modifiers::empty(),
+        });
+        self.pump(30);
+        self.runner.sync_and_update();
+    }
+
+    /// Change the store as the host would, and let the screen follow.
+    pub fn dispatch(&mut self, action: AppAction) {
+        let store = self.store();
+        self.runner.run_in(|| store.dispatch(action));
+        self.pump(60);
+        self.runner.sync_and_update();
+    }
+}
+
 pub struct Session {
     pub runner: TestingRunner,
     pub effects: Rc<RefCell<Vec<Effect>>>,

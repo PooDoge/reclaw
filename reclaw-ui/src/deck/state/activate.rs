@@ -16,6 +16,9 @@ impl DeckState {
         if let Overlay::Confirm(kind) = self.overlay {
             return self.activate_confirm(kind, id, view, fx);
         }
+        if let Overlay::Notice(notice) = self.overlay {
+            return self.activate_notice(notice, id, view, fx);
+        }
         if let Some(app) = view.active_game().map(|g| g.id) {
             if id == ids::BANNER_RESUME || id == ids::QA_RESUME {
                 return self.resume(app, view, fx);
@@ -86,6 +89,17 @@ impl DeckState {
             }
             Some(MainMenuEntry::SwitchToDesktop) => fx.push(Effect::SwitchToDesktop),
             None => {}
+        }
+    }
+
+    fn activate_notice(&mut self, notice: crate::notices::NoticeId, id: FocusId, view: &DeckView, fx: &mut Vec<Effect>) {
+        match id {
+            i if i == ids::NOTICE_CLOSE => self.close_overlay_quietly(view),
+            i if i == ids::NOTICE_DISMISS => {
+                self.close_overlay_quietly(view);
+                fx.push(Effect::DismissNotice(notice));
+            }
+            _ => {}
         }
     }
 

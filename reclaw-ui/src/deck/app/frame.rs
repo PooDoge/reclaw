@@ -1,14 +1,17 @@
+use std::{collections::HashMap, rc::Rc};
+
 use freya::prelude::*;
-use reclaw_input::{ActionMap, ControllerInfo, ControllerKind, FocusId};
+use reclaw_input::{ActionMap, Button, ControllerInfo, ControllerKind, FocusId};
 
 use super::text_boxes::TextBoxes;
 use crate::{
-    activity::Activity,
+    activity::{Activity, Indicator},
     deck::{
         DeckState, LastInput,
         settings::{Schema, SettingsTarget},
     },
     model::GameEntry,
+    notices::Notice,
 };
 
 /// A settings page's content: which page, its schema, and the text on its launch rows.
@@ -26,6 +29,14 @@ pub struct Frame {
     pub state: DeckState,
     pub games: Vec<GameEntry>,
     pub downloads: Vec<Activity>,
+    /// What each game's card shows of its background work, by game id.
+    pub indicators: Rc<HashMap<u32, Indicator>>,
+    /// The toast on screen, if any: the newest notice, when nothing else is in the way.
+    pub toast: Option<Notice>,
+    /// The notice whose details are open, if any.
+    pub notice_details: Option<Notice>,
+    /// The button being held for the toast's ring.
+    pub holding: Option<Button>,
     pub pad: Option<ControllerInfo>,
     pub kind: ControllerKind,
     /// Last input with the connected pad's kind filled in, for glyph choice.

@@ -4,12 +4,13 @@
 //! Run one file with `cargo test -p reclaw-ui --test ui deck_input::`.
 //!
 //! * `common`: the headless harness (`Mount`, `Session`) every test uses
-//! * `deck_*`: Deck mode (input, lifecycle with real processes, surfaces, snapshots)
+//! * `deck_*`: Deck mode (input, lifecycle with real processes, notifications and holds, surfaces, snapshots)
 //! * `desktop_*`, `nav_stage`: the desktop interface and the router
 //! * `shell_modes`: switching interface; `tokens_in_sync`: the design tokens against the Rust constants
 mod common;
 mod deck_input;
 mod deck_lifecycle;
+mod deck_notices;
 mod deck_routes;
 mod deck_snapshots;
 mod deck_surfaces;

@@ -1,6 +1,6 @@
 //! Actions in, effects out. Everything that changes `DeckState` in response to input starts here;
 //! what a press on a particular target does is in `activate`.
-use reclaw_input::{Action, Direction, FocusId, next_focus};
+use reclaw_input::{Action, Button, Direction, FocusId, HoldPhase, next_focus};
 
 use super::{DeckState, DeckView, Effect, LastInput, Overlay, Screen, ids, types::TextField};
 
@@ -9,6 +9,7 @@ impl DeckState {
         let mut fx = Vec::new();
         self.apply_inner(action, view, &mut fx);
         self.sync_owner(view, &mut fx);
+        self.sync_holds(view, &mut fx);
         self.drain_nav(&mut fx);
         fx
     }
@@ -68,6 +69,7 @@ impl DeckState {
             self.focus = self.remembered(self.scope(), view);
         }
         self.sync_owner(view, &mut fx);
+        self.sync_holds(view, &mut fx);
         self.drain_nav(&mut fx);
         fx
     }
@@ -76,6 +78,7 @@ impl DeckState {
         use super::{ConfirmKind, MenuPurpose};
         match self.overlay {
             Overlay::Menu(MenuPurpose::Options(id)) | Overlay::Confirm(ConfirmKind::Uninstall(id)) => view.game(id).is_none(),
+            Overlay::Notice(id) => view.notices.is_none_or(|n| n.get(id).is_none()),
             _ => false,
         }
     }
@@ -98,6 +101,9 @@ impl DeckState {
     }
 
     fn apply_inner(&mut self, action: Action, view: &DeckView, fx: &mut Vec<Effect>) {
+        if let Action::Hold(button, phase) = action {
+            return self.hold(button, phase, view, fx);
+        }
         // Typing: the text box has the keyboard; Confirm and Back leave it, nothing else counts.
         if self.entry.is_some() {
             if matches!(action, Action::Confirm | Action::Back) {
@@ -134,7 +140,53 @@ impl DeckState {
 
     /// The side panels open from the main pages and from each other, never over a confirmation.
     fn overlay_allows_panels(&self) -> bool {
-        !matches!(self.overlay, Overlay::Confirm(_) | Overlay::Menu(_)) && self.entry.is_none()
+        !matches!(self.overlay, Overlay::Confirm(_) | Overlay::Menu(_) | Overlay::Notice(_)) && self.entry.is_none()
+    }
+
+    /// A hold on X or Y, from the pad reader or the keyboard fallback: draw the ring while it lasts,
+    /// and when it completes do what it asks. Holds that arrive when no toast is up are ignored.
+    fn hold(&mut self, button: Button, phase: HoldPhase, view: &DeckView, fx: &mut Vec<Effect>) {
+        match phase {
+            HoldPhase::Started => {
+                if self.toast_visible(view) && crate::notices::HoldAction::of(button).is_some() {
+                    self.holding = Some(button);
+                }
+            }
+            HoldPhase::Cancelled => {
+                if self.holding == Some(button) {
+                    self.holding = None;
+                }
+            }
+            HoldPhase::Completed => {
+                // A late completion (the toast went away, another hold took over) is ignored.
+                if self.holding.take() != Some(button) || !self.toast_visible(view) {
+                    return;
+                }
+                match crate::notices::HoldAction::of(button) {
+                    Some(crate::notices::HoldAction::Details) => {
+                        if let Some(id) = view.top_notice().map(|n| n.id) {
+                            self.leave_scope();
+                            self.overlay = Overlay::Notice(id);
+                            self.enter_scope(view);
+                        }
+                    }
+                    Some(crate::notices::HoldAction::DismissAll) => fx.push(Effect::DismissAllNotices),
+                    None => {}
+                }
+            }
+        }
+    }
+
+    /// Ask the pad reader to treat X and Y as holds exactly while a toast is up.
+    pub(super) fn sync_holds(&mut self, view: &DeckView, fx: &mut Vec<Effect>) {
+        let wanted = self.toast_visible(view);
+        if !wanted && self.holding.is_some() {
+            self.holding = None;
+        }
+        if wanted != self.holds_on {
+            self.holds_on = wanted;
+            fx.push(Effect::NoticeHolds(wanted));
+        }
     }
 
     fn navigate(&mut self, dir: Direction, view: &DeckView) {

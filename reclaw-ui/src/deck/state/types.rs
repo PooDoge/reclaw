@@ -36,6 +36,8 @@ pub enum Overlay {
     QuickAccess,
     Menu(MenuPurpose),
     Confirm(ConfirmKind),
+    /// The details of a notification, opened by holding X on its toast.
+    Notice(crate::notices::NoticeId),
 }
 
 pub use crate::app_menu::MenuAction;

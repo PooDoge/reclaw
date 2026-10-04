@@ -6,6 +6,7 @@
 mod action;
 mod controller;
 mod env;
+mod hold;
 mod mapper;
 mod spatial;
 
@@ -15,5 +16,6 @@ pub mod backend;
 pub use action::{Action, ActionMap, Axis, Button, Direction, RawEvent};
 pub use controller::{ControllerInfo, ControllerKind, GlyphFace, PowerState};
 pub use env::{Environment, GuideOwner, UiMode, detect_environment};
+pub use hold::{HoldPhase, HoldRule, HoldTracker, Released};
 pub use mapper::{InputMapper, InputOwner, MapperConfig};
 pub use spatial::{FocusId, FocusNode, Rect, next_focus};

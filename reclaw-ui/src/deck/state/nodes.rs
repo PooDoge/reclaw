@@ -32,6 +32,7 @@ impl DeckState {
             Overlay::QuickAccess => Scope::QuickAccess,
             Overlay::Menu(_) => Scope::Menu,
             Overlay::Confirm(kind) => Scope::Confirm(kind),
+            Overlay::Notice(id) => Scope::Notice(id),
             Overlay::None => match self.screen {
                 Screen::Home => Scope::Home(self.section),
                 Screen::Game(id) => Scope::Game(id),
@@ -62,6 +63,9 @@ impl DeckState {
             Scope::Menu => Vec::new(),
             Scope::Confirm(_) => {
                 vec![node(ids::CONFIRM_CANCEL, 0., 0., 200., DECK_TARGET_MIN), node(ids::CONFIRM_OK, 216., 0., 200., DECK_TARGET_MIN)]
+            }
+            Scope::Notice(_) => {
+                vec![node(ids::NOTICE_CLOSE, 0., 0., 200., DECK_TARGET_MIN), node(ids::NOTICE_DISMISS, 216., 0., 200., DECK_TARGET_MIN)]
             }
             Scope::Game(id) => {
                 let mut v = vec![node(ids::GAME_PRIMARY, 0., 0., 220., DECK_TARGET_MIN)];
@@ -121,6 +125,8 @@ impl DeckState {
             Scope::MainMenu => ids::menu(MAIN_MENU.iter().position(|m| *m == MainMenuEntry::Section(self.section)).unwrap_or(0)),
             // Destructive confirmations start on Cancel.
             Scope::Confirm(_) => ids::CONFIRM_CANCEL,
+            // Closing is the harmless choice; it is where focus starts.
+            Scope::Notice(_) => ids::NOTICE_CLOSE,
             Scope::Settings(_, SettingsPane::TwoPane(s)) => ids::settings_nav(s),
             Scope::Settings(_, SettingsPane::List) => ids::settings_nav(self.settings_section),
             _ => first,

@@ -4,7 +4,7 @@
 //!
 //! * `types`: [`Notice`] and its kinds; `queue`: [`Notices`], the list with its rules
 //!   (a repeat replaces, the newest is shown, dismiss one or all)
-//! * `hold`: the press-and-hold gesture as a pure state machine, with the time passed in
+//! * `hold`: which buttons are held for what (the gesture itself is `reclaw_input::HoldTracker`)
 mod hold;
 mod queue;
 mod types;
@@ -12,6 +12,6 @@ mod types;
 #[cfg(test)]
 mod tests;
 
-pub use hold::{Hold, HoldAction, HoldPhase, HoldTimes, Released};
+pub use hold::{DETAILS_AFTER, DETAILS_BUTTON, DISMISS_ALL_AFTER, DISMISS_ALL_BUTTON, HoldAction, hold_rules};
 pub use queue::Notices;
 pub use types::{Notice, NoticeId, NoticeKind};

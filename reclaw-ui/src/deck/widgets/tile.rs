@@ -1,7 +1,7 @@
 use freya::prelude::*;
 
-use super::focus::FocusFrame;
-use crate::{components::PressHandler, metrics::*, prelude::*, typography::TypeStyle};
+use super::{card_progress::CardIndicator, focus::FocusFrame};
+use crate::{activity::Indicator, components::PressHandler, metrics::*, prelude::*, typography::TypeStyle};
 
 /// Big-art game tile. Title always shows; the badge appears when focused (or running), in space
 /// that is reserved up front so moving focus never reflows the shelf.
@@ -9,6 +9,7 @@ use crate::{components::PressHandler, metrics::*, prelude::*, typography::TypeSt
 pub struct DeckTile {
     game: GameEntry,
     focused: bool,
+    indicator: Option<Indicator>,
     on_press: Option<PressHandler>,
     key: DiffKey,
 }
@@ -21,7 +22,13 @@ impl KeyExt for DeckTile {
 
 impl DeckTile {
     pub fn new(game: GameEntry, focused: bool) -> Self {
-        Self { game, focused, on_press: None, key: DiffKey::None }
+        Self { game, focused, indicator: None, on_press: None, key: DiffKey::None }
+    }
+
+    /// Background work to show over the art: the chip and the bar.
+    pub fn indicator(mut self, indicator: Option<Indicator>) -> Self {
+        self.indicator = indicator;
+        self
     }
 
     pub fn on_press(mut self, handler: impl Into<PressHandler>) -> Self {
@@ -41,7 +48,8 @@ impl Component for DeckTile {
             .height(Size::px(DECK_TILE_H))
             .corner_radius(RADIUS_MD)
             .overflow(Overflow::Clip)
-            .child(ArtPlaceholder::new("CAPSULE 3:4", Size::fill(), Size::fill()));
+            .child(ArtPlaceholder::new("CAPSULE 3:4", Size::fill(), Size::fill()))
+            .maybe_child(self.indicator.clone().map(|indicator| CardIndicator::new(indicator).into_element()));
 
         let badge = if running { StatusBadge::running() } else { StatusBadge::new(self.game.status) };
         let caption = rect()

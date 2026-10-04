@@ -19,6 +19,8 @@ pub const INSTALL_CANCEL: FocusId = FocusId(34);
 pub const INSTALL_SUBMIT: FocusId = FocusId(35);
 pub const CONFIRM_CANCEL: FocusId = FocusId(40);
 pub const CONFIRM_OK: FocusId = FocusId(41);
+pub const NOTICE_CLOSE: FocusId = FocusId(42);
+pub const NOTICE_DISMISS: FocusId = FocusId(43);
 /// The header's Back button on a page (reachable by pointer and touch; the pad uses B).
 pub const PAGE_BACK: FocusId = FocusId(50);
 

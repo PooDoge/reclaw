@@ -63,6 +63,10 @@ pub struct DeckState {
     install: InstallDraft,
     /// Requests for the router made by the last action, handed out with its effects.
     nav_requests: Vec<Effect>,
+    /// The button being held for a notification's hold gesture, while its ring is drawn.
+    holding: Option<reclaw_input::Button>,
+    /// Whether the pad reader has been asked to treat X and Y as holds.
+    holds_on: bool,
 }
 
 impl DeckState {
@@ -86,6 +90,8 @@ impl DeckState {
             values: SettingsValues::default(),
             install: InstallDraft::default(),
             nav_requests: Vec::new(),
+            holding: None,
+            holds_on: false,
         };
         s.focus = s.default_focus(s.scope(), view);
         s.owner = s.input_owner(view);
@@ -114,6 +120,16 @@ impl DeckState {
 
     pub fn set_last_input(&mut self, last: LastInput) {
         self.last_input = last;
+    }
+
+    /// The button whose hold ring is being drawn.
+    pub fn holding(&self) -> Option<reclaw_input::Button> {
+        self.holding
+    }
+
+    /// Whether the notification toast is up: there is one, and nothing else holds the screen.
+    pub fn toast_visible(&self, view: &DeckView) -> bool {
+        view.top_notice().is_some() && self.overlay == Overlay::None && self.entry.is_none()
     }
 
     pub fn in_front(&self) -> bool {

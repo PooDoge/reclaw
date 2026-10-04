@@ -16,6 +16,7 @@ use reclaw_input::{
     detect_environment,
 };
 use reclaw_runtime::{InputProfile, LaunchSpec, RunState, SessionEvent, Supervisor};
+use reclaw_ui::notices::hold_rules;
 use reclaw_ui::{
     bootstrap::open_store,
     deck::ActionFeed,
@@ -46,11 +47,20 @@ impl App for Host {
             let feed_tx = self.feed.clone();
             move || {
                 let (supervisor, mut events) = Supervisor::new(Duration::from_secs(5));
-                let (input, mut messages) = backend::spawn(map);
+                // The notification toast's holds (X for details, Y to dismiss all) are the reader's job.
+                // Without a reader the keyboard still drives the app, so a failure to start is reported and survived.
+                let (input, messages) = match backend::spawn_with(map, hold_rules()) {
+                    Ok((input, messages)) => (Some(input), Some(messages)),
+                    Err(e) => {
+                        eprintln!("gamepad reader did not start: {e}");
+                        (None, None)
+                    }
+                };
 
                 // Gamepad thread -> UI: actions go to the feed's sender, controller changes to state.
                 let tx = feed_tx.sender();
                 spawn(async move {
+                    let Some(mut messages) = messages else { return };
                     while let Some(message) = messages.next().await {
                         match message {
                             InputMessage::Action(a) => {
@@ -98,7 +108,17 @@ impl App for Host {
                     set_run(store, id, supervisor.state(id));
                 }
             }
-            Effect::InputOwner(owner) => input.set_owner(owner),
+            Effect::InputOwner(owner) => {
+                if let Some(input) = &input {
+                    input.set_owner(owner);
+                }
+            }
+            // A toast is up (or gone): the reader treats X and Y as holds only while it is.
+            Effect::NoticeHolds(on) => {
+                if let Some(input) = &input {
+                    input.set_holds(on);
+                }
+            }
             // The rest need real windows, a catalog, or an installer: the host app's job.
             other => eprintln!("effect for the host to handle: {other:?}"),
         });

@@ -1,9 +1,11 @@
+use std::{collections::HashMap, rc::Rc};
+
 use freya::prelude::*;
 use reclaw_input::FocusId;
 
 use super::tile::DeckTile;
 use crate::deck::{SHELF_TITLE_BLOCK, ids, layout::shelf_offset};
-use crate::{metrics::*, prelude::*, typography::TypeStyle};
+use crate::{activity::Indicator, metrics::*, prelude::*, typography::TypeStyle};
 
 /// A titled, horizontally scrolling row of tiles. The focused tile is kept centered by `offset_x`.
 #[derive(Clone, PartialEq)]
@@ -12,6 +14,7 @@ pub struct Shelf {
     title: &'static str,
     index: usize,
     games: Vec<GameEntry>,
+    indicators: Rc<HashMap<u32, Indicator>>,
     focus: FocusId,
     ring_visible: bool,
     viewport_w: f32,
@@ -34,7 +37,13 @@ impl Shelf {
         viewport_w: f32,
         on_click: EventHandler<FocusId>,
     ) -> Self {
-        Self { key: DiffKey::None, title, index, games, focus, ring_visible, viewport_w, on_click }
+        Self { key: DiffKey::None, title, index, games, indicators: Rc::default(), focus, ring_visible, viewport_w, on_click }
+    }
+
+    /// What each game's card shows of its background work, by game id.
+    pub fn indicators(mut self, indicators: Rc<HashMap<u32, Indicator>>) -> Self {
+        self.indicators = indicators;
+        self
     }
 }
 
@@ -48,6 +57,7 @@ impl Component for Shelf {
             let id = ids::tile(self.index, game.id);
             let on_click = self.on_click.clone();
             DeckTile::new(game.clone(), self.ring_visible && focused_idx == Some(i))
+                .indicator(self.indicators.get(&game.id).cloned())
                 .on_press(move |_| on_click.call(id))
                 .key(id.0)
                 .into_element()

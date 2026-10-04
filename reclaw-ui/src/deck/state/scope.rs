@@ -23,4 +23,5 @@ pub(super) enum Scope {
     /// A cascading menu: its own focus lives in `MenuState`, not in spatial nodes.
     Menu,
     Confirm(ConfirmKind),
+    Notice(crate::notices::NoticeId),
 }

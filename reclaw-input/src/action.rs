@@ -78,6 +78,9 @@ pub enum Action {
     QuickAccess,
     /// Context menu of the focused item.
     Options,
+    /// A button with a hold rule changed phase (see `InputMapper::set_hold_rules`). Only the mapper
+    /// produces it.
+    Hold(Button, crate::hold::HoldPhase),
 }
 
 /// Button to action table. Defaults follow Steam's Big Picture conventions; every entry is

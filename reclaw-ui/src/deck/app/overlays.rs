@@ -3,7 +3,7 @@ use freya::prelude::*;
 
 use super::frame::Frame;
 use crate::{
-    deck::{ConfirmCopy, ConfirmKind, ConfirmOverlay, MainMenu, Overlay, PanelSide, QuickAccess, SlidePanel},
+    deck::{ConfirmCopy, ConfirmKind, ConfirmOverlay, MainMenu, NoticeDetails, NoticeToast, Overlay, PanelSide, QuickAccess, SlidePanel},
     metrics::*,
     surface::{MenuLevelView, MenuPlacement, ModalMenu},
 };
@@ -60,6 +60,13 @@ pub(super) fn overlays(f: &Frame) -> Vec<Element> {
             )
             .into_element(),
         );
+    }
+    if let Some(notice) = f.notice_details.clone() {
+        out.push(NoticeDetails::new(notice, state.focus(), f.ring, f.window, f.click.clone(), f.dismiss.clone()).into_element());
+    }
+    // The toast is on screen only while nothing else is: the reducer decides (`toast_visible`).
+    if let Some(notice) = f.toast.clone() {
+        out.push(NoticeToast::new(notice, f.holding, f.kind, f.last_input, f.window).into_element());
     }
     out
 }

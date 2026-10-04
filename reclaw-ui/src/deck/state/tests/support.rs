@@ -10,6 +10,7 @@ use reclaw_games::{project::ProjectInfo, settings::DisplayEnvironment};
 use crate::{
     activity::Activity,
     model::GameEntry,
+    notices::Notices,
     sample::{sample_activity, sample_games, sample_projects},
     settings::LaunchContext,
 };
@@ -25,6 +26,7 @@ pub(super) struct Fixture {
     pub projects: Vec<ProjectInfo>,
     pub env: DisplayEnvironment,
     pub launch: LaunchPrefs,
+    pub notices: Notices,
 }
 
 impl Fixture {
@@ -35,6 +37,7 @@ impl Fixture {
             projects: sample_projects(),
             env: DisplayEnvironment::unknown(),
             launch: LaunchPrefs::default(),
+            notices: Notices::default(),
         }
     }
 
@@ -43,6 +46,7 @@ impl Fixture {
             games: &self.games,
             downloads: &self.downloads,
             launch: Some(LaunchContext { env: &self.env, projects: &self.projects, prefs: &self.launch }),
+            notices: Some(&self.notices),
         }
     }
 

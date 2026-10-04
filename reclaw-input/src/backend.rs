@@ -9,7 +9,7 @@
 use std::{
     sync::{
         Arc,
-        atomic::{AtomicU8, Ordering},
+        atomic::{AtomicBool, AtomicU8, Ordering},
     },
     thread,
     time::{Duration, Instant},
@@ -21,6 +21,7 @@ use gilrs::{Axis as GAxis, Button as GButton, EventType, Gilrs, PowerInfo};
 use crate::{
     action::{Action, ActionMap, Axis, Button, RawEvent},
     controller::{ControllerInfo, PowerState},
+    hold::HoldRule,
     mapper::{InputMapper, InputOwner, MapperConfig},
 };
 
@@ -39,23 +40,38 @@ pub enum InputMessage {
 #[derive(Clone)]
 pub struct InputHandle {
     owner: Arc<AtomicU8>,
+    holds: Arc<AtomicBool>,
 }
 
 impl InputHandle {
     pub fn set_owner(&self, owner: InputOwner) {
         self.owner.store(owner as u8, Ordering::SeqCst);
     }
+
+    /// Turn the hold rules on while something on screen offers a hold, and off again after: a held
+    /// button acts on release instead of press, which is only wanted while a hold can happen.
+    pub fn set_holds(&self, on: bool) {
+        self.holds.store(on, Ordering::SeqCst);
+    }
 }
 
-pub fn spawn(map: ActionMap) -> (InputHandle, UnboundedReceiver<InputMessage>) {
+/// Start the reader with no hold rules.
+pub fn spawn(map: ActionMap) -> std::io::Result<(InputHandle, UnboundedReceiver<InputMessage>)> {
+    spawn_with(map, Vec::new())
+}
+
+/// Start the reader. `holds` lists the buttons that can be held (they act as holds only while
+/// [`InputHandle::set_holds`] is on). Fails only if the OS refuses to start a thread.
+pub fn spawn_with(map: ActionMap, holds: Vec<HoldRule>) -> std::io::Result<(InputHandle, UnboundedReceiver<InputMessage>)> {
     let (tx, rx) = unbounded();
     let owner = Arc::new(AtomicU8::new(InputOwner::Launcher as u8));
-    let handle = InputHandle { owner: owner.clone() };
-    thread::Builder::new().name("reclaw-gamepad".into()).spawn(move || run(map, owner, tx)).expect("spawn gamepad thread");
-    (handle, rx)
+    let hold_flag = Arc::new(AtomicBool::new(false));
+    let handle = InputHandle { owner: owner.clone(), holds: hold_flag.clone() };
+    thread::Builder::new().name("reclaw-gamepad".into()).spawn(move || run(map, holds, owner, hold_flag, tx))?;
+    Ok((handle, rx))
 }
 
-fn run(map: ActionMap, owner: Arc<AtomicU8>, tx: UnboundedSender<InputMessage>) {
+fn run(map: ActionMap, holds: Vec<HoldRule>, owner: Arc<AtomicU8>, hold_flag: Arc<AtomicBool>, tx: UnboundedSender<InputMessage>) {
     let mut gilrs = match Gilrs::new() {
         Ok(g) => g,
         Err(e) => {
@@ -64,6 +80,8 @@ fn run(map: ActionMap, owner: Arc<AtomicU8>, tx: UnboundedSender<InputMessage>) 
         }
     };
     let mut mapper = InputMapper::new(map, MapperConfig::default());
+    mapper.set_hold_rules(holds);
+    let mut holds_on = false;
 
     // Announce pads that were already plugged in.
     for (id, pad) in gilrs.gamepads() {
@@ -78,6 +96,11 @@ fn run(map: ActionMap, owner: Arc<AtomicU8>, tx: UnboundedSender<InputMessage>) 
 
         let now = Instant::now();
         let mut out = Vec::new();
+        let wanted_holds = hold_flag.load(Ordering::SeqCst);
+        if wanted_holds != holds_on {
+            holds_on = wanted_holds;
+            out.extend(mapper.set_holds_on(holds_on).into_iter().map(InputMessage::Action));
+        }
         // Wake at least every 8ms so held directions repeat on time.
         if let Some(event) = gilrs.next_event_blocking(Some(Duration::from_millis(8))) {
             let id = usize::from(event.id) as u32;

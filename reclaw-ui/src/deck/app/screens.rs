@@ -45,7 +45,8 @@ fn chrome(f: &Frame, section: Section, game_page: Option<u32>) -> Element {
             None => rect().into_element(),
         },
         (None, Section::Library) => {
-            HomePage::new(f.games.clone(), state.focus(), f.ring, w - 2. * DECK_SAFE_X, f.click.clone()).into_element()
+            HomePage::new(f.games.clone(), f.indicators.clone(), state.focus(), f.ring, w - 2. * DECK_SAFE_X, f.click.clone())
+                .into_element()
         }
         (None, Section::Downloads) => DownloadsPage::new(f.downloads.clone(), state.focus(), f.ring, f.click.clone()).into_element(),
         (None, Section::Catalog) => EmptyPage::new("Catalog", "Community app lists will appear here.").into_element(),

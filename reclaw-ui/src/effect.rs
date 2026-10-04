@@ -118,4 +118,7 @@ pub enum Effect {
     BringLauncherToFront,
     SendLauncherToBack,
     InputOwner(InputOwner),
+    /// A notification toast appeared (true) or went away (false): while it is up the pad reader treats
+    /// X and Y as holds, so a tap still does its usual job on release.
+    NoticeHolds(bool),
 }

@@ -1,6 +1,7 @@
 //! Building blocks of Deck mode. Each file is one component; none of them owns app state.
 mod backdrop;
 mod banner;
+mod card_progress;
 mod confirm;
 mod deck_row;
 mod focus;
@@ -8,6 +9,7 @@ mod glyph;
 mod hint_bar;
 mod launch_button;
 mod main_menu;
+mod notice;
 mod quick_access;
 mod shelf;
 mod slide_panel;
@@ -16,6 +18,7 @@ mod tile;
 
 pub use backdrop::Backdrop;
 pub use banner::{NowPlayingBanner, elapsed_label};
+pub use card_progress::{CARD_STRIP_H, CardIndicator};
 pub use confirm::{ConfirmCopy, ConfirmOverlay};
 pub use deck_row::DeckRow;
 pub use focus::FocusFrame;
@@ -23,6 +26,7 @@ pub use glyph::ButtonGlyph;
 pub use hint_bar::HintBar;
 pub use launch_button::LaunchButton;
 pub use main_menu::MainMenu;
+pub use notice::{NoticeDetails, NoticeToast, TOAST_H, TOAST_W};
 pub use quick_access::QuickAccess;
 pub use shelf::Shelf;
 pub use slide_panel::{PanelSide, SlidePanel};

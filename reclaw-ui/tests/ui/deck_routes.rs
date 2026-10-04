@@ -2,7 +2,7 @@
 //! page, and the page the app is on survives a switch of interface.
 use freya::prelude::*;
 use reclaw_input::Action;
-use reclaw_ui::{nav::Route, shell::DevOverrides};
+use reclaw_ui::nav::Route;
 
 use crate::common::*;
 
