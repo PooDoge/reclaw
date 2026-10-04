@@ -85,7 +85,8 @@ d["notices"] = {
     "holds": [{"button": "X (west)", "action": "details", "afterMs": 900}, {"button": "Y (north)", "action": "dismiss all", "afterMs": 1200}],
     "rules": [
         "HoldTracker is pure with the clock passed in; the pad reader runs it only while the UI says a toast is up (Effect::NoticeHolds)",
-        "a held button acts on release: early release is its ordinary action (X Options, Y Search), a completed hold fires once",
+        "a tap is decided on release: early release is the ordinary action (X Options, Y Search); a hold completes at its time while the button is still down, once, and the release after it does nothing",
+        "keyboard key repeat is not a press: the keys that are down are remembered and a second down with no up between is ignored",
         "the toast is not focusable and never takes the pad from the page",
         "the keyboard X and Y keys use the same tracker, so Deck mode is testable without a pad",
     ],
@@ -161,7 +162,7 @@ for e in [
      "rejected": ["forking freya-markdown", "freya-html (Blitz)", "a line-based fence splitter", "badges from their SVG"], "adr": "0004"},
     {"id": "own-window-frame", "decision": "Reclaw draws its own title bar on a borderless transparent window; RECLAW_WINDOW_FRAME=native is the escape hatch.", "why": "GNOME leaves decoration to the application; one look on every desktop.",
      "rejected": ["native decorations everywhere", "a custom bar inside native decoration", "calling winit from components", "the toolkit's use_maximized hook", "the toolkit's close call"], "adr": "0005"},
-    {"id": "holds-in-reader", "decision": "Press-and-hold is decided in the pad reader (pure HoldTracker); a held button acts on release while a toast is up.", "why": "A tap must keep its ordinary meaning.",
+    {"id": "holds-in-reader", "decision": "Press-and-hold is decided in the pad reader (pure HoldTracker); a tap is decided on release while a toast is up and a hold completes at its time.", "why": "A tap must keep its ordinary meaning.",
      "rejected": ["timers in the UI", "dedicated buttons", "acting on press and cancelling", "holds always on"], "adr": "0006"},
 ]:
     upsert(d["decisions"], e, "id")

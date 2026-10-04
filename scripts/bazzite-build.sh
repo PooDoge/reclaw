@@ -6,6 +6,7 @@
 #   scripts/bazzite-build.sh            # build (creates the container the first time)
 #   scripts/bazzite-build.sh --install  # also copy the binary and the launcher entry into your home
 #
+# The build uses --locked, so it compiles exactly the dependency set Cargo.lock names (Freya 0.5.0-rc.8) that the tests ran on.
 # Nothing here has been run on Bazzite by the author; see docs/BUILDING.md for what is and is not verified.
 set -euo pipefail
 
@@ -40,16 +41,18 @@ distrobox enter "$NAME" -- bash -lc "
   fi
   . \"\$HOME/.cargo/env\"
   cd '$ROOT'
-  CARGO_TARGET_DIR='$TARGET_DIR' cargo build --release -p reclaw-ui --example deck --features gamepad
+  CARGO_TARGET_DIR='$TARGET_DIR' cargo build --locked --release -p reclaw-ui --example deck --example gallery --features gamepad
 "
 
-BIN="$TARGET_DIR/release/examples/deck"
-[ -x "$BIN" ] || { echo "the build finished but $BIN is missing"; exit 1; }
-echo "built: $BIN"
+for example in deck gallery; do
+  [ -x "$TARGET_DIR/release/examples/$example" ] || { echo "the build finished but $TARGET_DIR/release/examples/$example is missing"; exit 1; }
+  echo "built: $TARGET_DIR/release/examples/$example"
+done
 
 if [ "${1:-}" = "--install" ]; then
-  install -Dm755 "$BIN" "$HOME/.local/bin/reclaw-deck"
+  install -Dm755 "$TARGET_DIR/release/examples/deck" "$HOME/.local/bin/reclaw-deck"
+  install -Dm755 "$TARGET_DIR/release/examples/gallery" "$HOME/.local/bin/reclaw-gallery"
   install -Dm644 "$ROOT/packaging/dev.reclaw.Reclaw.desktop" "$HOME/.local/share/applications/dev.reclaw.Reclaw.desktop"
   update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
-  echo "installed to ~/.local/bin/reclaw-deck and the applications menu (log out and in if GNOME does not show it)"
+  echo "installed ~/.local/bin/reclaw-deck, ~/.local/bin/reclaw-gallery and the applications menu entry (log out and in if GNOME does not show it)"
 fi

@@ -8,14 +8,20 @@ whole UI over sample data, in two example programs:
 | Program | What it is |
 |---|---|
 | `gallery` | Both interfaces over sample data, with no gamepad and no processes. For looking at layouts. |
-| `deck` | The same shell wired to a real gamepad reader and the process supervisor. "Games" are a shell loop that stands in for a recompiled game, so Play, Resume, Stop and Force quit are real processes. |
+| `deck` | The same shell wired to a real gamepad reader and the process supervisor. "Games" are a shell loop that stands in for a recompiled game, so Play, Resume, Stop and Force quit are real processes. **Update and Install play a scripted download** (about eleven seconds: a progress bar, a build, then finished), so the card progress, the sidebar's Updates section and the notification toast can be tried by hand. |
 
 ```sh
 cargo run -p reclaw-ui --example gallery
 cargo run -p reclaw-ui --example deck --features gamepad
 ```
 
-**F10** switches between the desktop and Deck mode, **F9** shows a simulated on-screen keyboard. Settings, favorites and
+`gallery --open /game/1` starts on a page (any path of the router; `/settings`, `/catalog`, `/mods` ...). **F10** switches between the
+desktop and Deck mode, **F9** shows a simulated on-screen keyboard.
+
+The sample games' pictures use a `catalog://` address that is never fetched, so by default every picture is a placeholder and the
+README on a game page says it could not load. **`RECLAW_LIVE_SAMPLE=1`** points two sample games at real public repositories
+(Starfall 64 at Zelda64Recomp, Kart Ruins at Freya): real artwork, a real screenshot and two real READMEs, fetched, cached under
+`RECLAW_HOME/cache/media` and drawn. It needs the internet, and `SSL_CERT_FILE` if your network re-signs HTTPS. Settings, favorites and
 the window's size and place are saved like the real app's; `RECLAW_HOME=/tmp/reclaw-try` keeps them (and the downloaded
 artwork cache) out of your real profile.
 
@@ -37,13 +43,14 @@ Bazzite's root is immutable, so Reclaw is built inside a **distrobox** container
 it produces runs on the host.
 
 ```sh
-scripts/bazzite-build.sh              # builds target-bazzite/release/examples/deck
-scripts/bazzite-build.sh --install    # also installs ~/.local/bin/reclaw-deck and the launcher entry
+scripts/bazzite-build.sh              # builds target-bazzite/release/examples/{deck,gallery}
+scripts/bazzite-build.sh --install    # also installs ~/.local/bin/reclaw-deck, reclaw-gallery and the launcher entry
 ```
 
 The script creates the container `reclaw-build` the first time, installs the development packages (`systemd-devel` for the
 gamepad reader's libudev, the Mesa EGL/GL/GLES headers, Wayland and xkbcommon, fontconfig, freetype), installs Rust with rustup
-if the container has none, and builds in release mode. Allow 10 GB of disk for the build: the graphics library (Skia) is large.
+if the container has none, and builds in release mode with `--locked`, so it compiles exactly the dependencies in `Cargo.lock`
+(Freya is pinned to `=0.5.0-rc.8`; `docs/` and `AGENTS.md` say how that release is the reference). Allow 10 GB of disk for the build: the graphics library (Skia) is large.
 
 Running, to try in this order if something is wrong:
 
@@ -63,6 +70,24 @@ Steam (`SteamGameId` is detected and the Guide button is unbound).
 
 **Bazzite's Steam Deck images.** Gaming mode runs gamescope, a single fullscreen compositor: Reclaw detects it (`GAMESCOPE_WAYLAND_DISPLAY`,
 `XDG_CURRENT_DESKTOP=gamescope`), starts in Deck mode, and offers no monitor or window-mode choices for games, because gamescope owns them.
+
+### A first run, in order
+
+Start with `RECLAW_HOME=/tmp/reclaw-try RECLAW_LIVE_SAMPLE=1 reclaw-deck` (an empty profile each time, real artwork on two games).
+
+| Look at | What right looks like | Verified elsewhere? |
+|---|---|---|
+| The window | A title bar with minimize, maximize and close; drag it to move; double-press it to maximize; resize from every edge and corner; rounded corners with nothing black behind them | X11 only |
+| Library | A sidebar with an *Updates* section (three rows with icons), system badges (N64, PS2, GBA), the *Recent* and *Deck mode* buttons, downloads below the hero | X11 |
+| A game page | Select Starfall 64, press *Details*: a real hero picture and screenshot, then About, requirements, and further down the real README (collapsed; *Show the whole README*) | X11, over the real network |
+| Mouse back/forward buttons, Alt+Left/Right | Move through pages like a browser; *Recent* lists the last pages | headless tests |
+| Scripted update | Select Skyward Quest, press *Update*. The Updates row and the progress follow; when it finishes a notice is made | X11 |
+| Deck mode (**F10**) | The window fills the screen with no title bar; cards show icon chips and progress bars; **F10** again gives the window back | X11 |
+| The toast | After the update finishes, bottom right: *Hold for details* (X) and *Hold to dismiss all* (Y), with a ring that fills while the key is down. Hold `x` for 0.9 s for the details; hold `y` for 1.2 s to dismiss | X11, keyboard only |
+| A gamepad | The same as the keyboard, with the controller's own glyphs on the hints; the toast's X and Y are the pad's | **nothing yet** |
+| Scale and monitors | Settings > Screen: UI scale; Deck monitor with two or more screens. At 125% or 150% fractional scaling text stays sharp and pointer targets line up | **nothing yet** |
+
+If a row goes wrong, the terminal output and which variable above got it working are the most useful report.
 
 ### Not verified on Bazzite
 

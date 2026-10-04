@@ -32,11 +32,16 @@ pub(super) struct KeyHolds {
     enabled: bool,
     /// The held key has not completed yet, so a timer should still be ticking.
     waiting: bool,
+    /// Keys that went down and have not come up. The system repeats a held key as more "key down" events
+    /// (Freya does not say which are repeats), and a pad never does, so a second down with no up between
+    /// is not a press. Without this, holding Y past its time dismisses the toast and the repeats that
+    /// follow, now that holding is off, would each be a Search.
+    down: Vec<Button>,
 }
 
 impl KeyHolds {
     pub fn new() -> Self {
-        Self { tracker: HoldTracker::new(hold_rules()), enabled: false, waiting: false }
+        Self { tracker: HoldTracker::new(hold_rules()), enabled: false, waiting: false, down: Vec::new() }
     }
 
     /// Turn holding on or off as notifications come and go. Turning it off mid-hold abandons the
@@ -57,10 +62,14 @@ impl KeyHolds {
 
     /// The key went down. Actions to apply, in order.
     pub fn down(&mut self, button: Button, now: Instant) -> Vec<Action> {
+        if self.down.contains(&button) {
+            return Vec::new();
+        }
+        self.down.push(button);
         if !self.enabled {
             return tap_action(button).into_iter().collect();
         }
-        // A repeat of the key already held, or a second key while one is held, starts nothing.
+        // A second key while one is held starts nothing. (A repeat of the same key never gets here.)
         if self.tracker.press(button, now) {
             self.waiting = true;
             vec![Action::Hold(button, HoldPhase::Started)]
@@ -79,6 +88,7 @@ impl KeyHolds {
     /// The key came up: a tap clears the ring and then does the button's ordinary job; a release
     /// after a completed hold does nothing.
     pub fn release(&mut self, button: Button) -> Vec<Action> {
+        self.down.retain(|b| *b != button);
         match self.tracker.release(button) {
             Released::Tap => {
                 self.waiting = false;
@@ -160,5 +170,28 @@ mod tests {
         assert!(!holds.waiting());
         assert!(holds.release(Button::West).is_empty(), "the key coming up afterwards is not a tap");
         assert_eq!(holds.set_enabled(false), None);
+    }
+
+    #[test]
+    fn key_repeat_after_the_hold_fired_and_the_notification_went_is_not_a_tap() {
+        let (mut holds, t) = on();
+        holds.down(Button::North, t);
+        assert_eq!(holds.tick(t + DISMISS_ALL_AFTER), Some(Action::Hold(Button::North, HoldPhase::Completed)));
+        // Dismissing the last notification turns holding off while the key is still down.
+        holds.set_enabled(false);
+        let repeat = t + DISMISS_ALL_AFTER + Duration::from_millis(40);
+        assert!(holds.down(Button::North, repeat).is_empty(), "the system repeating a held key is not a new press");
+        assert!(holds.release(Button::North).is_empty());
+        assert_eq!(holds.down(Button::North, repeat + Duration::from_secs(1)), vec![Action::Tertiary], "a fresh press is a tap again");
+    }
+
+    #[test]
+    fn a_plain_tap_key_does_not_repeat_while_it_is_held() {
+        let mut holds = KeyHolds::new();
+        let t = Instant::now();
+        assert_eq!(holds.down(Button::West, t), vec![Action::Secondary]);
+        assert!(holds.down(Button::West, t + Duration::from_millis(600)).is_empty(), "held, not pressed again");
+        assert!(holds.release(Button::West).is_empty());
+        assert_eq!(holds.down(Button::West, t + Duration::from_secs(2)), vec![Action::Secondary]);
     }
 }

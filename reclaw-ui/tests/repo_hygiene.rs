@@ -192,3 +192,46 @@ fn the_glob_matcher_follows_its_own_rules() {
     assert!(matches("a/b.rs", "a/b.rs") && !matches("a/b.rs", "a/c.rs"));
     assert!(!matches("a/**", "b/c.rs"));
 }
+
+/// The Freya release that the docs' claims about the toolkit were checked against (AGENTS.md, "Freya
+/// source of truth"). Moving to another release means re-checking those claims first.
+const FREYA_RELEASE: &str = "0.5.0-rc.8";
+
+#[test]
+fn freya_stays_on_the_release_the_docs_were_checked_against() {
+    let root = workspace_root();
+    let lock = fs::read_to_string(root.join("Cargo.lock")).expect("Cargo.lock is committed");
+    let mut checked = Vec::new();
+    for package in lock.split("[[package]]").skip(1) {
+        let field = |key: &str| {
+            package
+                .lines()
+                .find_map(|l| l.strip_prefix(key).and_then(|r| r.strip_prefix(" = \"")).and_then(|r| r.strip_suffix('"')))
+                .unwrap_or_default()
+        };
+        let name = field("name");
+        // The graphics bindings (`freya-skia-*`) are versioned on their own.
+        if !(name == "freya" || name.starts_with("freya-")) || name.starts_with("freya-skia") {
+            continue;
+        }
+        assert_eq!(field("version"), FREYA_RELEASE, "{name} is not at the release the docs were checked against");
+        assert!(field("source").starts_with("registry+"), "{name} must come from crates.io, not a path or a git checkout");
+        checked.push(name.to_string());
+    }
+    assert!(
+        checked.len() >= 10 && checked.iter().any(|n| n == "freya") && checked.iter().any(|n| n == "freya-core"),
+        "Cargo.lock should list Freya's crates, found {checked:?}"
+    );
+
+    let mut manifests = vec![root.join("Cargo.toml")];
+    manifests.extend(
+        fs::read_dir(&root).expect("the workspace root is readable").flatten().map(|e| e.path().join("Cargo.toml")).filter(|p| p.is_file()),
+    );
+    for manifest in manifests {
+        let text = fs::read_to_string(&manifest).expect("a manifest is readable");
+        assert!(!text.contains("[patch"), "{}: a [patch] can swap Freya for source the docs were not checked against", show(&manifest));
+        for line in text.lines().filter(|l| l.trim_start().starts_with("freya")) {
+            assert!(line.contains(&format!("\"={FREYA_RELEASE}\"")), "{}: pin Freya exactly with `=`: {line}", show(&manifest));
+        }
+    }
+}

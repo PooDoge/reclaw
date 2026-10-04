@@ -1,6 +1,7 @@
 # 0005 Reclaw draws its own window frame
 
 - status: accepted
+- freya: claims about the toolkit checked against 0.5.0-rc.8 (tag v0.5.0-rc.8, commit af55a77) on 2026-10-04
 - date: 2026-10-04
 - spec: ../specs/window.md
 
@@ -23,10 +24,11 @@ it all off. Every request to the window is an `Effect` the `Shell` carries out; 
 * **Native decoration with a custom bar inside it.** Two title bars.
 * **Calling the windowing library from components.** Against the rule that the UI asks only through `Effect`s, and the headless
   tests would need a window.
-* **The toolkit's `use_maximized` hook.** It asks for the window's id while rendering and panics without a window; a guarded copy
-  is used.
-* **The toolkit's close call for the Close button.** It skips the host's close hook, so settings written there would be lost; the
-  command records the window and flushes first.
+* **The borderless plugin's `use_maximized` hook** (`freya-borderless-plugin`). Its side effect calls `Platform::window_id()`, which
+  reads a root context and panics when there is none, as in the headless tests; a guarded copy is used.
+* **The toolkit's close call for the Close button.** `Platform::close_window` removes the window and tells plugins, but only the
+  window manager's close request (`CloseRequested`) runs the `on_close` hook, so settings flushed there would be lost; the command
+  flushes first itself.
 
 ## Consequences
 

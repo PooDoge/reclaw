@@ -57,10 +57,21 @@ blocks. The stock markdown viewer draws the prose, restyled with Reclaw's colors
 
 ## Not built / not verified
 
-Drawing diagrams; animated GIFs; SVG pictures that contain text; READMEs in other formats (`.rst`, `.adoc`) and docs beyond the
+Drawing diagrams; animated GIFs; SVG pictures that contain text. **An SVG that uses a mask drew nothing at all, with no placeholder
+behind it** (Freya's own logo as a capsule: the file was fetched and cached, the card stayed blank). The toolkit's SVG viewer only
+falls back when the file fails to parse. The cause was not investigated; rasters are unaffected, so the live sample uses rasters; READMEs in other formats (`.rst`, `.adoc`) and docs beyond the
 README; a settings row to clear the cache or show its size; Deck mode has no README view. Verified against the real internet once
 (`cargo test -p reclaw-media --test real_network -- --ignored`: a real README and image over TLS); not verified at scale or on a
 slow or captive network. Prose uses the stock viewer's fonts, not Reclaw's.
+
+## Trying it with real addresses
+
+`RECLAW_LIVE_SAMPLE=1` with the `gallery` or `deck` example (`reclaw_ui::sample::live_if_asked`) points sample games 1 and 3 at
+real GitHub repositories: a PNG capsule, a JPEG hero and screenshot, and the READMEs of Zelda64Recomp and Freya. Run in a real
+window under Xvfb on 2026-10-04 it fetched the README and pictures over TLS through the egress proxy, wrote them to
+`RECLAW_HOME/cache/media`, and drew the hero, the screenshot in the strip, the README (headings, nested lists, links, the collapsed
+view with *Show the whole README*) and the card art on Deck. A Discord banner that was an image inside a link degraded to its alt
+text as a link, as designed. Not tried: a slow network, a captive portal, a cold cache offline.
 
 ## Tests
 

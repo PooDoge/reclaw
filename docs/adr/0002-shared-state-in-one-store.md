@@ -1,6 +1,7 @@
 # 0002 Shared state in one freya-radio store, saved as a small TOML file
 
 - status: accepted
+- freya: claims about the toolkit checked against 0.5.0-rc.8 (tag v0.5.0-rc.8, commit af55a77) on 2026-10-04
 - date: 2026-10-04
 - spec: ../specs/state.md
 

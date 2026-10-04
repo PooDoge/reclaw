@@ -35,8 +35,14 @@ The toast offers two holds: **hold X for details** (0.9 s) opens the notice's fu
 
 * The gesture is `reclaw_input::HoldTracker` (pure; time is passed in). The pad reader runs it only while the UI has asked for it
   (`Effect::NoticeHolds(true)`, sent exactly while a toast is up), so X and Y act on press, as always, the rest of the time.
-* **A tap still does the button's ordinary job.** While holds are on, a held button acts on *release*: released early it is a tap
-  (X opens Options, Y searches) and the ring clears; held long enough it completes once and the release does nothing more.
+* **A tap still does the button's ordinary job, on release.** While holds are on, a press cannot yet be told from the start of a
+  hold, so the tap is decided when the button comes up: released early, the ring clears and the ordinary action runs (X opens
+  Options, Y searches). A hold that reaches its time **completes at that moment, while the button is still down**, once, and the
+  release after it does nothing.
+* **A key held on a keyboard repeats** as more "key down" events and Freya does not say which are repeats, so `key_holds.rs`
+  remembers which keys are down and ignores a second down with no up between. (Before this, holding Y past its time dismissed the
+  toast and the repeats that followed each opened Search; found by running the real window with `xdotool`.) A pad has no repeat.
+  If a key-up is ever lost (focus taken mid-hold) the next press of that key is ignored once.
 * **The keyboard does the same** (`key_holds.rs`, keys `x` and `y`, over the same tracker) so Deck mode can be driven and tested
   without a pad.
 * The ring runs on its own clock for the length of the hold; the reader's clock decides when it completes. They agree to within a frame.

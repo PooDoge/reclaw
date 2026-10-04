@@ -70,7 +70,8 @@ fn main() {
     let opened = open_store(
         |k| std::env::var(k).ok(),
         |state| {
-            let sample = AppState::sample();
+            let mut sample = AppState::sample();
+            reclaw_ui::sample::live_if_asked(|k| std::env::var(k).ok(), &mut sample.games, &mut sample.projects);
             state.games = sample.games;
             state.projects = sample.projects;
             state.mods = sample.mods;

@@ -77,3 +77,13 @@ keeps the compiled dependencies and drops only ours.
 Absolute `Position` is relative to the parent's origin and `bottom()` does not anchor like CSS (use `top`). `EventHandler`s are never
 equal across renders. Overlays need an absolute root with its own size and `Layer::Overlay`. Freya's wrapper moves focus on Tab and
 the vertical arrows. `Input` starts its caret at 0. `State<Option<String>>` cannot be called like a function (not `Copy`).
+
+## Freya source of truth
+
+The reference for the Freya API is the source that compiles: `~/.cargo/registry/src/*/freya-*-0.5.0-rc.8/` (crates.io release
+`0.5.0-rc.8`, published from tag `v0.5.0-rc.8` = commit `af55a77c3cb818c74d469d7da97f834f28cc1f0a`; each crate's `.cargo_vcs_info.json`
+says so). Check the version in the directory name: the registry may also hold 0.4.x. A Freya git checkout is a reference only if it is
+that tag; a fork or `main` can be far from it (a fork snapshot seen in development was an `rc.1`-era tree and differed from rc.8 in 48
+files of `freya-core`). `tests/repo_hygiene.rs` fails if any `freya*` crate in `Cargo.lock` is not `0.5.0-rc.8` from crates.io, if a
+Freya dependency is not pinned with `=`, or if a `[patch]` appears. To move to a new release, re-check every claim about Freya in
+`docs/adr` and `docs/specs` against the new source, update their `freya:` lines, then change the constant in that test.

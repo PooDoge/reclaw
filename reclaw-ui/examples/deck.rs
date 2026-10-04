@@ -4,11 +4,16 @@
 //! shell loop standing in for a recompiled game, so Play, Resume, Stop and Force quit are real
 //! processes. Arrow keys, Enter, Esc, Tab and Shift+Tab work without a pad.
 //!
+//! Update and Install play a scripted download (about eleven seconds), so the progress bars, the sidebar's
+//! Updates section and the notification toast can be tried: hold X for details, hold Y to dismiss all.
+//! `RECLAW_LIVE_SAMPLE=1` points two sample games at real repositories for artwork and READMEs.
+//!
 //! RECLAW_MODE / Steam variables pick the starting interface (under Steam the Guide button is left
 //! to Steam). F10 switches interface by hand; F9 shows a simulated on-screen keyboard.
 use std::time::Duration;
 
 use freya::prelude::*;
+use futures_channel::mpsc::unbounded;
 use futures_util::StreamExt;
 use reclaw_input::{
     ActionMap, Button, GuideOwner,
@@ -18,11 +23,13 @@ use reclaw_input::{
 use reclaw_runtime::{InputProfile, LaunchSpec, RunState, SessionEvent, Supervisor};
 use reclaw_ui::notices::hold_rules;
 use reclaw_ui::{
+    activity::{ActivityEvent, ActivityId, Kind},
     bootstrap::{open_media, open_store},
     deck::ActionFeed,
     effect::Effect,
     nav::Route,
     prelude::*,
+    sample::pretend_job,
     shell::{DevOverrides, Services, Shell},
     store::{AppAction, AppState, Store},
     window::{Frame, WindowHost, detect_server, launch::launch_config},
@@ -45,7 +52,7 @@ impl App for Host {
         use_init_reclaw(dev.theme.unwrap_or_else(|| store.with(|s| ThemeKind::from_settings(&s.settings))));
 
         // Everything long-lived is created once.
-        let (supervisor, input) = use_hook({
+        let (supervisor, input, jobs) = use_hook({
             let map = self.map.clone();
             let feed_tx = self.feed.clone();
             move || {
@@ -88,7 +95,31 @@ impl App for Host {
                         store.dispatch(AppAction::SetRun { id: app, run: watched.state(app) });
                     }
                 });
-                (supervisor, input)
+
+                // A stand-in installer: Update and Install play a scripted download, so progress bars, the Updates
+                // section and the notification toast (hold X for details, hold Y to dismiss) can be tried by hand.
+                let (jobs, mut requests) = unbounded::<(u32, Kind)>();
+                spawn(async move {
+                    let mut next: ActivityId = 100;
+                    while let Some((game, kind)) = requests.next().await {
+                        let Some(title) = store.with(|s| s.games.iter().find(|g| g.id == game).map(|g| g.title.to_string())) else {
+                            continue;
+                        };
+                        // A real installer would not start a second job for a game already being worked on.
+                        let stale: Vec<ActivityId> =
+                            store.with(|s| s.activity.for_game(game).filter(|a| a.is_running() && !a.is_mod()).map(|a| a.id).collect());
+                        for id in stale {
+                            store.dispatch(AppAction::Activity(ActivityEvent::Cancelled { id }));
+                        }
+                        next += 1;
+                        for (wait, event) in pretend_job(next, game, kind, &title) {
+                            timer(wait).await;
+                            store.dispatch(AppAction::Activity(event));
+                        }
+                        store.dispatch(AppAction::SetStatus { id: game, status: AppStatus::Installed });
+                    }
+                });
+                (supervisor, input, jobs)
             }
         });
 
@@ -122,6 +153,13 @@ impl App for Host {
                     input.set_holds(on);
                 }
             }
+            // No installer here, so a scripted one reports a download for these two.
+            Effect::Update(id) => {
+                let _ = jobs.unbounded_send((id, Kind::Update));
+            }
+            Effect::StartInstall { app, .. } => {
+                let _ = jobs.unbounded_send((app, Kind::Install));
+            }
             // The rest need real windows, a catalog, or an installer: the host app's job.
             other => eprintln!("effect for the host to handle: {other:?}"),
         });
@@ -154,7 +192,8 @@ fn main() {
     let opened = open_store(
         |k| std::env::var(k).ok(),
         |state| {
-            let sample = AppState::sample();
+            let mut sample = AppState::sample();
+            reclaw_ui::sample::live_if_asked(|k| std::env::var(k).ok(), &mut sample.games, &mut sample.projects);
             state.games = sample.games;
             state.projects = sample.projects;
             state.mods = sample.mods;
