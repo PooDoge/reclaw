@@ -31,10 +31,6 @@ impl Component for ToggleSwitch {
             toggled_thumb_background: Some(t.on_accent.into()),
             focus_border_fill: Some(t.accent.into()),
         };
-        Switch::new()
-            .toggled(on)
-            .enabled(self.enabled)
-            .theme_colors(colors)
-            .on_toggle(move |_| on.toggle())
+        Switch::new().toggled(on).enabled(self.enabled).theme_colors(colors).on_toggle(move |_| on.toggle())
     }
 }

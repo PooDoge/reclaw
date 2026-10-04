@@ -5,15 +5,11 @@ use serde_json::Value;
 
 fn tokens() -> Value {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../design-system/tokens.json");
-    serde_json::from_str(&std::fs::read_to_string(path).expect("read tokens.json"))
-        .expect("parse tokens.json")
+    serde_json::from_str(&std::fs::read_to_string(path).expect("read tokens.json")).expect("parse tokens.json")
 }
 
 fn px(value: &str) -> f32 {
-    value
-        .trim_end_matches("px")
-        .parse()
-        .unwrap_or_else(|_| panic!("not a length: {value}"))
+    value.trim_end_matches("px").parse().unwrap_or_else(|_| panic!("not a length: {value}"))
 }
 
 fn family(t: &Value, name: &str, key: &str) -> f32 {
@@ -65,21 +61,22 @@ fn lengths_match() {
         ("layout", "deck-tabs-h", DECK_TABS_H),
         ("layout", "deck-panel-w", DECK_PANEL_W),
         ("layout", "deck-focus-ring", DECK_FOCUS_RING),
+        ("layout", "deck-menu-w", DECK_MENU_W),
+        ("layout", "deck-settings-nav-w", DECK_SETTINGS_NAV_W),
+        ("layout", "deck-settings-row-h", DECK_SETTINGS_ROW_H),
+        ("layout", "deck-two-pane-min-w", reclaw_ui::deck::TWO_PANE_MIN_W),
+        ("layout", "surface-header-h", SURFACE_HEADER_H),
+        ("layout", "surface-header-h-compact", SURFACE_HEADER_H_COMPACT),
+        ("layout", "surface-footer-h", SURFACE_FOOTER_H),
+        ("layout", "surface-max-w", SURFACE_MAX_W),
+        ("layout", "surface-short-h", SURFACE_SHORT_H),
+        ("layout", "surface-touch-popup-min-h", reclaw_ui::surface::TOUCH_POPUP_MIN_HEIGHT),
     ];
     for (fam, name, actual) in expected {
-        assert_eq!(
-            family(&t, fam, name),
-            *actual,
-            "{fam}.{name} drifted from tokens.json"
-        );
+        assert_eq!(family(&t, fam, name), *actual, "{fam}.{name} drifted from tokens.json");
     }
     // The scale is a bare number, not px.
-    let scale = t["layout"]["tokens"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|x| x["name"] == "deck-focus-scale")
-        .unwrap()["value"]
+    let scale = t["layout"]["tokens"].as_array().unwrap().iter().find(|x| x["name"] == "deck-focus-scale").unwrap()["value"]
         .as_str()
         .unwrap()
         .parse::<f32>()
@@ -90,12 +87,7 @@ fn lengths_match() {
 fn hex(value: &str) -> (u8, u8, u8, u8) {
     let h = value.trim_start_matches('#');
     let byte = |i: usize| u8::from_str_radix(&h[i..i + 2], 16).unwrap();
-    (
-        byte(0),
-        byte(2),
-        byte(4),
-        if h.len() == 8 { byte(6) } else { 255 },
-    )
+    (byte(0), byte(2), byte(4), if h.len() == 8 { byte(6) } else { 255 })
 }
 
 #[test]
@@ -103,22 +95,13 @@ fn every_color_token_matches_in_both_themes() {
     let t = tokens();
     let colors = t["color"]["tokens"].as_array().unwrap();
     assert!(colors.len() > 20);
-    for (theme, id) in [
-        (ThemeKind::Midnight, "midnight"),
-        (ThemeKind::Daylight, "daylight"),
-    ] {
+    for (theme, id) in [(ThemeKind::Midnight, "midnight"), (ThemeKind::Daylight, "daylight")] {
         let rust = theme.tokens();
         for token in colors {
             let name = token["name"].as_str().unwrap();
             let want = hex(token["value"][id].as_str().unwrap());
-            let got = rust
-                .get(name)
-                .unwrap_or_else(|| panic!("{name} missing from Reclaw::get"));
-            assert_eq!(
-                (got.r(), got.g(), got.b(), got.a()),
-                want,
-                "{name} ({id}) drifted from tokens.json"
-            );
+            let got = rust.get(name).unwrap_or_else(|| panic!("{name} missing from Reclaw::get"));
+            assert_eq!((got.r(), got.g(), got.b(), got.a()), want, "{name} ({id}) drifted from tokens.json");
         }
     }
 }
@@ -127,28 +110,10 @@ fn every_color_token_matches_in_both_themes() {
 fn deck_type_scale_is_what_typography_uses() {
     // The sizes live in typography.rs; this pins them to the design tokens.
     let t = tokens();
-    let styles: Vec<&Value> = t["type"]["groups"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .flat_map(|g| g["styles"].as_array().unwrap())
-        .collect();
-    let size = |name: &str| {
-        px(
-            styles.iter().find(|s| s["name"] == name).unwrap()["fontSize"]
-                .as_str()
-                .unwrap(),
-        )
-    };
+    let styles: Vec<&Value> = t["type"]["groups"].as_array().unwrap().iter().flat_map(|g| g["styles"].as_array().unwrap()).collect();
+    let size = |name: &str| px(styles.iter().find(|s| s["name"] == name).unwrap()["fontSize"].as_str().unwrap());
     assert_eq!(
-        [
-            size("deck-title"),
-            size("deck-heading"),
-            size("deck-body"),
-            size("deck-label"),
-            size("deck-meta"),
-            size("deck-hint")
-        ],
+        [size("deck-title"), size("deck-heading"), size("deck-body"), size("deck-label"), size("deck-meta"), size("deck-hint")],
         [40., 24., 20., 18., 16., 16.]
     );
 }

@@ -10,10 +10,25 @@ use futures_util::StreamExt;
 use reclaw_input::{ActionMap, InputOwner};
 use reclaw_runtime::{LaunchSpec, RunState, SessionEvent, Supervisor};
 use reclaw_ui::{
-    deck::{ActionFeed, DeckApp, Effect},
+    deck::{ActionFeed, DeckApp},
+    effect::Effect,
+    host::HostState,
     prelude::*,
     sample::{sample_downloads, sample_games},
 };
+
+/// Kills whatever the test started, even when an assertion fails halfway: the second `stop` is the
+/// supervisor's force-kill. Without it a failed run leaves a shell loop behind.
+struct KillOnDrop(Supervisor);
+
+impl Drop for KillOnDrop {
+    fn drop(&mut self) {
+        for app in self.0.running() {
+            let _ = self.0.stop(app);
+            let _ = self.0.stop(app);
+        }
+    }
+}
 
 fn pump(runner: &mut TestingRunner, ms: u64) {
     runner.poll(Duration::from_millis(10), Duration::from_millis(ms));
@@ -23,15 +38,15 @@ fn pump(runner: &mut TestingRunner, ms: u64) {
 fn play_guide_resume_stop_with_a_real_process() {
     let log: Rc<RefCell<Vec<Effect>>> = Rc::default();
     let (supervisor, events) = Supervisor::new(Duration::from_secs(2));
+    let _cleanup = KillOnDrop(supervisor.clone());
     let events = Rc::new(RefCell::new(Some(events)));
 
     let app = {
         let (log, supervisor, events) = (log.clone(), supervisor.clone(), events.clone());
         move || {
             use_init_reclaw(ThemeKind::Midnight);
-            let mut games = use_state(sample_games);
-            let downloads = use_state(sample_downloads);
-            let controller = use_state(|| None);
+            let host = HostState::use_new(sample_games(), sample_downloads());
+            let mut games = host.games;
             let (_tx, feed) = ActionFeed::new();
 
             use_hook({
@@ -51,12 +66,10 @@ fn play_guide_resume_stop_with_a_real_process() {
 
             let (log, supervisor) = (log.clone(), supervisor.clone());
             DeckApp {
-                games,
-                downloads,
-                controller,
+                host,
                 feed,
                 on_effect: EventHandler::new(move |effect: Effect| {
-                    log.borrow_mut().push(effect);
+                    log.borrow_mut().push(effect.clone());
                     match effect {
                         Effect::Launch(id) => {
                             let spec = LaunchSpec::new("sh").arg("-c").arg("while true; do sleep 1; done");
@@ -115,10 +128,6 @@ fn play_guide_resume_stop_with_a_real_process() {
     // The supervisor ends the session; the app notices and brings the launcher forward.
     pump(&mut runner, 1500);
     assert_eq!(supervisor.state(1), RunState::Idle, "SIGTERM ended the whole group");
-    assert!(
-        log.borrow().contains(&Effect::BringLauncherToFront),
-        "the launcher comes forward when the app ends: {:?}",
-        log.borrow()
-    );
+    assert!(log.borrow().contains(&Effect::BringLauncherToFront), "the launcher comes forward when the app ends: {:?}", log.borrow());
     assert_eq!(log.borrow().last(), Some(&Effect::InputOwner(InputOwner::Launcher)));
 }

@@ -16,6 +16,7 @@ pub enum IconName {
     Mods,
     Queue,
     Settings,
+    More,
     Folder,
     Chevron,
     Refresh,
@@ -25,6 +26,9 @@ pub enum IconName {
     Square,
     Triangle,
     Desktop,
+    Back,
+    ChevronDown,
+    Gamepad,
 }
 
 impl IconName {
@@ -41,6 +45,7 @@ impl IconName {
             Self::Mods => ("puzzle", lucide::puzzle()),
             Self::Queue => ("arrow-down-to-line", lucide::arrow_down_to_line()),
             Self::Settings => ("settings", lucide::settings()),
+            Self::More => ("ellipsis", lucide::ellipsis()),
             Self::Folder => ("folder-open", lucide::folder_open()),
             Self::Chevron => ("chevron-right", lucide::chevron_right()),
             Self::Refresh => ("refresh-cw", lucide::refresh_cw()),
@@ -50,14 +55,13 @@ impl IconName {
             Self::Square => ("square", lucide::square()),
             Self::Triangle => ("triangle", lucide::triangle()),
             Self::Desktop => ("monitor", lucide::monitor()),
+            Self::Back => ("chevron-left", lucide::chevron_left()),
+            Self::ChevronDown => ("chevron-down", lucide::chevron_down()),
+            Self::Gamepad => ("gamepad-2", lucide::gamepad_2()),
         }
     }
 }
 
 pub fn icon(name: IconName, size: f32, color: Color) -> SvgViewer {
-    SvgViewer::new(name.source())
-        .color(color)
-        .width(Size::px(size))
-        .height(Size::px(size))
-        .show_loader(false)
+    SvgViewer::new(name.source()).color(color).width(Size::px(size)).height(Size::px(size)).show_loader(false)
 }

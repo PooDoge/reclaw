@@ -23,13 +23,7 @@ impl KeyExt for DownloadItem {
 
 impl DownloadItem {
     pub fn new(download: Download) -> Self {
-        Self {
-            download,
-            on_cancel: None,
-            controller: false,
-            cancel_focused: false,
-            key: DiffKey::None,
-        }
+        Self { download, on_cancel: None, controller: false, cancel_focused: false, key: DiffKey::None }
     }
 
     /// Deck mode: larger text and padding, and the Cancel button shows the focus frame.
@@ -61,11 +55,8 @@ impl Component for DownloadItem {
         let detail = d.error.clone().unwrap_or_else(|| d.detail.clone());
         let detail_color = if failed { t.danger } else { t.ink_subtle };
 
-        let bar = ProgressBar::new(d.progress.clamp(0., 100.))
-            .show_progress(false)
-            .background(t.bg_raised)
-            .progress_background(fill)
-            .height(6.);
+        let bar =
+            ProgressBar::new(d.progress.clamp(0., 100.)).show_progress(false).background(t.bg_raised).progress_background(fill).height(6.);
 
         let text_column = rect()
             .vertical()
@@ -79,19 +70,13 @@ impl Component for DownloadItem {
                     .width(Size::fill())
                     .child(
                         rect().width(Size::flex(1.)).child(
-                            (if self.controller {
-                                TypeStyle::DeckLabel
-                            } else {
-                                TypeStyle::Label
-                            })
-                            .text(d.title.clone(), t.ink)
-                            .max_lines(1)
-                            .text_overflow(TextOverflow::Ellipsis),
+                            (if self.controller { TypeStyle::DeckLabel } else { TypeStyle::Label })
+                                .text(d.title.clone(), t.ink)
+                                .max_lines(1)
+                                .text_overflow(TextOverflow::Ellipsis),
                         ),
                     )
-                    .child(
-                        TypeStyle::Mono.text(stage, if failed { t.danger } else { t.ink_muted }),
-                    ),
+                    .child(TypeStyle::Mono.text(stage, if failed { t.danger } else { t.ink_muted })),
             )
             .child(bar)
             .child(
@@ -100,16 +85,8 @@ impl Component for DownloadItem {
                     .content(Content::Flex)
                     .spacing(SPACE_3)
                     .width(Size::fill())
-                    .child(
-                        rect()
-                            .width(Size::flex(1.))
-                            .child(TypeStyle::Meta.text(detail, detail_color)),
-                    )
-                    .maybe_child(
-                        d.speed
-                            .clone()
-                            .map(|s| TypeStyle::Mono.text(s, t.ink_muted)),
-                    ),
+                    .child(rect().width(Size::flex(1.)).child(TypeStyle::Meta.text(detail, detail_color)))
+                    .maybe_child(d.speed.clone().map(|s| TypeStyle::Mono.text(s, t.ink_muted))),
             );
 
         rect()
@@ -124,23 +101,14 @@ impl Component for DownloadItem {
                 Gaps::new(SPACE_3, SPACE_4, SPACE_3, SPACE_4)
             })
             .background(t.bg_panel)
-            .border(
-                Border::new()
-                    .fill(t.line)
-                    .width(1.)
-                    .alignment(BorderAlignment::Inner),
-            )
+            .border(Border::new().fill(t.line).width(1.).alignment(BorderAlignment::Inner))
             .corner_radius(RADIUS_MD)
             .child(ArtPlaceholder::thumb(92., 43.))
             .child(text_column)
             .child(crate::deck::FocusFrame::new(
                 ActionButton::new(ButtonVariant::Ghost)
                     .icon(IconName::X)
-                    .size(if self.controller {
-                        ButtonSize::Controller
-                    } else {
-                        ButtonSize::Md
-                    })
+                    .size(if self.controller { ButtonSize::Controller } else { ButtonSize::Md })
                     .map(self.on_cancel.clone(), |b, h| b.on_press(h)),
                 self.cancel_focused,
             ))

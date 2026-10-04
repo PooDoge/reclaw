@@ -1,0 +1,30 @@
+//! Building blocks of Deck mode. Each file is one component; none of them owns app state.
+mod backdrop;
+mod banner;
+mod confirm;
+mod deck_row;
+mod focus;
+mod glyph;
+mod hint_bar;
+mod launch_button;
+mod main_menu;
+mod quick_access;
+mod shelf;
+mod slide_panel;
+mod tabs;
+mod tile;
+
+pub use backdrop::Backdrop;
+pub use banner::{NowPlayingBanner, elapsed_label};
+pub use confirm::{ConfirmCopy, ConfirmOverlay};
+pub use deck_row::DeckRow;
+pub use focus::FocusFrame;
+pub use glyph::ButtonGlyph;
+pub use hint_bar::HintBar;
+pub use launch_button::LaunchButton;
+pub use main_menu::MainMenu;
+pub use quick_access::QuickAccess;
+pub use shelf::Shelf;
+pub use slide_panel::{PanelSide, SlidePanel};
+pub use tabs::SectionTabs;
+pub use tile::DeckTile;

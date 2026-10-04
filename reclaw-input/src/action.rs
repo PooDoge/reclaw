@@ -132,17 +132,11 @@ impl ActionMap {
     }
 
     pub fn action_for(&self, button: Button) -> Option<Action> {
-        self.entries
-            .iter()
-            .find(|(b, _)| *b == button)
-            .map(|(_, a)| *a)
+        self.entries.iter().find(|(b, _)| *b == button).map(|(_, a)| *a)
     }
 
     pub fn button_for(&self, action: Action) -> Option<Button> {
-        self.entries
-            .iter()
-            .find(|(_, a)| *a == action)
-            .map(|(b, _)| *b)
+        self.entries.iter().find(|(_, a)| *a == action).map(|(b, _)| *b)
     }
 
     /// The glyph to print in a hint bar for `action` on this kind of controller.

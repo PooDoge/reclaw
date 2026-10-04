@@ -26,14 +26,7 @@ impl ControllerKind {
             Self::SteamDeck
         } else if has(&["xbox", "x-box", "xinput"]) {
             Self::Xbox
-        } else if has(&[
-            "dualsense",
-            "dualshock",
-            "playstation",
-            "ps4",
-            "ps5",
-            "wireless controller",
-        ]) {
+        } else if has(&["dualsense", "dualshock", "playstation", "ps4", "ps5", "wireless controller"]) {
             Self::PlayStation
         } else if has(&["nintendo", "switch", "joy-con", "pro controller"]) {
             Self::Nintendo
@@ -91,11 +84,7 @@ impl ControllerKind {
                     RightTrigger => L(if deck { "R2" } else { "RT" }),
                     Select => L("View"),
                     Start => L("Menu"),
-                    Guide => L(if self == Self::SteamDeck {
-                        "Steam"
-                    } else {
-                        "Guide"
-                    }),
+                    Guide => L(if self == Self::SteamDeck { "Steam" } else { "Guide" }),
                     LeftStick => L("L3"),
                     RightStick => L("R3"),
                     DPadUp | DPadDown | DPadLeft | DPadRight => L("D-pad"),
@@ -137,22 +126,10 @@ pub struct ControllerInfo {
 }
 
 impl ControllerInfo {
-    pub fn new(
-        id: u32,
-        name: impl Into<String>,
-        vendor_id: Option<u16>,
-        product_id: Option<u16>,
-    ) -> Self {
+    pub fn new(id: u32, name: impl Into<String>, vendor_id: Option<u16>, product_id: Option<u16>) -> Self {
         let name = name.into();
         let kind = ControllerKind::detect(&name, vendor_id);
-        Self {
-            id,
-            name,
-            kind,
-            vendor_id,
-            product_id,
-            power: PowerState::Unknown,
-        }
+        Self { id, name, kind, vendor_id, product_id, power: PowerState::Unknown }
     }
 }
 
@@ -162,45 +139,21 @@ mod tests {
 
     #[test]
     fn vendor_beats_name() {
-        assert_eq!(
-            ControllerKind::detect("Wireless Controller", Some(0x054c)),
-            ControllerKind::PlayStation
-        );
-        assert_eq!(
-            ControllerKind::detect("Totally Generic Pad", Some(0x045e)),
-            ControllerKind::Xbox
-        );
+        assert_eq!(ControllerKind::detect("Wireless Controller", Some(0x054c)), ControllerKind::PlayStation);
+        assert_eq!(ControllerKind::detect("Totally Generic Pad", Some(0x045e)), ControllerKind::Xbox);
     }
 
     #[test]
     fn name_fallback() {
-        assert_eq!(
-            ControllerKind::detect("Nintendo Switch Pro Controller", None),
-            ControllerKind::Nintendo
-        );
-        assert_eq!(
-            ControllerKind::detect("Microsoft X-Box 360 pad", None),
-            ControllerKind::Xbox
-        );
-        assert_eq!(
-            ControllerKind::detect("8BitDo Lite", None),
-            ControllerKind::Generic
-        );
+        assert_eq!(ControllerKind::detect("Nintendo Switch Pro Controller", None), ControllerKind::Nintendo);
+        assert_eq!(ControllerKind::detect("Microsoft X-Box 360 pad", None), ControllerKind::Xbox);
+        assert_eq!(ControllerKind::detect("8BitDo Lite", None), ControllerKind::Generic);
     }
 
     #[test]
     fn nintendo_labels_follow_the_cap_not_the_position() {
-        assert_eq!(
-            ControllerKind::Nintendo.glyph(Button::East),
-            GlyphFace::Label("A")
-        );
-        assert_eq!(
-            ControllerKind::Xbox.glyph(Button::East),
-            GlyphFace::Label("B")
-        );
-        assert_eq!(
-            ControllerKind::PlayStation.glyph(Button::South),
-            GlyphFace::Cross
-        );
+        assert_eq!(ControllerKind::Nintendo.glyph(Button::East), GlyphFace::Label("A"));
+        assert_eq!(ControllerKind::Xbox.glyph(Button::East), GlyphFace::Label("B"));
+        assert_eq!(ControllerKind::PlayStation.glyph(Button::South), GlyphFace::Cross);
     }
 }

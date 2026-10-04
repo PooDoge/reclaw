@@ -17,12 +17,10 @@ pub struct InputProfile {
 impl InputProfile {
     pub fn apply(&self, spec: &mut LaunchSpec) {
         if let Some(config) = &self.sdl_controller_config {
-            spec.env
-                .push(("SDL_GAMECONTROLLERCONFIG".into(), config.into()));
+            spec.env.push(("SDL_GAMECONTROLLERCONFIG".into(), config.into()));
         }
         if self.allow_background_events {
-            spec.env
-                .push(("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS".into(), "1".into()));
+            spec.env.push(("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS".into(), "1".into()));
         }
         for (k, v) in &self.env {
             spec.env.push((k.into(), v.into()));
@@ -62,19 +60,13 @@ impl SdlMapping {
                 bindings.insert(key.to_string(), value.to_string());
             }
         }
-        Some(Self {
-            guid,
-            name,
-            bindings,
-            platform,
-        })
+        Some(Self { guid, name, bindings, platform })
     }
 
     /// Exchange what two logical outputs read from, e.g. `swap("a", "b")`. Returns `false` if
     /// either output is not bound.
     pub fn swap(&mut self, a: &str, b: &str) -> bool {
-        let (Some(va), Some(vb)) = (self.bindings.get(a).cloned(), self.bindings.get(b).cloned())
-        else {
+        let (Some(va), Some(vb)) = (self.bindings.get(a).cloned(), self.bindings.get(b).cloned()) else {
             return false;
         };
         self.bindings.insert(a.to_string(), vb);
@@ -114,14 +106,8 @@ mod tests {
     fn swap_a_and_b() {
         let mut m = SdlMapping::parse(LINE).unwrap();
         assert!(m.swap("a", "b"));
-        assert_eq!(
-            (m.bindings["a"].as_str(), m.bindings["b"].as_str()),
-            ("b1", "b0")
-        );
-        assert!(
-            !m.swap("a", "start"),
-            "unbound output is reported, not invented"
-        );
+        assert_eq!((m.bindings["a"].as_str(), m.bindings["b"].as_str()), ("b1", "b0"));
+        assert!(!m.swap("a", "start"), "unbound output is reported, not invented");
     }
 
     #[test]
@@ -133,24 +119,9 @@ mod tests {
     #[test]
     fn profile_sets_the_sdl_variables() {
         let mut spec = LaunchSpec::new("/bin/true");
-        InputProfile {
-            sdl_controller_config: Some("g,n,a:b0".into()),
-            allow_background_events: true,
-            env: vec![("X".into(), "1".into())],
-        }
-        .apply(&mut spec);
-        let keys: Vec<_> = spec
-            .env
-            .iter()
-            .map(|(k, _)| k.to_string_lossy().into_owned())
-            .collect();
-        assert_eq!(
-            keys,
-            [
-                "SDL_GAMECONTROLLERCONFIG",
-                "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS",
-                "X"
-            ]
-        );
+        InputProfile { sdl_controller_config: Some("g,n,a:b0".into()), allow_background_events: true, env: vec![("X".into(), "1".into())] }
+            .apply(&mut spec);
+        let keys: Vec<_> = spec.env.iter().map(|(k, _)| k.to_string_lossy().into_owned()).collect();
+        assert_eq!(keys, ["SDL_GAMECONTROLLERCONFIG", "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "X"]);
     }
 }

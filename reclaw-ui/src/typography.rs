@@ -52,16 +52,7 @@ impl TypeStyle {
     pub fn text(self, text: impl Into<Cow<'static, str>>, color: Color) -> Label {
         let (size, weight, family) = self.spec();
         let text = text.into();
-        let text: Cow<'static, str> = if self == Self::Eyebrow {
-            Cow::Owned(text.to_uppercase())
-        } else {
-            text
-        };
-        label()
-            .text(text)
-            .font_size(size)
-            .font_weight(weight)
-            .font_family(family)
-            .color(color)
+        let text: Cow<'static, str> = if self == Self::Eyebrow { Cow::Owned(text.to_uppercase()) } else { text };
+        label().text(text).font_size(size).font_weight(weight).font_family(family).color(color)
     }
 }

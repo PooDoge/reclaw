@@ -17,7 +17,7 @@ pub enum ButtonVariant {
     Danger,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ButtonSize {
     #[default]
     Md,
@@ -78,15 +78,7 @@ impl KeyExt for ActionButton {
 
 impl ActionButton {
     pub fn new(variant: ButtonVariant) -> Self {
-        Self {
-            variant,
-            size: ButtonSize::Md,
-            icon: None,
-            label: None,
-            enabled: true,
-            on_press: None,
-            key: DiffKey::None,
-        }
+        Self { variant, size: ButtonSize::Md, icon: None, label: None, enabled: true, on_press: None, key: DiffKey::None }
     }
 
     pub fn install() -> Self {
@@ -154,11 +146,7 @@ impl Component for ActionButton {
             ..Default::default()
         };
 
-        let label_style = if self.size == ButtonSize::Controller {
-            TypeStyle::DeckLabel
-        } else {
-            TypeStyle::Label
-        };
+        let label_style = if self.size == ButtonSize::Controller { TypeStyle::DeckLabel } else { TypeStyle::Label };
         let content = rect()
             .horizontal()
             .cross_align(Alignment::Center)
@@ -168,6 +156,7 @@ impl Component for ActionButton {
 
         Button::new()
             .filled()
+            .focusable(try_consume_context::<super::ManagedFocus>().is_none())
             .enabled(self.enabled)
             .theme_colors(colors)
             .theme_layout(layout)

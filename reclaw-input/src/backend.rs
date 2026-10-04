@@ -50,13 +50,8 @@ impl InputHandle {
 pub fn spawn(map: ActionMap) -> (InputHandle, UnboundedReceiver<InputMessage>) {
     let (tx, rx) = unbounded();
     let owner = Arc::new(AtomicU8::new(InputOwner::Launcher as u8));
-    let handle = InputHandle {
-        owner: owner.clone(),
-    };
-    thread::Builder::new()
-        .name("reclaw-gamepad".into())
-        .spawn(move || run(map, owner, tx))
-        .expect("spawn gamepad thread");
+    let handle = InputHandle { owner: owner.clone() };
+    thread::Builder::new().name("reclaw-gamepad".into()).spawn(move || run(map, owner, tx)).expect("spawn gamepad thread");
     (handle, rx)
 }
 
@@ -72,20 +67,13 @@ fn run(map: ActionMap, owner: Arc<AtomicU8>, tx: UnboundedSender<InputMessage>) 
 
     // Announce pads that were already plugged in.
     for (id, pad) in gilrs.gamepads() {
-        if tx
-            .unbounded_send(InputMessage::Connected(info(usize::from(id) as u32, &pad)))
-            .is_err()
-        {
+        if tx.unbounded_send(InputMessage::Connected(info(usize::from(id) as u32, &pad))).is_err() {
             return;
         }
     }
 
     loop {
-        let wanted = if owner.load(Ordering::SeqCst) == InputOwner::App as u8 {
-            InputOwner::App
-        } else {
-            InputOwner::Launcher
-        };
+        let wanted = if owner.load(Ordering::SeqCst) == InputOwner::App as u8 { InputOwner::App } else { InputOwner::Launcher };
         mapper.set_owner(wanted);
 
         let now = Instant::now();
@@ -99,37 +87,20 @@ fn run(map: ActionMap, owner: Arc<AtomicU8>, tx: UnboundedSender<InputMessage>) 
                     let _ = tx.unbounded_send(InputMessage::Connected(info(id, &pad)));
                 }
                 EventType::Disconnected => {
-                    out.extend(
-                        mapper
-                            .handle(RawEvent::Disconnected, now)
-                            .into_iter()
-                            .map(InputMessage::Action),
-                    );
+                    out.extend(mapper.handle(RawEvent::Disconnected, now).into_iter().map(InputMessage::Action));
                     let _ = tx.unbounded_send(InputMessage::Disconnected { id });
                 }
                 EventType::ButtonPressed(b, _) => push_button(&mut mapper, &mut out, b, true, now),
-                EventType::ButtonReleased(b, _) => {
-                    push_button(&mut mapper, &mut out, b, false, now)
-                }
+                EventType::ButtonReleased(b, _) => push_button(&mut mapper, &mut out, b, false, now),
                 EventType::AxisChanged(a, value, _) => {
                     if let Some(axis) = map_axis(a) {
-                        out.extend(
-                            mapper
-                                .handle(RawEvent::Axis { axis, value }, now)
-                                .into_iter()
-                                .map(InputMessage::Action),
-                        );
+                        out.extend(mapper.handle(RawEvent::Axis { axis, value }, now).into_iter().map(InputMessage::Action));
                     }
                 }
                 _ => {}
             }
         }
-        out.extend(
-            mapper
-                .tick(Instant::now())
-                .into_iter()
-                .map(InputMessage::Action),
-        );
+        out.extend(mapper.tick(Instant::now()).into_iter().map(InputMessage::Action));
         for message in out {
             if tx.unbounded_send(message).is_err() {
                 return; // The UI is gone.
@@ -138,20 +109,9 @@ fn run(map: ActionMap, owner: Arc<AtomicU8>, tx: UnboundedSender<InputMessage>) 
     }
 }
 
-fn push_button(
-    mapper: &mut InputMapper,
-    out: &mut Vec<InputMessage>,
-    b: GButton,
-    pressed: bool,
-    now: Instant,
-) {
+fn push_button(mapper: &mut InputMapper, out: &mut Vec<InputMessage>, b: GButton, pressed: bool, now: Instant) {
     if let Some(button) = map_button(b) {
-        out.extend(
-            mapper
-                .handle(RawEvent::Button { button, pressed }, now)
-                .into_iter()
-                .map(InputMessage::Action),
-        );
+        out.extend(mapper.handle(RawEvent::Button { button, pressed }, now).into_iter().map(InputMessage::Action));
     }
 }
 

@@ -23,13 +23,7 @@ impl KeyExt for FilterChip {
 
 impl FilterChip {
     pub fn new(label: impl Into<Cow<'static, str>>) -> Self {
-        Self {
-            label: label.into(),
-            count: None,
-            selected: false,
-            on_press: None,
-            key: DiffKey::None,
-        }
+        Self { label: label.into(), count: None, selected: false, on_press: None, key: DiffKey::None }
     }
 
     pub fn count(mut self, count: u32) -> Self {
@@ -69,23 +63,15 @@ impl Component for FilterChip {
             hover_icon_fill: Some(t.ink.into()),
             ..Default::default()
         };
-        let fg = if self.selected {
-            t.on_accent
-        } else {
-            t.ink_muted
-        };
-        Chip::new()
-            .selected(self.selected)
-            .theme(theme)
-            .map(self.on_press.clone(), |el, handler| el.on_press(handler))
-            .child(
-                rect()
-                    .horizontal()
-                    .cross_align(Alignment::Center)
-                    .spacing(SPACE_1)
-                    .child(TypeStyle::Label.text(self.label.clone(), fg))
-                    .maybe_child(self.count.map(|n| TypeStyle::Mono.text(n.to_string(), fg))),
-            )
+        let fg = if self.selected { t.on_accent } else { t.ink_muted };
+        Chip::new().selected(self.selected).theme(theme).map(self.on_press.clone(), |el, handler| el.on_press(handler)).child(
+            rect()
+                .horizontal()
+                .cross_align(Alignment::Center)
+                .spacing(SPACE_1)
+                .child(TypeStyle::Label.text(self.label.clone(), fg))
+                .maybe_child(self.count.map(|n| TypeStyle::Mono.text(n.to_string(), fg))),
+        )
     }
 
     fn render_key(&self) -> DiffKey {

@@ -18,13 +18,7 @@ pub struct LaunchSpec {
 
 impl LaunchSpec {
     pub fn new(program: impl Into<PathBuf>) -> Self {
-        Self {
-            program: program.into(),
-            args: Vec::new(),
-            env: Vec::new(),
-            cwd: None,
-            log: None,
-        }
+        Self { program: program.into(), args: Vec::new(), env: Vec::new(), cwd: None, log: None }
     }
 
     pub fn arg(mut self, arg: impl Into<OsString>) -> Self {
@@ -59,10 +53,7 @@ pub enum RunState {
 impl RunState {
     /// True while the app owns the gamepad and the screen.
     pub fn is_active(&self) -> bool {
-        matches!(
-            self,
-            Self::Starting | Self::Running { .. } | Self::Stopping { .. }
-        )
+        matches!(self, Self::Starting | Self::Running { .. } | Self::Stopping { .. })
     }
 }
 

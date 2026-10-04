@@ -72,12 +72,8 @@ pub fn shows_stop_pair(run: &RunState, controller: bool) -> bool {
 pub fn failure_message(run: &RunState) -> Option<String> {
     use reclaw_runtime::Outcome::*;
     match run {
-        RunState::Failed(ExitedWithCode { code, .. }) => {
-            Some(format!("Exited with code {code}. The log has details."))
-        }
-        RunState::Failed(Signaled { signal, .. }) => Some(format!(
-            "Closed unexpectedly (signal {signal}). The log has details."
-        )),
+        RunState::Failed(ExitedWithCode { code, .. }) => Some(format!("Exited with code {code}. The log has details.")),
+        RunState::Failed(Signaled { signal, .. }) => Some(format!("Closed unexpectedly (signal {signal}). The log has details.")),
         _ => None,
     }
 }
@@ -91,62 +87,35 @@ mod tests {
     use super::*;
 
     fn running() -> RunState {
-        RunState::Running {
-            pid: 1,
-            since: SystemTime::now(),
-        }
+        RunState::Running { pid: 1, since: SystemTime::now() }
     }
 
     #[test]
     fn idle_installed_plays() {
-        assert_eq!(
-            launch_verb(AppStatus::Installed, &RunState::Idle, false),
-            LaunchVerb::Play
-        );
-        assert_eq!(
-            launch_verb(AppStatus::UpdateReady, &RunState::Idle, true),
-            LaunchVerb::Update
-        );
-        assert_eq!(
-            launch_verb(AppStatus::NeedsFile, &RunState::Idle, true),
-            LaunchVerb::Install
-        );
+        assert_eq!(launch_verb(AppStatus::Installed, &RunState::Idle, false), LaunchVerb::Play);
+        assert_eq!(launch_verb(AppStatus::UpdateReady, &RunState::Idle, true), LaunchVerb::Update);
+        assert_eq!(launch_verb(AppStatus::NeedsFile, &RunState::Idle, true), LaunchVerb::Install);
     }
 
     #[test]
     fn play_turns_into_stop_on_desktop_and_resume_on_deck() {
-        assert_eq!(
-            launch_verb(AppStatus::Installed, &running(), false),
-            LaunchVerb::Stop
-        );
-        assert_eq!(
-            launch_verb(AppStatus::Installed, &running(), true),
-            LaunchVerb::Resume
-        );
+        assert_eq!(launch_verb(AppStatus::Installed, &running(), false), LaunchVerb::Stop);
+        assert_eq!(launch_verb(AppStatus::Installed, &running(), true), LaunchVerb::Resume);
         assert!(shows_stop_pair(&running(), true));
         assert!(!shows_stop_pair(&running(), false));
     }
 
     #[test]
     fn stopping_offers_force_quit_and_starting_is_disabled() {
-        assert_eq!(
-            launch_verb(AppStatus::Installed, &RunState::Stopping { pid: 1 }, false),
-            LaunchVerb::ForceQuit
-        );
+        assert_eq!(launch_verb(AppStatus::Installed, &RunState::Stopping { pid: 1 }, false), LaunchVerb::ForceQuit);
         assert!(!launch_verb(AppStatus::Installed, &RunState::Starting, false).enabled());
         assert!(!launch_verb(AppStatus::Installing, &RunState::Idle, false).enabled());
     }
 
     #[test]
     fn failure_explains_itself() {
-        let f = RunState::Failed(Outcome::ExitedWithCode {
-            code: 3,
-            ran_for: Duration::ZERO,
-        });
-        assert_eq!(
-            launch_verb(AppStatus::Installed, &f, true),
-            LaunchVerb::Retry
-        );
+        let f = RunState::Failed(Outcome::ExitedWithCode { code: 3, ran_for: Duration::ZERO });
+        assert_eq!(launch_verb(AppStatus::Installed, &f, true), LaunchVerb::Retry);
         assert!(failure_message(&f).unwrap().contains("code 3"));
         assert!(failure_message(&RunState::Idle).is_none());
     }

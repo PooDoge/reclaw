@@ -25,13 +25,7 @@ impl KeyExt for LibraryRow {
 
 impl LibraryRow {
     pub fn new(game: GameEntry) -> Self {
-        Self {
-            game,
-            selected: false,
-            density: Density::Pointer,
-            on_press: None,
-            key: DiffKey::None,
-        }
+        Self { game, selected: false, density: Density::Pointer, on_press: None, key: DiffKey::None }
     }
 
     pub fn selected(mut self, selected: bool) -> Self {
@@ -76,13 +70,7 @@ impl Component for LibraryRow {
             .background(if active { t.bg_raised } else { super::CLEAR })
             .maybe(self.selected, |el| {
                 el.border(
-                    Border::new()
-                        .fill(t.accent)
-                        .width(BorderWidth {
-                            left: 3.,
-                            ..Default::default()
-                        })
-                        .alignment(BorderAlignment::Inner),
+                    Border::new().fill(t.accent).width(BorderWidth { left: 3., ..Default::default() }).alignment(BorderAlignment::Inner),
                 )
             })
             .child(
@@ -90,43 +78,22 @@ impl Component for LibraryRow {
                     .width(Size::px(20.))
                     .height(Size::px(20.))
                     .corner_radius(RADIUS_SM)
-                    .background(if self.selected {
-                        t.bg_panel
-                    } else {
-                        t.bg_raised
-                    })
-                    .border(
-                        Border::new()
-                            .fill(t.line_strong)
-                            .width(1.)
-                            .alignment(BorderAlignment::Inner),
-                    ),
+                    .background(if self.selected { t.bg_panel } else { t.bg_raised })
+                    .border(Border::new().fill(t.line_strong).width(1.).alignment(BorderAlignment::Inner)),
             )
             .child(
-                rect().width(Size::flex(1.)).child(
-                    text_style
-                        .text(self.game.title.clone(), fg)
-                        .max_lines(1)
-                        .text_overflow(TextOverflow::Ellipsis),
-                ),
+                rect()
+                    .width(Size::flex(1.))
+                    .child(text_style.text(self.game.title.clone(), fg).max_lines(1).text_overflow(TextOverflow::Ellipsis)),
             )
-            .maybe(!self.game.version.is_empty(), |el| {
-                el.child(TypeStyle::Mono.text(self.game.version.clone(), t.ink_subtle))
-            })
+            .maybe(!self.game.version.is_empty(), |el| el.child(TypeStyle::Mono.text(self.game.version.clone(), t.ink_subtle)))
             .child(
                 rect()
                     .width(Size::px(8.))
                     .height(Size::px(8.))
                     .corner_radius(CornerRadius::new_all(4.))
                     .maybe(!hollow, |el| el.background(dot))
-                    .maybe(hollow, |el| {
-                        el.border(
-                            Border::new()
-                                .fill(t.ink_subtle)
-                                .width(1.)
-                                .alignment(BorderAlignment::Inner),
-                        )
-                    }),
+                    .maybe(hollow, |el| el.border(Border::new().fill(t.ink_subtle).width(1.).alignment(BorderAlignment::Inner))),
             )
             .map(self.on_press.clone(), |el, handler| el.on_press(handler));
 

@@ -23,12 +23,7 @@ pub struct MapperConfig {
 
 impl Default for MapperConfig {
     fn default() -> Self {
-        Self {
-            stick_enter: 0.6,
-            stick_exit: 0.4,
-            repeat_delay: Duration::from_millis(400),
-            repeat_interval: Duration::from_millis(110),
-        }
+        Self { stick_enter: 0.6, stick_exit: 0.4, repeat_delay: Duration::from_millis(400), repeat_interval: Duration::from_millis(110) }
     }
 }
 
@@ -148,11 +143,7 @@ impl InputMapper {
         let (x, y) = self.stick;
         let magnitude = x.abs().max(y.abs());
         let dominant = if x.abs() >= y.abs() {
-            if x >= 0. {
-                Direction::Right
-            } else {
-                Direction::Left
-            }
+            if x >= 0. { Direction::Right } else { Direction::Left }
         } else if y >= 0. {
             Direction::Up
         } else {
@@ -203,24 +194,15 @@ mod tests {
     use super::*;
 
     fn mapper() -> (InputMapper, Instant) {
-        (
-            InputMapper::new(ActionMap::default(), MapperConfig::default()),
-            Instant::now(),
-        )
+        (InputMapper::new(ActionMap::default(), MapperConfig::default()), Instant::now())
     }
 
     fn press(button: Button) -> RawEvent {
-        RawEvent::Button {
-            button,
-            pressed: true,
-        }
+        RawEvent::Button { button, pressed: true }
     }
 
     fn release(button: Button) -> RawEvent {
-        RawEvent::Button {
-            button,
-            pressed: false,
-        }
+        RawEvent::Button { button, pressed: false }
     }
 
     #[test]
@@ -233,20 +215,11 @@ mod tests {
     #[test]
     fn dpad_moves_then_repeats_after_the_delay() {
         let (mut m, t) = mapper();
-        assert_eq!(
-            m.handle(press(Button::DPadRight), t),
-            vec![Action::Navigate(Direction::Right)]
-        );
+        assert_eq!(m.handle(press(Button::DPadRight), t), vec![Action::Navigate(Direction::Right)]);
         assert!(m.tick(t + Duration::from_millis(399)).is_empty());
-        assert_eq!(
-            m.tick(t + Duration::from_millis(400)),
-            vec![Action::Navigate(Direction::Right)]
-        );
+        assert_eq!(m.tick(t + Duration::from_millis(400)), vec![Action::Navigate(Direction::Right)]);
         assert!(m.tick(t + Duration::from_millis(450)).is_empty());
-        assert_eq!(
-            m.tick(t + Duration::from_millis(510)),
-            vec![Action::Navigate(Direction::Right)]
-        );
+        assert_eq!(m.tick(t + Duration::from_millis(510)), vec![Action::Navigate(Direction::Right)]);
     }
 
     #[test]
@@ -268,51 +241,27 @@ mod tests {
     fn newest_dpad_direction_wins_and_falls_back() {
         let (mut m, t) = mapper();
         m.handle(press(Button::DPadUp), t);
-        assert_eq!(
-            m.handle(press(Button::DPadLeft), t),
-            vec![Action::Navigate(Direction::Left)]
-        );
+        assert_eq!(m.handle(press(Button::DPadLeft), t), vec![Action::Navigate(Direction::Left)]);
         // Letting go of Left falls back to the still-held Up.
-        assert_eq!(
-            m.handle(release(Button::DPadLeft), t),
-            vec![Action::Navigate(Direction::Up)]
-        );
+        assert_eq!(m.handle(release(Button::DPadLeft), t), vec![Action::Navigate(Direction::Up)]);
     }
 
     #[test]
     fn stick_has_hysteresis() {
         let (mut m, t) = mapper();
-        let x = |value| RawEvent::Axis {
-            axis: Axis::LeftX,
-            value,
-        };
+        let x = |value| RawEvent::Axis { axis: Axis::LeftX, value };
         assert!(m.handle(x(0.5), t).is_empty(), "below enter threshold");
-        assert_eq!(
-            m.handle(x(0.7), t),
-            vec![Action::Navigate(Direction::Right)]
-        );
-        assert!(
-            m.handle(x(0.5), t).is_empty(),
-            "between exit and enter keeps the direction, no new move"
-        );
+        assert_eq!(m.handle(x(0.7), t), vec![Action::Navigate(Direction::Right)]);
+        assert!(m.handle(x(0.5), t).is_empty(), "between exit and enter keeps the direction, no new move");
         assert!(m.handle(x(0.3), t).is_empty(), "released");
-        assert!(
-            m.tick(t + Duration::from_secs(1)).is_empty(),
-            "and no repeat after release"
-        );
-        assert_eq!(
-            m.handle(x(0.7), t),
-            vec![Action::Navigate(Direction::Right)]
-        );
+        assert!(m.tick(t + Duration::from_secs(1)).is_empty(), "and no repeat after release");
+        assert_eq!(m.handle(x(0.7), t), vec![Action::Navigate(Direction::Right)]);
     }
 
     #[test]
     fn stick_up_is_positive_y() {
         let (mut m, t) = mapper();
-        let y = RawEvent::Axis {
-            axis: Axis::LeftY,
-            value: 0.9,
-        };
+        let y = RawEvent::Axis { axis: Axis::LeftY, value: 0.9 };
         assert_eq!(m.handle(y, t), vec![Action::Navigate(Direction::Up)]);
     }
 
@@ -332,10 +281,7 @@ mod tests {
         m.handle(press(Button::DPadRight), t);
         m.set_owner(InputOwner::App);
         m.set_owner(InputOwner::Launcher);
-        assert!(
-            m.tick(t + Duration::from_secs(1)).is_empty(),
-            "no phantom repeat after returning"
-        );
+        assert!(m.tick(t + Duration::from_secs(1)).is_empty(), "no phantom repeat after returning");
     }
 
     #[test]

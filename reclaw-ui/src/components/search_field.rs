@@ -11,19 +11,22 @@ pub struct SearchField {
     value: State<String>,
     placeholder: Cow<'static, str>,
     density: Density,
+    icon: IconName,
 }
 
 impl SearchField {
     pub fn new(value: State<String>) -> Self {
-        Self {
-            value,
-            placeholder: Cow::Borrowed("Search library, tags, repos"),
-            density: Density::Pointer,
-        }
+        Self { value, placeholder: Cow::Borrowed("Search library, tags, repos"), density: Density::Pointer, icon: IconName::Search }
     }
 
     pub fn placeholder(mut self, placeholder: impl Into<Cow<'static, str>>) -> Self {
         self.placeholder = placeholder.into();
+        self
+    }
+
+    /// The leading icon, a magnifier by default.
+    pub fn icon(mut self, icon: IconName) -> Self {
+        self.icon = icon;
         self
     }
 
@@ -56,7 +59,7 @@ impl Component for SearchField {
         Input::new(self.value)
             .placeholder(self.placeholder.clone())
             .width(Size::fill())
-            .leading(icon(IconName::Search, 16., t.ink_subtle))
+            .leading(icon(self.icon, 16., t.ink_subtle))
             .theme_colors(colors)
             .theme_layout(layout)
     }

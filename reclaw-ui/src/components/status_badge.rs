@@ -37,20 +37,12 @@ pub struct StatusBadge {
 
 impl StatusBadge {
     pub fn new(status: AppStatus) -> Self {
-        Self {
-            status,
-            running: false,
-            label: None,
-        }
+        Self { status, running: false, label: None }
     }
 
     /// The app is running right now. Takes priority over its install state on tiles and heroes.
     pub fn running() -> Self {
-        Self {
-            status: AppStatus::Installed,
-            running: true,
-            label: None,
-        }
+        Self { status: AppStatus::Installed, running: true, label: None }
     }
 
     pub fn label(mut self, label: impl Into<Cow<'static, str>>) -> Self {
@@ -63,11 +55,8 @@ impl Component for StatusBadge {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         let (fg, bg) = status_tone(&t, self.status);
-        let (icon_name, default_text) = if self.running {
-            (Some(IconName::Play), "Running")
-        } else {
-            (status_icon(self.status), self.status.label())
-        };
+        let (icon_name, default_text) =
+            if self.running { (Some(IconName::Play), "Running") } else { (status_icon(self.status), self.status.label()) };
         let text = self.label.clone().unwrap_or(Cow::Borrowed(default_text));
 
         rect()

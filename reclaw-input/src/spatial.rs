@@ -45,26 +45,10 @@ pub fn next_focus(nodes: &[FocusNode], current: FocusId, dir: Direction) -> Opti
     for node in nodes.iter().filter(|n| n.id != current) {
         let r = node.rect;
         let (along, cross_center, cross_gap) = match dir {
-            Direction::Right => (
-                r.cx() - from.cx(),
-                (r.cy() - from.cy()).abs(),
-                gap(from.y, from.h, r.y, r.h),
-            ),
-            Direction::Left => (
-                from.cx() - r.cx(),
-                (r.cy() - from.cy()).abs(),
-                gap(from.y, from.h, r.y, r.h),
-            ),
-            Direction::Down => (
-                r.cy() - from.cy(),
-                (r.cx() - from.cx()).abs(),
-                gap(from.x, from.w, r.x, r.w),
-            ),
-            Direction::Up => (
-                from.cy() - r.cy(),
-                (r.cx() - from.cx()).abs(),
-                gap(from.x, from.w, r.x, r.w),
-            ),
+            Direction::Right => (r.cx() - from.cx(), (r.cy() - from.cy()).abs(), gap(from.y, from.h, r.y, r.h)),
+            Direction::Left => (from.cx() - r.cx(), (r.cy() - from.cy()).abs(), gap(from.y, from.h, r.y, r.h)),
+            Direction::Down => (r.cy() - from.cy(), (r.cx() - from.cx()).abs(), gap(from.x, from.w, r.x, r.w)),
+            Direction::Up => (from.cy() - r.cy(), (r.cx() - from.cx()).abs(), gap(from.x, from.w, r.x, r.w)),
         };
         if along <= 0.5 {
             continue;
@@ -93,10 +77,7 @@ mod tests {
     use super::*;
 
     fn node(id: u32, x: f32, y: f32, w: f32, h: f32) -> FocusNode {
-        FocusNode {
-            id: FocusId(id),
-            rect: Rect::new(x, y, w, h),
-        }
+        FocusNode { id: FocusId(id), rect: Rect::new(x, y, w, h) }
     }
 
     /// Two shelves of tiles; the second shelf is shifted by half a tile.
@@ -113,14 +94,8 @@ mod tests {
     #[test]
     fn moves_along_a_row() {
         let n = shelves();
-        assert_eq!(
-            next_focus(&n, FocusId(1), Direction::Right),
-            Some(FocusId(2))
-        );
-        assert_eq!(
-            next_focus(&n, FocusId(3), Direction::Left),
-            Some(FocusId(2))
-        );
+        assert_eq!(next_focus(&n, FocusId(1), Direction::Right), Some(FocusId(2)));
+        assert_eq!(next_focus(&n, FocusId(3), Direction::Left), Some(FocusId(2)));
     }
 
     #[test]
@@ -136,14 +111,8 @@ mod tests {
         let n = shelves();
         // Tile 2 (x 110..210) sits between 11 (55..155) and 12 (165..265); 11's center is 55 away,
         // 12's is 55 away: equal, so the lower id wins deterministically.
-        assert_eq!(
-            next_focus(&n, FocusId(2), Direction::Down),
-            Some(FocusId(11))
-        );
-        assert_eq!(
-            next_focus(&n, FocusId(3), Direction::Down),
-            Some(FocusId(12))
-        );
+        assert_eq!(next_focus(&n, FocusId(2), Direction::Down), Some(FocusId(11)));
+        assert_eq!(next_focus(&n, FocusId(3), Direction::Down), Some(FocusId(12)));
         // 12 sits exactly between 2 and 3: a tie goes to the lower id, deterministically.
         assert_eq!(next_focus(&n, FocusId(12), Direction::Up), Some(FocusId(2)));
     }
@@ -161,9 +130,6 @@ mod tests {
             node(3, 60., 400., 100., 100.), // not to the right at all
             node(4, 110., 90., 100., 100.), // overlaps vertically by 10 only
         ];
-        assert_eq!(
-            next_focus(&n, FocusId(1), Direction::Right),
-            Some(FocusId(2))
-        );
+        assert_eq!(next_focus(&n, FocusId(1), Direction::Right), Some(FocusId(2)));
     }
 }

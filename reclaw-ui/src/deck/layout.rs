@@ -33,9 +33,6 @@ mod tests {
         let mid = shelf_offset(20, 10, 1000.);
         assert!((mid - (10. * step - (1000. - DECK_TILE_W) / 2.)).abs() < 0.01);
         let end = shelf_offset(20, 19, 1000.);
-        assert!(
-            (end - (20. * step - DECK_TILE_GAP - 1000.)).abs() < 0.01,
-            "clamped to the last tile"
-        );
+        assert!((end - (20. * step - DECK_TILE_GAP - 1000.)).abs() < 0.01, "clamped to the last tile");
     }
 }

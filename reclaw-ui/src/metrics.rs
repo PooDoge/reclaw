@@ -38,6 +38,19 @@ pub const DECK_FOCUS_SCALE: f32 = 1.06;
 pub const DECK_BUTTON_SCALE: f32 = 1.04;
 pub const DECK_FOCUS_RING: f32 = 3.;
 
+pub const DECK_MENU_W: f32 = 416.;
+pub const DECK_SETTINGS_NAV_W: f32 = 400.;
+pub const DECK_SETTINGS_ROW_H: f32 = 68.;
+pub const SURFACE_HEADER_H: f32 = 64.;
+pub const SURFACE_HEADER_H_COMPACT: f32 = 48.;
+pub const SURFACE_FOOTER_H: f32 = 88.;
+pub const SURFACE_MAX_W: f32 = 720.;
+/// Below this window height the footer actions move into the header: a landscape phone or a
+/// small handheld cannot spare a footer row and a hint row as well as a header.
+pub const SURFACE_SHORT_H: f32 = 600.;
+/// Space under the hint bar of a full-screen page, so the glyphs clear the screen edge.
+pub const SURFACE_HINTS_PAD_B: f32 = 12.;
+
 pub const BP_WIDE: f32 = 1100.;
 pub const BP_COMPACT: f32 = 720.;
 

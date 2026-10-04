@@ -38,6 +38,10 @@ There is no Reclaw mark yet. Set the name "Reclaw" in `Hanken Grotesk` 700; do n
 
 For handhelds and TVs the same system has a controller-first shell: big-art tiles on shelves, a focus ring with a glow, slide-in menu and Quick Access panels, glyph prompts that follow the controller in use, and a Play button that becomes Resume and Stop while an app runs. It is a mode on the same components, not a theme. Deck is dark only and uses the `deck-*` tokens (safe zone, tile and row sizes, type scale, `deck-bg`, `deck-scrim`, `focus-glow`). Over art, text may only be `ink` or `ink-muted`, set on `deck-scrim`. The design, its decisions and what is not built are in the Deck mode section; the machine-readable spec is `reclaw.freya.json`.
 
+## Surfaces
+
+Dialogs, settings and menus are one of three kinds and one table decides their presentation at each form factor: popups on desktop; full-screen pages with a Back button on phones, short touch screens and in Deck mode (with keyboard avoidance); menus anchored at the pointer on desktop and centered over a darkened screen with an inverted focus row on touch and pad. See the Surfaces section. Deck mode can be entered by hand at any time (F10, the Deck mode button, Settings) and a keyboard can be simulated (F9) for testing.
+
 ## Using this system with Freya
 
 Start from `freya/theme.rs.txt` (save as theme.rs) (generated from `tokens.json`) and the Freya handoff section. The machine-readable contract is `reclaw.freya.json`; where it disagrees with this text, the JSON wins.

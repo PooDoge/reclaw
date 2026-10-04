@@ -21,10 +21,7 @@ pub enum LaunchError {
     #[error("could not open the log file: {0}")]
     Log(std::io::Error),
     #[error("could not start {program}: {source}")]
-    Spawn {
-        program: String,
-        source: std::io::Error,
-    },
+    Spawn { program: String, source: std::io::Error },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -56,30 +53,15 @@ impl Supervisor {
     /// `grace` is how long a graceful stop may take before the whole group is killed.
     pub fn new(grace: Duration) -> (Self, UnboundedReceiver<SessionEvent>) {
         let (events, rx) = unbounded();
-        let this = Self {
-            sessions: Arc::default(),
-            last_failure: Arc::default(),
-            events,
-            grace,
-        };
+        let this = Self { sessions: Arc::default(), last_failure: Arc::default(), events, grace };
         (this, rx)
     }
 
     pub fn state(&self, app: AppId) -> RunState {
         if let Some(a) = lock(&self.sessions).get(&app) {
-            return if a.stopping {
-                RunState::Stopping { pid: a.pid }
-            } else {
-                RunState::Running {
-                    pid: a.pid,
-                    since: a.since,
-                }
-            };
+            return if a.stopping { RunState::Stopping { pid: a.pid } } else { RunState::Running { pid: a.pid, since: a.since } };
         }
-        lock(&self.last_failure)
-            .get(&app)
-            .cloned()
-            .map_or(RunState::Idle, RunState::Failed)
+        lock(&self.last_failure).get(&app).cloned().map_or(RunState::Idle, RunState::Failed)
     }
 
     pub fn running(&self) -> Vec<AppId> {
@@ -96,18 +78,12 @@ impl Supervisor {
         }
 
         let mut cmd = Command::new(&spec.program);
-        cmd.args(&spec.args)
-            .envs(spec.env.iter().map(|(k, v)| (k, v)))
-            .stdin(Stdio::null());
+        cmd.args(&spec.args).envs(spec.env.iter().map(|(k, v)| (k, v))).stdin(Stdio::null());
         if let Some(cwd) = &spec.cwd {
             cmd.current_dir(cwd);
         }
         if let Some(path) = &spec.log {
-            let file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(path)
-                .map_err(LaunchError::Log)?;
+            let file = OpenOptions::new().create(true).append(true).open(path).map_err(LaunchError::Log)?;
             let err = file.try_clone().map_err(LaunchError::Log)?;
             cmd.stdout(file).stderr(err);
         }
@@ -118,30 +94,16 @@ impl Supervisor {
             cmd.process_group(0);
         }
 
-        let mut child = cmd.spawn().map_err(|source| LaunchError::Spawn {
-            program: spec.program.display().to_string(),
-            source,
-        })?;
+        let mut child = cmd.spawn().map_err(|source| LaunchError::Spawn { program: spec.program.display().to_string(), source })?;
         let pid = child.id();
         let started = Instant::now();
         let since = SystemTime::now();
         let stop_requested = Arc::new(AtomicBool::new(false));
         let exited = Arc::new(AtomicBool::new(false));
-        table.insert(
-            app,
-            Active {
-                pid,
-                since,
-                stop_requested: stop_requested.clone(),
-                exited: exited.clone(),
-                stopping: false,
-            },
-        );
+        table.insert(app, Active { pid, since, stop_requested: stop_requested.clone(), exited: exited.clone(), stopping: false });
         drop(table);
         lock(&self.last_failure).remove(&app);
-        let _ = self
-            .events
-            .unbounded_send(SessionEvent::Started { app, pid });
+        let _ = self.events.unbounded_send(SessionEvent::Started { app, pid });
 
         let this = self.clone();
         thread::Builder::new()
@@ -156,14 +118,9 @@ impl Supervisor {
                 if outcome.is_failure() {
                     lock(&this.last_failure).insert(app, outcome.clone());
                 }
-                let _ = this
-                    .events
-                    .unbounded_send(SessionEvent::Ended { app, outcome });
+                let _ = this.events.unbounded_send(SessionEvent::Ended { app, outcome });
             })
-            .map_err(|source| LaunchError::Spawn {
-                program: spec.program.display().to_string(),
-                source,
-            })?;
+            .map_err(|source| LaunchError::Spawn { program: spec.program.display().to_string(), source })?;
         Ok(pid)
     }
 
@@ -205,11 +162,7 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-fn classify(
-    status: std::io::Result<std::process::ExitStatus>,
-    stop_requested: bool,
-    ran_for: Duration,
-) -> Outcome {
+fn classify(status: std::io::Result<std::process::ExitStatus>, stop_requested: bool, ran_for: Duration) -> Outcome {
     if stop_requested {
         return Outcome::Stopped { ran_for };
     }
@@ -295,9 +248,7 @@ mod tests {
     #[test]
     fn spawn_failure_is_an_error_not_a_session() {
         let (sup, _rx) = Supervisor::new(Duration::from_secs(1));
-        let err = sup
-            .start(1, LaunchSpec::new("/definitely/not/here"))
-            .unwrap_err();
+        let err = sup.start(1, LaunchSpec::new("/definitely/not/here")).unwrap_err();
         assert!(matches!(err, LaunchError::Spawn { .. }));
         assert_eq!(sup.state(1), RunState::Idle);
         assert!(sup.running().is_empty());
@@ -307,10 +258,7 @@ mod tests {
     fn second_launch_is_refused_while_running() {
         let (sup, mut rx) = Supervisor::new(Duration::from_secs(1));
         sup.start(1, sh("sleep 30")).unwrap();
-        assert!(matches!(
-            sup.start(1, sh("true")),
-            Err(LaunchError::AlreadyRunning(1))
-        ));
+        assert!(matches!(sup.start(1, sh("true")), Err(LaunchError::AlreadyRunning(1))));
         assert!(matches!(sup.state(1), RunState::Running { .. }));
         sup.stop(1).unwrap();
         wait_ended(&mut rx);
@@ -324,34 +272,26 @@ mod tests {
         assert!(matches!(sup.state(1), RunState::Stopping { .. }));
         let began = Instant::now();
         assert!(matches!(wait_ended(&mut rx), Outcome::Stopped { .. }));
-        assert!(
-            began.elapsed() < Duration::from_secs(3),
-            "SIGTERM should not need the grace period"
-        );
+        assert!(began.elapsed() < Duration::from_secs(3), "SIGTERM should not need the grace period");
     }
 
     #[test]
     fn stubborn_app_is_killed_after_the_grace_period() {
         let (sup, mut rx) = Supervisor::new(Duration::from_millis(300));
         // Ignores SIGTERM. `sleep` in the foreground is in the same group and is killed too.
-        sup.start(1, sh("trap '' TERM; while true; do sleep 1; done"))
-            .unwrap();
+        sup.start(1, sh("trap '' TERM; while true; do sleep 1; done")).unwrap();
         thread::sleep(Duration::from_millis(100));
         sup.stop(1).unwrap();
         let began = Instant::now();
         assert!(matches!(wait_ended(&mut rx), Outcome::Stopped { .. }));
-        assert!(
-            began.elapsed() >= Duration::from_millis(250),
-            "must wait out the grace period"
-        );
+        assert!(began.elapsed() >= Duration::from_millis(250), "must wait out the grace period");
         assert!(began.elapsed() < Duration::from_secs(4));
     }
 
     #[test]
     fn second_stop_forces() {
         let (sup, mut rx) = Supervisor::new(Duration::from_secs(60));
-        sup.start(1, sh("trap '' TERM; while true; do sleep 1; done"))
-            .unwrap();
+        sup.start(1, sh("trap '' TERM; while true; do sleep 1; done")).unwrap();
         thread::sleep(Duration::from_millis(100));
         sup.stop(1).unwrap();
         sup.stop(1).unwrap();
@@ -366,17 +306,10 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let pidfile = dir.join("child.pid");
         let (sup, mut rx) = Supervisor::new(Duration::from_secs(2));
-        sup.start(
-            1,
-            sh(&format!("sleep 60 & echo $! > {}; wait", pidfile.display())),
-        )
-        .unwrap();
+        sup.start(1, sh(&format!("sleep 60 & echo $! > {}; wait", pidfile.display()))).unwrap();
         let deadline = Instant::now() + Duration::from_secs(5);
         let child_pid = loop {
-            if let Some(pid) = std::fs::read_to_string(&pidfile)
-                .ok()
-                .and_then(|t| t.trim().parse::<i32>().ok())
-            {
+            if let Some(pid) = std::fs::read_to_string(&pidfile).ok().and_then(|t| t.trim().parse::<i32>().ok()) {
                 break pid;
             }
             assert!(Instant::now() < deadline, "child never wrote its pid");

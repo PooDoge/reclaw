@@ -71,11 +71,7 @@ impl Component for NavButton {
             NavMode::Rail => (if self.active { t.ink } else { t.ink_muted }, 22.),
             NavMode::Top => (if self.active { t.ink } else { t.ink_muted }, 15.),
         };
-        let fg = if hovering() && !self.active {
-            t.ink
-        } else {
-            fg
-        };
+        let fg = if hovering() && !self.active { t.ink } else { fg };
 
         let badge = self.count.filter(|n| *n > 0).map(|n| {
             rect()
@@ -97,10 +93,7 @@ impl Component for NavButton {
                 .border(
                     Border::new()
                         .fill(if self.active { t.accent } else { super::CLEAR })
-                        .width(BorderWidth {
-                            bottom: 2.,
-                            ..Default::default()
-                        })
+                        .width(BorderWidth { bottom: 2., ..Default::default() })
                         .alignment(BorderAlignment::Inner),
                 )
                 .child(icon(item.icon(), size, fg))
@@ -111,19 +104,12 @@ impl Component for NavButton {
                 .height(Size::px(TARGET_MIN))
                 .center()
                 .corner_radius(RADIUS_MD)
-                .background(if self.active {
-                    t.bg_raised
-                } else {
-                    super::CLEAR
-                })
+                .background(if self.active { t.bg_raised } else { super::CLEAR })
                 .maybe(self.active, |el| {
                     el.border(
                         Border::new()
                             .fill(t.accent)
-                            .width(BorderWidth {
-                                left: 3.,
-                                ..Default::default()
-                            })
+                            .width(BorderWidth { left: 3., ..Default::default() })
                             .alignment(BorderAlignment::Inner),
                     )
                 })
@@ -142,16 +128,11 @@ impl Component for NavButton {
         let body = body
             .a11y_role(AccessibilityRole::Button)
             .a11y_alt(item.label())
-            .map(self.on_select.clone(), |el, handler| {
-                el.on_press(move |_| handler.call(item))
-            });
+            .map(self.on_select.clone(), |el, handler| el.on_press(move |_| handler.call(item)));
         let body = pointer_cursor(hoverable(body, hovering));
 
         if self.mode == NavMode::Rail {
-            TooltipContainer::new(Tooltip::new_text(item.label()))
-                .position(AttachedPosition::Right)
-                .child(body)
-                .into_element()
+            TooltipContainer::new(Tooltip::new_text(item.label())).position(AttachedPosition::Right).child(body).into_element()
         } else {
             body.into_element()
         }
@@ -168,18 +149,13 @@ pub struct Nav {
     active: NavItem,
     downloads: Option<u32>,
     trailing: Option<Element>,
+    actions: Option<Element>,
     on_select: Option<EventHandler<NavItem>>,
 }
 
 impl Nav {
     pub fn new(mode: NavMode, active: NavItem) -> Self {
-        Self {
-            mode,
-            active,
-            downloads: None,
-            trailing: None,
-            on_select: None,
-        }
+        Self { mode, active, downloads: None, trailing: None, actions: None, on_select: None }
     }
 
     /// Shows a count badge on Downloads while the queue is active.
@@ -191,6 +167,12 @@ impl Nav {
     /// Top mode only: a slot pushed to the right edge, used for the search field.
     pub fn trailing(mut self, element: impl IntoElement) -> Self {
         self.trailing = Some(element.into_element());
+        self
+    }
+
+    /// Top mode only: buttons placed before the search field, such as the switch to Deck mode.
+    pub fn actions(mut self, element: impl IntoElement) -> Self {
+        self.actions = Some(element.into_element());
         self
     }
 
@@ -207,9 +189,7 @@ impl Component for Nav {
             item,
             mode: self.mode,
             active: item == self.active,
-            count: (item == NavItem::Downloads)
-                .then_some(self.downloads)
-                .flatten(),
+            count: (item == NavItem::Downloads).then_some(self.downloads).flatten(),
             on_select: self.on_select.clone(),
         });
 
@@ -223,18 +203,12 @@ impl Component for Nav {
                 .height(Size::px(TOPBAR_H))
                 .padding(Gaps::new(0., SPACE_4, 0., SPACE_4))
                 .background(t.bg_nav)
-                .border(Border::new().fill(t.line).width(BorderWidth {
-                    bottom: 1.,
-                    ..Default::default()
-                }))
+                .border(Border::new().fill(t.line).width(BorderWidth { bottom: 1., ..Default::default() }))
                 .child(TypeStyle::Heading.text("Reclaw", t.ink))
                 .children(buttons.into_iter().map(IntoElement::into_element))
                 .child(rect().width(Size::flex(1.)))
-                .maybe_child(
-                    self.trailing
-                        .clone()
-                        .map(|el| rect().width(Size::px(280.)).child(el)),
-                )
+                .maybe_child(self.actions.clone().map(|el| rect().padding(Gaps::new(0., SPACE_2, 0., 0.)).child(el)))
+                .maybe_child(self.trailing.clone().map(|el| rect().width(Size::px(280.)).child(el)))
                 .into_element(),
             NavMode::Rail => rect()
                 .vertical()
@@ -244,10 +218,7 @@ impl Component for Nav {
                 .height(Size::fill())
                 .padding(Gaps::new(SPACE_3, 0., SPACE_3, 0.))
                 .background(t.bg_nav)
-                .border(Border::new().fill(t.line).width(BorderWidth {
-                    right: 1.,
-                    ..Default::default()
-                }))
+                .border(Border::new().fill(t.line).width(BorderWidth { right: 1., ..Default::default() }))
                 .children(buttons.into_iter().map(IntoElement::into_element))
                 .into_element(),
             NavMode::Bottom => rect()
@@ -257,10 +228,7 @@ impl Component for Nav {
                 .width(Size::fill())
                 .height(Size::px(TABBAR_H))
                 .background(t.bg_nav)
-                .border(Border::new().fill(t.line).width(BorderWidth {
-                    top: 1.,
-                    ..Default::default()
-                }))
+                .border(Border::new().fill(t.line).width(BorderWidth { top: 1., ..Default::default() }))
                 .children(buttons.into_iter().map(IntoElement::into_element))
                 .into_element(),
         }

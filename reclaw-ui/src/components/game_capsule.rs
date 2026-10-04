@@ -25,15 +25,7 @@ impl KeyExt for GameCapsule {
 
 impl GameCapsule {
     pub fn new(game: GameEntry) -> Self {
-        Self {
-            game,
-            selected: false,
-            fluid: false,
-            hovered: false,
-            on_press: None,
-            on_play: None,
-            key: DiffKey::None,
-        }
+        Self { game, selected: false, fluid: false, hovered: false, on_press: None, on_play: None, key: DiffKey::None }
     }
 
     pub fn selected(mut self, selected: bool) -> Self {
@@ -68,11 +60,7 @@ impl Component for GameCapsule {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         let hovering = use_state(|| false);
-        let width = if self.fluid {
-            Size::fill()
-        } else {
-            Size::px(CAPSULE_W)
-        };
+        let width = if self.fluid { Size::fill() } else { Size::px(CAPSULE_W) };
         let hot = hovering() || self.hovered;
         let lit = self.selected || hot;
         let border = Border::new()
@@ -81,43 +69,21 @@ impl Component for GameCapsule {
             .alignment(BorderAlignment::Inner);
         let show_play = hot && self.game.status.is_installed();
 
-        let art = rect()
-            .width(Size::fill())
-            .child(ArtPlaceholder::capsule(Size::fill()))
-            .maybe(show_play, |el| {
-                el.child(
-                    rect()
-                        .position(
-                            Position::new_absolute()
-                                .top(CAPSULE_H - 44. - SPACE_2)
-                                .right(SPACE_2),
-                        )
-                        .child(
-                            ActionButton::install()
-                                .icon(IconName::Play)
-                                .label("Play")
-                                .map(self.on_play.clone(), |b, h| b.on_press(h)),
-                        ),
-                )
-            });
+        let art = rect().width(Size::fill()).child(ArtPlaceholder::capsule(Size::fill())).maybe(show_play, |el| {
+            el.child(
+                rect()
+                    .position(Position::new_absolute().top(CAPSULE_H - 44. - SPACE_2).right(SPACE_2))
+                    .child(ActionButton::install().icon(IconName::Play).label("Play").map(self.on_play.clone(), |b, h| b.on_press(h))),
+            )
+        });
 
         let body = rect()
             .vertical()
             .width(Size::fill())
             .spacing(6.)
             .padding(Gaps::new(SPACE_2, SPACE_3, SPACE_3, SPACE_3))
-            .child(
-                TypeStyle::Label
-                    .text(self.game.title.clone(), t.ink)
-                    .max_lines(1)
-                    .text_overflow(TextOverflow::Ellipsis),
-            )
-            .child(
-                TypeStyle::Meta
-                    .text(self.game.project.clone(), t.ink_subtle)
-                    .max_lines(1)
-                    .text_overflow(TextOverflow::Ellipsis),
-            )
+            .child(TypeStyle::Label.text(self.game.title.clone(), t.ink).max_lines(1).text_overflow(TextOverflow::Ellipsis))
+            .child(TypeStyle::Meta.text(self.game.project.clone(), t.ink_subtle).max_lines(1).text_overflow(TextOverflow::Ellipsis))
             .child(match self.game.status {
                 // The full label wraps inside a 168px capsule.
                 AppStatus::NeedsFile => StatusBadge::new(self.game.status).label("Needs game file"),
@@ -131,14 +97,7 @@ impl Component for GameCapsule {
             .border(border)
             .corner_radius(RADIUS_MD)
             .overflow(Overflow::Clip)
-            .maybe(lit, |el| {
-                el.shadow(
-                    Shadow::new()
-                        .y(2.)
-                        .blur(8.)
-                        .color(Color::from_argb(90, 0, 0, 0)),
-                )
-            })
+            .maybe(lit, |el| el.shadow(Shadow::new().y(2.).blur(8.).color(Color::from_argb(90, 0, 0, 0))))
             .child(art)
             .child(body)
             .map(self.on_press.clone(), |el, handler| el.on_press(handler));

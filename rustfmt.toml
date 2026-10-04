@@ -1,0 +1,5 @@
+# One style for the whole workspace. Wide lines and compact one-line structs keep files short, which
+# keeps them inside the size limit (see ARCHITECTURE.md) without splitting code just to satisfy a formatter.
+edition = "2024"
+max_width = 140
+use_small_heuristics = "Max"

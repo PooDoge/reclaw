@@ -14,12 +14,7 @@ pub struct ArtPlaceholder {
 
 impl ArtPlaceholder {
     pub fn new(role: &'static str, width: Size, height: Size) -> Self {
-        Self {
-            role,
-            width,
-            height,
-            tag_at_end: true,
-        }
+        Self { role, width, height, tag_at_end: true }
     }
 
     pub fn capsule(width: Size) -> Self {
@@ -27,10 +22,7 @@ impl ArtPlaceholder {
     }
 
     pub fn hero(height: f32) -> Self {
-        Self {
-            tag_at_end: false,
-            ..Self::new("HERO 16:5", Size::fill(), Size::px(height))
-        }
+        Self { tag_at_end: false, ..Self::new("HERO 16:5", Size::fill(), Size::px(height)) }
     }
 
     pub fn thumb(width: f32, height: f32) -> Self {
@@ -45,11 +37,7 @@ impl Component for ArtPlaceholder {
             .width(self.width.clone())
             .height(self.height.clone())
             .background(t.bg_raised)
-            .main_align(if self.tag_at_end {
-                Alignment::End
-            } else {
-                Alignment::Start
-            })
+            .main_align(if self.tag_at_end { Alignment::End } else { Alignment::Start })
             .child(
                 rect()
                     .padding(Gaps::new(SPACE_1, SPACE_2, SPACE_1, SPACE_2))

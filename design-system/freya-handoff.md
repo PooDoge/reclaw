@@ -4,7 +4,7 @@ How to get from this system into the Rust app. Targets freya 0.5.0-rc.8 (newest 
 
 ## Pipeline
 
-1. Tokens: `tokens.json` is the source. `freya/theme.rs.txt` (the repo's `reclaw-ui/src/tokens.rs`) is generated from it (a `Reclaw` struct of every token and two `Theme` constructors, `reclaw_midnight` and `reclaw_daylight`). Provide the struct with `use_provide_context` beside `use_init_theme`.
+1. Tokens: `tokens.json` is the source. `freya/theme.rs` (published here as `theme.rs.txt`; the repo's `reclaw-ui/src/tokens.rs` is the same generated code) is generated from it by `tools/gen_tokens.py` (a `Reclaw` struct of every token and two `Theme` constructors, `reclaw_midnight` and `reclaw_daylight`). Provide the struct with `use_provide_context` beside `use_init_theme`.
 2. Contract: `reclaw.freya.json` lists every component with its Freya built-in (or `custom`), tokens, radius, states and responsive behavior. Treat it as the WHAT; the design-to-freya skill is the HOW.
 3. Previews: `components/*/preview.html` are the visual reference. They are React stand-ins, not code to port.
 
@@ -22,9 +22,27 @@ How to get from this system into the Rust app. Targets freya 0.5.0-rc.8 (newest 
 | HeroHeader | custom `rect()` over `image()` |
 | DownloadItem | `ProgressBar` in a custom row |
 | Nav | `SideBarItem` / `FloatingTab` (rail, tabs), custom top bar |
-| InstallDialog | `Popup` (+ `PopupTitle`, `PopupContent`, `PopupButtons`) |
+| InstallDialog | `Dialog`: `Popup` (+ `PopupTitle`, `PopupContent`, `PopupButtons`) or a `FullScreenPage`, by `surface::presentation` |
 | Library grid | `VirtualScrollView` |
 | Responsive shell | `ResizableContainer` is not needed; switch on width state |
+
+## Code organization
+
+The repo is arranged so that one concern is one small file and the logic can be tested without a window. `ARCHITECTURE.md` at the repo root has the module map, the rules (files under 1000 lines, every `mod.rs` documented, decisions pure and components only draw, hooks never conditional, one `Effect` vocabulary) and the testing map; `AGENTS.md` has the commands and how to add a component, page, settings row, effect or dialog. `tools/` regenerates tokens, the contract additions and these previews.
+
+## Surfaces handover
+
+`surfaces.md` is the design; the `surfaces`, `shell` and `codeMap` sections of `reclaw.freya.json` are the machine-readable spec. Build order: `surface::presentation` and `reveal` (pure), `MenuState`, then `FullScreenPage`, `Dialog`, `ModalMenu`, `SettingRow`. A host provides `HostState` (including `keyboard_inset`), handles `Effect`s, and renders `Shell`.
+
+| contract | Rust | built from |
+| --- | --- | --- |
+| Dialog | `surface::Dialog` | `Popup`, or `FullScreenPage`, or an `Layer::Overlay` card |
+| FullScreenPage | `surface::FullScreenPage` | `rect`, `RevealScroll` (`use_scroll_controller` + `use_side_effect`) |
+| ModalMenu | `surface::ModalMenu` | absolute `rect` on `Layer::Overlay`, a `ScrollView` per column |
+| SettingRow | `surface::SettingRow` | `rect`, `Input` |
+| SettingsBody | `deck::SettingsBody` | two `rect` panes or a list |
+| ConfirmOverlay | `deck::ConfirmOverlay` | absolute `rect` on `Layer::Overlay` |
+| Shell, DesktopApp | `shell::Shell`, `desktop::DesktopApp` | `App`/`Component`, `on_global_key_down` for F9 and F10 |
 
 ## Fonts
 
@@ -73,6 +91,10 @@ The full machine-readable spec is `reclaw.freya.json` (`decisions`, `modes`, `in
 - Overlays need `.layer(Layer::Overlay)` or page content paints over them.
 - `TestingRunner::press_key` and `poll` make keyboard-driven and animated components testable headlessly; `poll` is real time.
 - `EventHandler` props never compare equal across renders, so components that receive one re-render with their parent.
+- Hooks (`use_state`, `use_reclaw()`) must run on every render in the same order. Read the tokens once at the top of a component; a helper that calls `use_reclaw()` on only some paths panics when the path changes (resizing across a layout class, drilling into a settings section).
+- Freya's root wrapper moves focus on Tab and the vertical arrows. Buttons that the interface focuses itself must not be focus targets (`Button::focusable(false)`), or Enter presses them twice.
+- `Input` starts its caret at the start and exposes no way to move it from outside.
+- `TestingRunner::run_in` lets a test write app state (the keyboard height, a run state); `find`/`find_many` with `Label::try_downcast` read text and its laid-out position.
 
 ## 0.4 to 0.5 differences found while building
 
