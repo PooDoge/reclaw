@@ -9,7 +9,7 @@ use crate::{
     activity::ActivityEvent,
     model::{AppStatus, GameEntry, ModEntry, ModProvider, ModStatus},
     nav::Route,
-    notices::NoticeId,
+    notices::{Notice, NoticeId},
     settings::{SettingChange, TextField},
 };
 use reclaw_config::WindowPrefs;
@@ -22,6 +22,10 @@ pub enum AppAction {
     SetGames(Vec<GameEntry>),
     SetProjects(Vec<ProjectInfo>),
     SetMods(Vec<ModEntry>),
+    /// The catalog loader's progress and findings.
+    Catalog(super::status::CatalogStatus),
+    /// Tell the user something (a notice from the host that is not about one download).
+    Notify(Notice),
     SetRun {
         id: u32,
         run: RunState,

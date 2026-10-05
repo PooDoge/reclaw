@@ -16,11 +16,12 @@ use freya::prelude::*;
 
 use self::ctx::Ctx;
 pub use self::filter::Filter;
+use super::common::{empty_state, page_scroll, tab_header};
 use crate::{
     activity::sidebar_entries,
     desktop::use_desktop_ui,
     metrics::*,
-    nav::use_nav,
+    nav::{Route, use_nav},
     prelude::*,
     shell::use_shell,
     store::{use_activity, use_games, use_settings},
@@ -37,6 +38,24 @@ impl Component for LibraryPage {
         let env = *ui.env.read();
         let (games, activity, settings) = (use_games(), use_activity(), use_settings());
         let sort = Sort::from_settings(&settings);
+        if games.is_empty() {
+            // The real first-run state: nothing added yet. Say so, and say where games come from.
+            let say = crate::empty::library(false);
+            let browse = ActionButton::new(ButtonVariant::Primary)
+                .icon(IconName::Catalog)
+                .label("Browse the catalog")
+                .on_press(move |_| nav.open(Route::Catalog {}));
+            return page_scroll(
+                &env,
+                rect()
+                    .vertical()
+                    .spacing(SPACE_4)
+                    .width(Size::fill())
+                    .child(tab_header(&t, &env, "Library", "No games yet".to_string(), ui.search))
+                    .child(empty_state(&t, say.title, say.text))
+                    .child(rect().width(Size::fill()).center().child(browse)),
+            );
+        }
         let selected = ui.selected;
         let updates_section = sidebar_entries(&activity, &games);
 

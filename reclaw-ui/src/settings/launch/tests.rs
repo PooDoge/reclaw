@@ -1,6 +1,6 @@
 use reclaw_config::LaunchPrefs;
 use reclaw_games::{
-    sample::sample_projects,
+    fixtures::sample_projects,
     settings::{DisplayEnvironment, SettingKey, SettingValue, Size},
 };
 

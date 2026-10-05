@@ -3,7 +3,7 @@
 
 use crate::common::*;
 use freya::prelude::NamedKey::*;
-use reclaw_ui::{deck::TextField, effect::Effect, sample::sample_games};
+use reclaw_ui::{deck::TextField, effect::Effect, fixtures::sample_games};
 
 /// Home -> Dino Rush (not installed) -> its game page -> Install page. Home's first row is
 /// Starfall, Skyward Quest, Tide Racer; Down reaches the All apps shelf, where Dino Rush is fourth.
@@ -36,11 +36,11 @@ fn the_options_menu_opens_with_o_cascades_and_closes_with_back() {
     assert!(s.has_label("Manage"), "the menu is up: {:?}", s.labels());
     assert!(s.has_label("Starfall 64"), "titled with the app");
 
-    s.presses(&[ArrowDown, Enter]); // Add to ...
-    assert!(s.has_label("Backlog"), "the submenu opened: {:?}", s.labels());
+    s.presses(&[ArrowDown, Enter]); // Manage ...
+    assert!(s.has_label("Open install folder"), "the submenu opened: {:?}", s.labels());
 
     s.press(Escape); // closes the submenu only
-    assert!(!s.has_label("Backlog"));
+    assert!(!s.has_label("Open install folder"));
     assert!(s.has_label("Manage"));
 
     s.press(Escape); // closes the menu
@@ -52,13 +52,13 @@ fn the_options_menu_opens_with_o_cascades_and_closes_with_back() {
 fn choosing_a_menu_row_sends_its_effect_and_uninstall_asks_first() {
     let mut s = Mount::deck().start();
     s.press_char("o");
-    s.presses(&[ArrowDown, Enter, ArrowDown, Enter]); // Add to -> Backlog
-    assert_eq!(s.take_effects(), vec![Effect::AddToCollection { app: 1, name: "Backlog" }]);
+    s.presses(&[ArrowDown, Enter, Enter]); // Manage -> Open install folder
+    assert_eq!(s.take_effects(), vec![Effect::OpenFolder(1)]);
     assert!(!s.has_label("Manage"), "choosing closes the menu");
 
     s.press_char("o");
-    s.presses(&[ArrowDown, ArrowDown, Enter]); // Manage ->
-    s.presses(&[ArrowDown, ArrowDown, ArrowDown, Enter]); // -> Uninstall
+    s.presses(&[ArrowDown, Enter]); // Manage ->
+    s.presses(&[ArrowDown, ArrowDown, ArrowDown, ArrowDown, Enter]); // -> Uninstall
     assert_eq!(s.take_effects(), vec![], "nothing is sent before the confirmation");
     assert!(s.has_label("Uninstall Starfall 64?"), "{:?}", s.labels());
 

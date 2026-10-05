@@ -245,6 +245,23 @@ fn a_proxy_that_refuses_the_tunnel_is_reported_as_the_networks_decision() {
 }
 
 #[test]
+fn a_refused_host_is_not_asked_again_for_every_picture() {
+    let proxy = TestServer::start(|req, _| if req.method == "CONNECT" { Reply::new(403, "denied by policy") } else { Reply::new(502, "") });
+    let net =
+        Net::new(NetConfig { proxy: ProxyMode::Url(format!("http://{}", proxy.addr)), attempts: 3, ..NetConfig::default() }).expect("net");
+    let first = net.fetch(&Request::get("https://cdn.example.com/icon-1.png")).expect_err("refused");
+    assert!(matches!(first, NetError::ProxyDenied { .. }));
+    for i in 2..=20 {
+        let again = net.fetch(&Request::get(format!("https://cdn.example.com/icon-{i}.png"))).expect_err("still refused");
+        assert_eq!(again, first, "the same answer, from memory");
+    }
+    assert_eq!(proxy.count(), 1, "the network was asked once, not twenty times");
+    let other = net.fetch(&Request::get("https://other.example.com/x")).expect_err("also refused, but asked");
+    assert!(matches!(other, NetError::ProxyDenied { ref host, .. } if host == "other.example.com"));
+    assert_eq!(proxy.count(), 2, "another host gets its own question");
+}
+
+#[test]
 fn nothing_listening_and_no_such_name_are_told_apart() {
     let mut config = local_config();
     config.attempts = 1;

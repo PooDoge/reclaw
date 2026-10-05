@@ -30,6 +30,7 @@
 | `specs/media.md` | Fetching and caching artwork, the README on the game page |
 | `specs/systems.md` | The original-system badge, filter and sort |
 | `specs/game-settings.md` | Per-game launch settings and the global defaults |
+| `specs/network.md` | The one HTTP client: retries, limits, cache, resumable downloads, failure kinds |
 | `specs/catalog-format.md` | The catalog and library documents, in Quiver's format, and the optional `reclaw` block |
 
 ## Decisions
@@ -46,3 +47,5 @@
 | `adr/0008-reclaw-places-its-own-resize-bands.md` | Reclaw places its own resize bands |
 | `adr/0009-reclaw-speaks-quivers-catalog-format.md` | Quiver's catalog format, with one optional `reclaw` block |
 | `adr/0010-fetching-is-not-confined-to-one-crate.md` | Any non-UI crate may fetch, through one shared client |
+| `adr/0011-one-async-http-client-that-says-who-it-is.md` | One async `reqwest` client, honest about who it is, with the failures told apart |
+| `adr/0012-the-program-has-no-sample-data.md` | No sample data in the program; fixtures are for tests; game numbers are a hash of identity |

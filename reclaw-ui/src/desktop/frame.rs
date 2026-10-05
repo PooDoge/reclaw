@@ -12,7 +12,7 @@ use crate::{
     nav::{Route, RouteStage, Section, use_nav},
     prelude::*,
     shell::use_shell,
-    store::{use_activity, use_games, use_keyboard_inset, use_mods},
+    store::{now_secs, use_activity, use_catalog_status, use_games, use_keyboard_inset, use_mods},
     typography::TypeStyle,
     window::{Frame, Titlebar},
 };
@@ -47,6 +47,7 @@ impl Component for DesktopFrame {
         let mode = shell.model.read().mode;
 
         let (games, activity, keyboard_inset, mods) = (use_games(), use_activity(), use_keyboard_inset(), use_mods());
+        let catalog = use_catalog_status();
         let window = *shell.window.read();
         let class = shell.dev.layout.unwrap_or_else(|| LayoutClass::from_width(window.0));
         let measured = DesktopEnv { class, density: shell.dev.density.unwrap_or_else(|| class.default_density()), window, keyboard_inset };
@@ -108,7 +109,7 @@ impl Component for DesktopFrame {
                     .height(Size::px(28.))
                     .padding(Gaps::new(0., SPACE_4, 0., SPACE_4))
                     .background(t.bg_deep)
-                    .child(rect().width(Size::flex(1.)).child(TypeStyle::Meta.text("Library synced", t.ink_subtle)))
+                    .child(rect().width(Size::flex(1.)).child(TypeStyle::Meta.text(catalog.strip(now_secs()), t.ink_subtle)))
                     .child(TypeStyle::Mono.text(
                         format!("{} apps  {updates} {}", games.len(), if updates == 1 { "update" } else { "updates" }),
                         t.ink_subtle,

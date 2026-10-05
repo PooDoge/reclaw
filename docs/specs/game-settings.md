@@ -1,7 +1,7 @@
 # Game settings
 
-- last-verified: 2026-10-04
-- owner-paths: reclaw-games/src/settings/**, reclaw-games/src/project.rs, reclaw-games/src/sample.rs
+- last-verified: 2026-10-05
+- owner-paths: reclaw-games/src/settings/**, reclaw-games/src/project.rs, reclaw-games/src/fixtures.rs
 
 Launch settings (window mode, resolution, upscaling ...) that Reclaw can pass to a game. The crate is `reclaw-games`; the UI is in
 `reclaw-ui` and only displays what this crate says is supported.

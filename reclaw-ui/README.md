@@ -5,8 +5,8 @@ Freya components for the Reclaw installer and launcher, generated from the desig
 crates.io; there is no final 0.5.0 yet), pinned exactly in `Cargo.toml`.
 
 ```
-cargo run -p reclaw-ui --example gallery                       # desktop; RECLAW_THEME=daylight RECLAW_DENSITY=touch
-cargo run -p reclaw-ui --example deck --features gamepad       # Deck mode with a real pad and real processes
+cargo run -p reclaw                                            # the launcher (RECLAW_THEME=daylight RECLAW_DENSITY=touch ...)
+cargo run -p reclaw --features gamepad                         # with a real gamepad reader
 cargo test --workspace                                         # writes target/snapshots/*.png (headless Skia renders)
 ```
 

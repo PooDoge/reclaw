@@ -10,8 +10,8 @@ use crate::{
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MenuAction {
     ToggleFavorite,
-    AddTo(&'static str),
-    NewCollection,
+    AddToLibrary,
+    RemoveFromLibrary,
     OpenFolder,
     Verify,
     CheckUpdate,
@@ -28,8 +28,8 @@ impl MenuAction {
     pub fn effect(self, app: u32) -> Option<Effect> {
         Some(match self {
             Self::ToggleFavorite => Effect::ToggleFavorite(app),
-            Self::AddTo(name) => Effect::AddToCollection { app, name },
-            Self::NewCollection => Effect::NewCollection(app),
+            Self::AddToLibrary => Effect::AddToLibrary(app),
+            Self::RemoveFromLibrary => Effect::RemoveFromLibrary(app),
             Self::OpenFolder => Effect::OpenFolder(app),
             Self::Verify => Effect::Verify(app),
             Self::CheckUpdate => Effect::CheckUpdate(app),
@@ -49,34 +49,31 @@ impl MenuAction {
     }
 }
 
-/// Collections an app can be filed under. A catalog will supply real ones.
-pub const COLLECTIONS: [&str; 3] = ["Handheld friendly", "Backlog", "Recompiled N64"];
-
 /// The Options menu of one app, in Big Picture's shape: a flat list with group separators,
-/// `Add to` and `Manage` opening submenus, Properties, then Cancel.
+/// `Manage` opening a submenu, Properties, then Cancel.
 ///
 /// `with_properties` is false where there is no Properties page to open (the desktop for now).
 pub fn options_menu(game: &GameEntry, with_properties: bool) -> MenuState<MenuAction> {
     let favorite = game.tags.iter().any(|t| t == "favorite");
     let installed = game.status.is_installed();
-    let add_to: Vec<_> = COLLECTIONS
-        .iter()
-        .map(|c| MenuEntry::action(*c, MenuAction::AddTo(c)))
-        .chain([MenuEntry::action("New collection...", MenuAction::NewCollection).separated()])
-        .collect();
-    let manage = vec![
-        MenuEntry::action("Open install folder", MenuAction::OpenFolder),
-        MenuEntry::action("Verify files", MenuAction::Verify),
-        MenuEntry::action("Check for updates", MenuAction::CheckUpdate),
-        MenuEntry::action("Uninstall", MenuAction::Uninstall).separated(),
+    // What needs the app on disk is disabled until it is installed; leaving the library is always possible.
+    let on_disk = |entry: MenuEntry<MenuAction>| if installed { entry } else { entry.disabled() };
+    let mut manage = vec![
+        on_disk(MenuEntry::action("Open install folder", MenuAction::OpenFolder)),
+        on_disk(MenuEntry::action("Verify files", MenuAction::Verify)),
+        on_disk(MenuEntry::action("Check for updates", MenuAction::CheckUpdate)),
     ];
-    // Nothing to manage until the app is installed.
-    let manage: Vec<_> = manage.into_iter().map(|e| if installed { e } else { e.disabled() }).collect();
-    let mut items = vec![
-        MenuEntry::action(if favorite { "Remove from favorites" } else { "Add to favorites" }, MenuAction::ToggleFavorite),
-        MenuEntry::submenu("Add to", "Add to", add_to),
-        MenuEntry::submenu("Manage", "Manage", manage),
-    ];
+    if game.in_library {
+        manage.push(MenuEntry::action("Remove from library", MenuAction::RemoveFromLibrary).separated());
+    }
+    let uninstall = MenuEntry::action("Uninstall", MenuAction::Uninstall);
+    manage.push(on_disk(if game.in_library { uninstall } else { uninstall.separated() }));
+    let mut items =
+        vec![MenuEntry::action(if favorite { "Remove from favorites" } else { "Add to favorites" }, MenuAction::ToggleFavorite)];
+    if !game.in_library {
+        items.push(MenuEntry::action("Add to library", MenuAction::AddToLibrary));
+    }
+    items.push(MenuEntry::submenu("Manage", "Manage", manage));
     if with_properties {
         items.push(MenuEntry::action("Properties...", MenuAction::Properties).separated());
     }
@@ -87,7 +84,7 @@ pub fn options_menu(game: &GameEntry, with_properties: bool) -> MenuState<MenuAc
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{sample::sample_games, surface::EntryKind};
+    use crate::{fixtures::sample_games, surface::EntryKind};
 
     fn manage_entries(game: &GameEntry) -> Vec<bool> {
         let menu = options_menu(game, true);
@@ -99,13 +96,30 @@ mod tests {
         }
     }
 
+    fn root_labels(game: &GameEntry) -> Vec<String> {
+        options_menu(game, true).levels()[0].entries.iter().map(|e| e.label.to_string()).collect()
+    }
+
     #[test]
-    fn manage_is_disabled_until_installed() {
+    fn what_needs_files_on_disk_is_disabled_until_installed_but_leaving_the_library_is_not() {
         let games = sample_games();
         let installed = games.iter().find(|g| g.status.is_installed()).unwrap();
         let available = games.iter().find(|g| !g.status.is_installed()).unwrap();
         assert!(manage_entries(installed).iter().all(|on| *on));
-        assert!(manage_entries(available).iter().all(|on| !*on));
+        // Open folder, Verify, Check for updates, Remove from library, Uninstall.
+        assert_eq!(manage_entries(available), [false, false, false, true, false]);
+    }
+
+    #[test]
+    fn a_project_that_is_not_in_the_library_offers_to_add_it_and_one_that_is_offers_to_remove_it() {
+        let mut game = sample_games().remove(3);
+        assert!(game.in_library);
+        assert!(!root_labels(&game).contains(&"Add to library".to_string()));
+        game.in_library = false;
+        assert!(root_labels(&game).contains(&"Add to library".to_string()));
+        assert_eq!(manage_entries(&game), [false, false, false, false], "nothing to remove, and nothing installed to manage");
+        assert_eq!(MenuAction::AddToLibrary.effect(7), Some(Effect::AddToLibrary(7)));
+        assert_eq!(MenuAction::RemoveFromLibrary.effect(7), Some(Effect::RemoveFromLibrary(7)));
     }
 
     #[test]
@@ -119,7 +133,6 @@ mod tests {
     #[test]
     fn only_self_contained_choices_become_effects() {
         assert_eq!(MenuAction::Verify.effect(7), Some(Effect::Verify(7)));
-        assert_eq!(MenuAction::AddTo("Backlog").effect(7), Some(Effect::AddToCollection { app: 7, name: "Backlog" }));
         for needs_ui in [MenuAction::Uninstall, MenuAction::Properties, MenuAction::Cancel, MenuAction::Choice(1)] {
             assert_eq!(needs_ui.effect(7), None, "{needs_ui:?}");
         }

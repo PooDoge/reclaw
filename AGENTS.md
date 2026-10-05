@@ -12,15 +12,16 @@ cargo test -p reclaw-ui --test repo_hygiene        # file sizes, //! headers, do
 cargo clippy --workspace --all-targets      # must stay clean (CI uses -D warnings)
 cargo fmt --all                             # rustfmt.toml sets the style; run before committing
 QUIVER_CATALOG_DIR=<checkout> cargo test -p reclaw-catalog   # also check the real community catalog (skipped without it)
-cargo run -p reclaw-ui --example gallery    # look at it (F10: Deck mode, F9: simulated keyboard)
-cargo run -p reclaw-ui --example deck --features gamepad   # with a real pad and processes
+cargo run -p reclaw                         # the launcher with the real catalog (F10: Deck mode, F9: simulated keyboard)
+cargo run -p reclaw --features gamepad      # with a real gamepad reader
+cargo run -p reclaw-net --example probe     # what each host the program needs does from this machine
 scripts/x11-smoke.sh                        # a real window under Xvfb: drag, resize, maximize, close (not part of cargo test)
 ```
 
 Linux needs `libudev-dev` and the GL/EGL dev packages (`libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libwayland-dev`).
 Snapshot PNGs land in `reclaw-ui/target/snapshots/`; look at them after changing any layout.
 Bazzite (immutable) builds in a distrobox: `docs/BUILDING.md`, `scripts/bazzite-build.sh`.
-Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog`
+Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog -p reclaw-net -p reclaw-sync -p reclaw`
 keeps the compiled dependencies and drops only ours.
 
 ## Rules
@@ -66,8 +67,8 @@ keeps the compiled dependencies and drops only ours.
   status from a component.
 * **A window command**: a `WindowCommand` variant, handled in `window/platform.rs`; the `Shell` runs it, a component only produces the effect.
 * **A picture or document from the web**: `use_remote_file(url)` in a component keyed by the URL; the policy lives in `reclaw-media`.
-* **An Effect**: variant in `effect.rs`, produced by the reducer or a component handler, handled in the host (`examples/deck.rs`
-  shows one). The `Shell` handles mode effects itself.
+* **An Effect**: variant in `effect.rs`, produced by the reducer or a component handler, handled in the host (`reclaw-app/src/host.rs`
+  answers most). The `Shell` handles mode effects itself.
 * **A dialog**: build a `Dialog` with a `SurfaceKind`; do not use Freya's `Popup` directly.
 * **A menu**: `MenuState` data + `ModalMenu`; see `app_menu.rs`.
 

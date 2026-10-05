@@ -49,7 +49,7 @@ fn saved_favorites_are_applied_to_a_library_the_host_reports_later() {
     let mut s = state();
     s.games.clear();
     s.favorites.insert(2);
-    s.reduce(AppAction::SetGames(crate::sample::sample_games()));
+    s.reduce(AppAction::SetGames(crate::fixtures::sample_games()));
     assert!(s.games.iter().find(|g| g.id == 2).is_some_and(|g| g.is_favorite()));
 }
 
@@ -167,4 +167,29 @@ fn an_activity_channel_reaches_the_aggregate_readers_too() {
     use freya::radio::RadioChannel;
     assert_eq!(AppChannel::ActivityOf(4).derive_channel(&state()), vec![AppChannel::ActivityOf(4), AppChannel::Activity]);
     assert_eq!(AppChannel::Games.derive_channel(&state()), vec![AppChannel::Games]);
+}
+
+#[test]
+fn the_catalog_status_is_set_and_redraws_only_its_readers_when_it_changes() {
+    use crate::store::{AppState, CatalogPhase, CatalogStatus};
+    let mut s = AppState::default();
+    let loading = CatalogStatus { phase: CatalogPhase::Loading, ..Default::default() };
+    assert_eq!(s.reduce(AppAction::Catalog(loading.clone())), vec![AppChannel::Catalog]);
+    assert_eq!(s.catalog, loading);
+    assert!(s.reduce(AppAction::Catalog(loading)).is_empty(), "the same status again tells nobody");
+}
+
+#[test]
+fn a_notice_from_the_host_is_queued_and_shown() {
+    use crate::{
+        notices::{Notice, NoticeKind},
+        store::AppState,
+    };
+    let mut s = AppState::default();
+    let touched = s.reduce(AppAction::Notify(Notice::problem("Catalog", "offline", vec!["no network".into()])));
+    assert_eq!(touched, vec![AppChannel::Notices]);
+    let top = s.notices.top().expect("queued");
+    assert_eq!((top.kind, top.title.as_str()), (NoticeKind::Problem, "Catalog"));
+    assert!(top.kind.is_failure(), "a problem stays until dismissed");
+    assert!(!Notice::note("t", "b", vec![]).kind.is_failure(), "a note passes");
 }

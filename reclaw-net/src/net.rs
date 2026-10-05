@@ -27,6 +27,8 @@ use crate::{
 
 /// A rate-limit wait up to this long is slept through; a longer one is reported and remembered.
 const SHORT_WAIT: Duration = Duration::from_secs(5);
+/// How long a refusal by the network's policy is remembered per host.
+const POLICY_MEMORY: Duration = Duration::from_secs(5 * 60);
 /// How much of an error response is read to recognise a limit or a challenge in it.
 const ERROR_BODY_PEEK: usize = 4096;
 
@@ -322,6 +324,9 @@ impl Net {
     /// A transport failure: classified, and retried when it says nothing about the request.
     pub(crate) fn transport(&self, host: &str, error: &reqwest::Error) -> Attempt {
         let error = from_reqwest(host, error);
+        if matches!(error, NetError::ProxyDenied { .. }) {
+            self.inner.gate.deny(host, error.clone(), POLICY_MEMORY);
+        }
         if error.is_transient() { Attempt::Retry { error, wait: None } } else { Attempt::Stop(error) }
     }
 

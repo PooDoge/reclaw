@@ -13,7 +13,7 @@ use freya::prelude::*;
 use crate::{
     desktop::DesktopEnv,
     metrics::*,
-    nav::{Route, use_nav},
+    nav::{Nav, Route, use_nav},
     prelude::*,
     typography::TypeStyle,
 };
@@ -99,9 +99,9 @@ pub fn heading(t: &Reclaw, text: &'static str) -> Rect {
 }
 
 /// Capsules in fixed-column rows of fluid capsules, so the last row keeps its column width.
-/// Pressing one opens that game's page.
-pub fn capsule_grid(games: &[GameEntry], columns: usize, selected: Option<State<Option<u32>>>) -> Rect {
-    let nav = use_nav();
+/// Pressing one opens that game's page. `nav` is read by the caller, at the top of its render: this function is only reached when there
+/// is something to show, and a hook that runs only sometimes panics on the render where it does not (AGENTS rule 5).
+pub fn capsule_grid(games: &[GameEntry], columns: usize, selected: Option<State<Option<u32>>>, nav: Nav) -> Rect {
     rect().vertical().spacing(SPACE_3).width(Size::fill()).children(games.chunks(columns.max(1)).enumerate().map(|(row, chunk)| {
         let mut line = rect().horizontal().content(Content::Flex).spacing(SPACE_3).width(Size::fill());
         for game in chunk {
@@ -152,6 +152,18 @@ pub fn card(t: &Reclaw, lines: impl IntoIterator<Item = Element>) -> Rect {
 /// The title row of a top-level page: its name and a short summary, and on layouts without the top
 /// bar's search field (compact and phone), a search box below.
 pub fn tab_header(t: &Reclaw, env: &DesktopEnv, title: &'static str, summary: String, search: State<String>) -> Rect {
+    tab_header_with(t, env, title, summary, search, None)
+}
+
+/// [`tab_header`] with something at the end of the title row (a Refresh button, say).
+pub fn tab_header_with(
+    t: &Reclaw,
+    env: &DesktopEnv,
+    title: &'static str,
+    summary: String,
+    search: State<String>,
+    trailing: Option<Element>,
+) -> Rect {
     rect()
         .vertical()
         .spacing(SPACE_3)
@@ -162,7 +174,8 @@ pub fn tab_header(t: &Reclaw, env: &DesktopEnv, title: &'static str, summary: St
                 .cross_align(Alignment::End)
                 .spacing(SPACE_3)
                 .child(TypeStyle::TitlePage.text(title, t.ink))
-                .child(TypeStyle::Meta.text(summary, t.ink_subtle)),
+                .child(TypeStyle::Meta.text(summary, t.ink_subtle))
+                .maybe_child(trailing),
         )
         .maybe(env.class != LayoutClass::Wide, |el| el.child(SearchField::new(search).density(env.density)))
 }

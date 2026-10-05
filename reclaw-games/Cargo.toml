@@ -4,9 +4,16 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 
+[features]
+# The invented projects of `fixtures`, for the tests of crates that build on this one.
+fixtures = []
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 # preserve_order keeps a game's JSON keys where the game's author put them when we edit one value.
 serde_json = { version = "1", features = ["preserve_order"] }
 toml_edit = "0.22"
 thiserror = "2"
+
+[dev-dependencies]
+reclaw-games = { path = ".", features = ["fixtures"] }

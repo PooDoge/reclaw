@@ -8,6 +8,7 @@
 //! * `desktop_*`, `nav_stage`: the desktop interface and the router
 //! * `recents`: the Recent menu (desktop) and the Quick access list (Deck)
 //! * `media`: artwork and READMEs against a fake internet
+//! * `real_data`: data arriving after the first frame, and (with `QUIVER_CATALOG_DIR`) the real catalog on both interfaces
 //! * `systems`: the system badge, the System filter and Sort in the Library, shelves per system in Deck mode
 //! * `window_chrome`: the custom title bar and the Screen settings
 //! * `shell_modes`: switching interface; `tokens_in_sync`: the design tokens against the Rust constants
@@ -25,6 +26,7 @@ mod desktop_snapshots;
 mod desktop_surfaces;
 mod media;
 mod nav_stage;
+mod real_data;
 mod recents;
 mod shell_modes;
 mod systems;

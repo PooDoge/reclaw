@@ -103,7 +103,7 @@ mod tests {
     fn a_change_is_saved_and_the_next_start_reads_it() {
         let dir = tempfile::tempdir().expect("tempdir");
         {
-            let opened = open_store(home(&dir), |s| *s = AppState { games: crate::sample::sample_games(), ..s.clone() });
+            let opened = open_store(home(&dir), |s| *s = AppState { games: crate::fixtures::sample_games(), ..s.clone() });
             assert!(opened.warning.is_none());
             opened.store.dispatch(AppAction::ToggleFavorite(2));
             opened.store.dispatch(AppAction::Setting(SettingChange { app: None, key: "rumble", value: SettingValue::Bool(false) }));

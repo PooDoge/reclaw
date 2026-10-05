@@ -9,6 +9,8 @@ pub enum AppChannel {
     Games,
     Projects,
     Mods,
+    /// The catalog loader's status.
+    Catalog,
     /// Any activity changed.
     Activity,
     /// One game's activity changed. Notifies [`Activity`](Self::Activity) readers too.

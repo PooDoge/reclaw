@@ -1,7 +1,7 @@
-//! The sample games from `reclaw_games::sample`, taken from catalog entry to the exact command line
+//! The invented games from `reclaw_games::fixtures`, taken from catalog entry to the exact command line
 //! and config edits a launch would use.
 use reclaw_games::{
-    sample::sample_projects,
+    fixtures::sample_projects,
     settings::{
         Base, Capabilities, ConfigFormat, ConfigValue, DisplayEnvironment, DisplayServer, KeyEdit, Monitor, SettingKey, SettingValue,
         SettingsLayer, Size, Source, ValueKind, apply_edits, effective, plan, supported,

@@ -204,10 +204,19 @@ impl Component for Nav {
                 .background(t.bg_nav)
                 .border(Border::new().fill(t.line).width(BorderWidth { bottom: 1., ..Default::default() }))
                 .child(TypeStyle::Heading.text("Reclaw", t.ink))
-                .children(buttons.into_iter().map(IntoElement::into_element))
+                // The tabs sit closer to each other than to the title and the actions: at the narrowest wide window (1100 px) the row
+                // has to fit the title, five tabs with a badge, two actions and the search box.
+                .child(
+                    rect()
+                        .horizontal()
+                        .cross_align(Alignment::Center)
+                        .height(Size::fill())
+                        .spacing(SPACE_3)
+                        .children(buttons.into_iter().map(IntoElement::into_element)),
+                )
                 .child(rect().width(Size::flex(1.)))
                 .maybe_child(self.actions.clone().map(|el| rect().padding(Gaps::new(0., SPACE_2, 0., 0.)).child(el)))
-                .maybe_child(self.trailing.clone().map(|el| rect().width(Size::px(280.)).child(el)))
+                .maybe_child(self.trailing.clone().map(|el| rect().width(Size::px(240.)).child(el)))
                 .into_element(),
             NavMode::Rail => rect()
                 .vertical()

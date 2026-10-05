@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Runs the real gallery binary under a virtual X server with a window manager, and checks that the
+# Runs the real launcher under a virtual X server with a window manager, and checks that the
 # window behaves: custom title bar buttons, dragging, resize bands, Deck mode fullscreen, and that the
 # size and place survive a restart. This is the only check that exercises the real winit window; the
 # headless tests never open one.
 #
-#   cargo build -p reclaw-ui --example gallery && scripts/x11-smoke.sh
+#   cargo build -p reclaw && scripts/x11-smoke.sh
 #
 # Needs: Xvfb, openbox, xdotool, x11-utils (xwininfo, xprop), libxkbcommon-x11.
 #   Debian/Ubuntu: apt-get install xvfb openbox xdotool x11-utils libxkbcommon-x11-0
@@ -12,11 +12,13 @@
 # What it cannot tell you: anything about Wayland, a compositor (transparency, rounded corners), more
 # than one monitor (a virtual X server has one), or a high-DPI screen.
 set -u
-BIN="${RECLAW_BIN:-$(dirname "$0")/../target/debug/examples/gallery}"
+BIN="${RECLAW_BIN:-$(dirname "$0")/../target/debug/reclaw}"
 DISPLAY_NUM="${RECLAW_X11_DISPLAY:-79}"
 SHOTS="${RECLAW_SHOTS:-/tmp/reclaw-x11-shots}"
 export DISPLAY=":$DISPLAY_NUM"
 export RECLAW_HOME="$(mktemp -d)"
+# The window is what is under test, not the network: an index address the network layer refuses outright keeps the run hermetic.
+export RECLAW_CATALOG_INDEX="https://127.0.0.1/index.json"
 mkdir -p "$SHOTS"
 
 failures=0

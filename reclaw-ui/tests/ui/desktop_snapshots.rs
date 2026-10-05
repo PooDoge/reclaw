@@ -30,7 +30,7 @@ fn component_states() {
     use freya::prelude::*;
     use freya_core::element::AppComponent;
     use freya_testing::prelude::*;
-    use reclaw_ui::{prelude::*, sample::sample_games};
+    use reclaw_ui::{fixtures::sample_games, prelude::*};
     let games = sample_games();
     let state_sheet = {
         let g = games.clone();

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Runs the real gallery on native Wayland, on a headless sway (a real compositor), and checks that the window can be
+# Runs the real launcher on native Wayland, on a headless sway (a real compositor), and checks that the window can be
 # resized: the resize cursor the app asks for at each edge and corner, and a real drag, at several display scales.
 # This is the check that found the resize bands missing the right and bottom edges on a scaled display (ADR 0008);
 # the X11 rig (x11-smoke.sh) runs at scale 1 and could not.
 #
-#   cargo build -p reclaw-ui --example gallery && scripts/wayland-smoke.sh
+#   cargo build -p reclaw && scripts/wayland-smoke.sh
 #
 # Needs: sway, a cursor theme (Debian/Ubuntu: dmz-cursor-theme; set RECLAW_CURSOR_THEME for another), python3, cargo.
 # How it works: sway has no input device when headless, so tools/virtual-pointer gives its seat a pointer. The app runs
@@ -13,13 +13,15 @@
 # What it cannot tell you: anything about GNOME's compositor (Mutter), transparency and rounded corners, or a real panel.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BIN="${RECLAW_BIN:-$ROOT/target/debug/examples/gallery}"
+BIN="${RECLAW_BIN:-$ROOT/target/debug/reclaw}"
 SCALES="${RECLAW_SCALES:-1 1.5 2}"
 WORK="$(mktemp -d)"
 export XDG_RUNTIME_DIR="$WORK/run"; mkdir -m 700 "$XDG_RUNTIME_DIR"
 export WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=pixman
 export XCURSOR_THEME="${RECLAW_CURSOR_THEME:-DMZ-White}" XCURSOR_SIZE=24
 export RECLAW_HOME="$WORK/home"
+# The window is what is under test, not the network: an index address the network layer refuses outright keeps the run hermetic.
+export RECLAW_CATALOG_INDEX="https://127.0.0.1/index.json"
 CMDS="$WORK/pointer.cmds"; LOG="$WORK/app.log"; : > "$CMDS"
 
 failures=0

@@ -32,7 +32,10 @@ impl Component for ModsPage {
             .child(chip(ModProvider::GameBanana.label(), count_for(ModProvider::GameBanana), Some(ModProvider::GameBanana)));
 
         let list: Element = if shown.is_empty() {
-            empty_state(&t, "No mods match", "Try another site or a different search.").into_element()
+            {
+                let say = crate::empty::mods(!mods.is_empty());
+                empty_state(&t, say.title, say.text).into_element()
+            }
         } else {
             rect()
                 .vertical()

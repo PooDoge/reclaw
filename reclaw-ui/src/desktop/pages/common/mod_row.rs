@@ -127,7 +127,7 @@ impl Component for ModRow {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sample::sample_mods;
+    use crate::fixtures::sample_mods;
 
     #[test]
     fn downloads_are_abbreviated() {

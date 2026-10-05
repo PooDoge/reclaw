@@ -23,7 +23,7 @@ pub fn title(route: &Route, games: &[GameEntry], mods: &[ModEntry]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sample::{sample_games, sample_mods};
+    use crate::fixtures::{sample_games, sample_mods};
 
     fn name(route: Route) -> String {
         title(&route, &sample_games(), &sample_mods())

@@ -9,9 +9,9 @@ use reclaw_games::{project::ProjectInfo, settings::DisplayEnvironment};
 
 use crate::{
     activity::Activity,
+    fixtures::{sample_activity, sample_games, sample_projects},
     model::GameEntry,
     notices::Notices,
-    sample::{sample_activity, sample_games, sample_projects},
     settings::LaunchContext,
 };
 

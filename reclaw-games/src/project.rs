@@ -96,6 +96,9 @@ pub struct Requirements {
 pub struct ProjectInfo {
     pub id: u32,
     pub title: String,
+    /// The team, port or product this version comes from ("Ghostship"); empty when the catalog gives none.
+    #[serde(default)]
+    pub project: String,
     pub summary: String,
     pub description: String,
     pub platform: Platform,

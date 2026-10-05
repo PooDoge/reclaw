@@ -69,8 +69,9 @@ impl Component for FilterChip {
                 .horizontal()
                 .cross_align(Alignment::Center)
                 .spacing(SPACE_1)
-                .child(TypeStyle::Label.text(self.label.clone(), fg))
-                .maybe_child(self.count.map(|n| TypeStyle::Mono.text(n.to_string(), fg))),
+                .child(TypeStyle::Label.text(self.label.clone(), fg).max_lines(1))
+                // On one line whatever the row has left: a chip at the end of a wrapped row once broke "61" into "6" over "1".
+                .maybe_child(self.count.map(|n| TypeStyle::Mono.text(n.to_string(), fg).max_lines(1))),
         )
     }
 

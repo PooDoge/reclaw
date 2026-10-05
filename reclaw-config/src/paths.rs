@@ -32,6 +32,11 @@ impl AppDirs {
         self.config.join("settings.toml")
     }
 
+    /// The user's library of apps (`apps.json`, Quiver's format; see `reclaw-sync`).
+    pub fn library_file(&self) -> PathBuf {
+        self.data.join("apps.json")
+    }
+
     /// Answers from the catalog and release services, kept so the next start is instant and an offline start still shows something.
     pub fn http_cache(&self) -> PathBuf {
         self.cache.join("http")
@@ -52,6 +57,8 @@ mod tests {
         let dirs = AppDirs::locate(|k| (k == "RECLAW_HOME").then(|| "/tmp/portable".to_string())).expect("dirs");
         assert_eq!(dirs.prefs_file(), PathBuf::from("/tmp/portable/config/settings.toml"));
         assert_eq!(dirs.media_cache(), PathBuf::from("/tmp/portable/cache/media"));
+        assert_eq!(dirs.library_file(), PathBuf::from("/tmp/portable/data/apps.json"));
+        assert_eq!(dirs.http_cache(), PathBuf::from("/tmp/portable/cache/http"));
     }
 
     #[test]

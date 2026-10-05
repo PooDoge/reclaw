@@ -20,7 +20,9 @@ Everything the program fetches goes through `reclaw_net::Net` (ADR 0010, 0011). 
   or 403 is an answer and is not retried. Policy refusals and bot checks are not retried.
 * **Rate limits** are read from `Retry-After`, `x-ratelimit-*` and `ratelimit-*`. A wait up to 5 s is slept through; a longer one is
   returned as `RateLimited` and the host is remembered as blocked, so the next request fails at once without being sent.
-* **Concurrency**: 6 requests in flight per host.
+* **Concurrency**: 6 requests in flight per host. A host the network's policy refuses (a proxy answering the tunnel request with 403) is remembered
+  for five minutes: the next requests to it fail at once with the same error and are not sent, so a catalog with a hundred pictures on a
+  blocked host asks the network once, not a hundred times.
 * **Small answers** (`fetch`): body capped as it arrives; optional on-disk cache with a time to live, `If-None-Match` /
   `If-Modified-Since` revalidation, and an old copy returned (marked `CacheStale`, with the reason) when the network is unwell and the
   request allows it.

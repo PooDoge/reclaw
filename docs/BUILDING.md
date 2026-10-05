@@ -2,28 +2,21 @@
 
 ## What there is to run today
 
-There is no installer-and-launcher binary yet: the install and launch backends are not written. What runs is the
-whole UI over sample data, in two example programs:
-
-| Program | What it is |
-|---|---|
-| `gallery` | Both interfaces over sample data, with no gamepad and no processes. For looking at layouts. |
-| `deck` | The same shell wired to a real gamepad reader and the process supervisor. "Games" are a shell loop that stands in for a recompiled game, so Play, Resume, Stop and Force quit are real processes. **Update and Install play a scripted download** (about eleven seconds: a progress bar, a build, then finished), so the card progress, the sidebar's Updates section and the notification toast can be tried by hand. |
-
 ```sh
-cargo run -p reclaw-ui --example gallery
-cargo run -p reclaw-ui --example deck --features gamepad
+cargo run -p reclaw                       # the launcher: desktop or Deck mode, with the real community catalog
+cargo run -p reclaw --features gamepad    # with a real gamepad reader (needs libudev)
 ```
 
-`gallery --open /game/1` starts on a page (any path of the router; `/settings`, `/catalog`, `/mods` ...). **F10** switches between the
-desktop and Deck mode, **F9** shows a simulated on-screen keyboard.
+`reclaw` has no sample data. On start it shows what the last run saved (the community catalog, your library), refreshes the catalog in
+the background (about 650 ms on a good connection: the index, four lists and the platform metadata), and shows how fresh it is under
+the Catalog's title and in the bottom strip. **Add to library** (Options > Add to library, in the desktop's Manage menu and in Deck's
+Options) writes your library file (`apps.json`, Quiver's format). **Install, Play, Update and the rest need the installer, which is not
+built yet**: pressing them says so and, for Install, keeps the game in your library. See `docs/quiver-parity.md`.
 
-The sample games' pictures use a `catalog://` address that is never fetched, so by default every picture is a placeholder and the
-README on a game page says it could not load. **`RECLAW_LIVE_SAMPLE=1`** points two sample games at real public repositories
-(Starfall 64 at Zelda64Recomp, Kart Ruins at Freya): real artwork, a real screenshot and two real READMEs, fetched, cached under
-`RECLAW_HOME/cache/media` and drawn. It needs the internet, and `SSL_CERT_FILE` if your network re-signs HTTPS. Settings, favorites and
-the window's size and place are saved like the real app's; `RECLAW_HOME=/tmp/reclaw-try` keeps them (and the downloaded
-artwork cache) out of your real profile.
+`reclaw --open /catalog` starts on a page (any path of the router; `/settings`, `/mods`, `/game/<id>` ...). **F10** switches between the
+desktop and Deck mode, **F9** shows a simulated on-screen keyboard. Settings, favorites and the window's size and place are saved;
+`RECLAW_HOME=/tmp/reclaw-try` keeps all of Reclaw's folders (settings, library, caches) out of your real profile. `RECLAW_CATALOG_INDEX=<url>`
+points it at another catalog index, which is how a catalog of your own would be tried.
 
 ## When a download fails
 
@@ -36,6 +29,7 @@ limit (`docs/specs/network.md`). Run it first; it shows what the program sees, w
 | Variable | Effect |
 |---|---|
 | `RECLAW_HOME` | Put the config, data and cache folders under one root. |
+| `RECLAW_CATALOG_INDEX` | The address of a community catalog index other than Quiver's. |
 | `RECLAW_MODE=deck\|desktop` | Start in an interface (otherwise it is detected: SteamOS, gamescope and Steam variables mean Deck). |
 | `RECLAW_WINDOW_FRAME=native` | Use the window manager's border and title bar instead of Reclaw's own. The fallback if a compositor mishandles transparent, undecorated windows. |
 | `RECLAW_LAYOUT`, `RECLAW_DENSITY`, `RECLAW_THEME`, `RECLAW_MOTION`, `RECLAW_KEYBOARD`, `RECLAW_SIM_KEYBOARD` | Push any build into any form factor, theme or motion setting without a device. See `reclaw-ui/src/shell/overrides.rs`. |
@@ -51,8 +45,8 @@ Bazzite's root is immutable, so Reclaw is built inside a **distrobox** container
 it produces runs on the host.
 
 ```sh
-scripts/bazzite-build.sh              # builds target-bazzite/release/examples/{deck,gallery}
-scripts/bazzite-build.sh --install    # also installs ~/.local/bin/reclaw-deck, reclaw-gallery and the launcher entry
+scripts/bazzite-build.sh              # builds target-bazzite/release/reclaw
+scripts/bazzite-build.sh --install    # also installs ~/.local/bin/reclaw and the launcher entry
 ```
 
 The script creates the container `reclaw-build` the first time, installs the development packages (`systemd-devel` for the
@@ -105,7 +99,8 @@ Nobody has run Reclaw on Bazzite yet. What is known and what is not:
 |---|---|
 | Verified (Ubuntu 24.04, X11 under Xvfb with openbox, software rendering) | The build, all tests, and `scripts/x11-smoke.sh`: the custom title bar's buttons, dragging, the resize bands, fullscreen in Deck mode and back, closing, and the window's size and place restored on the next start. |
 | Verified on native Wayland (sway, headless, `scripts/wayland-smoke.sh`) | The window opens; the resize cursor appears on every edge and corner and a drag resizes, at scales 1.0, 1.5 and 2.0. |
-| Not verified | The Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; GNOME's compositor (Mutter: dragging and resizing, transparency and rounded corners); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
+| Verified against the live internet (2026-10-05, the real `reclaw` binary under Xvfb) | The catalog (index, four lists, platform metadata) loaded and was saved; 232 projects drawn with their systems; 56 icons hosted on `raw.githubusercontent.com` fetched and drawn; the `probe` example classified every host. Hosts the build sandbox's proxy refuses (`thunderstore.io`, `gamebanana.com`, `cdn2.steamgriddb.com`) were reported as refused and their pictures stayed placeholders. |
+| Not verified | Downloading a real release asset (github.com was unreachable from the build sandbox); the mod sites' real responses; the Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; GNOME's compositor (Mutter: dragging and resizing, transparency and rounded corners); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
 
 If one of those fails, the terminal output and whichever variable above got it working are the most useful report.
 
@@ -117,7 +112,7 @@ sudo apt install build-essential pkg-config libudev-dev libegl1-mesa-dev libgl1-
 cargo test --workspace --features reclaw-ui/gamepad
 ```
 
-`libxkbcommon-x11-0` is needed at run time on X11. To exercise the real window without a display, `scripts/x11-smoke.sh` runs the gallery
+`libxkbcommon-x11-0` is needed at run time on X11. To exercise the real window without a display, `scripts/x11-smoke.sh` runs the launcher
 under Xvfb with a window manager (it needs `xvfb openbox xdotool x11-utils`; see its header).
 
 ## Windows and macOS

@@ -5,12 +5,10 @@ edition = "2024"
 publish = false
 
 [features]
-# Real gamepad reading for the deck example (needs libudev on Linux).
+# Real gamepad reading (needs libudev on Linux).
 gamepad = ["reclaw-input/gilrs-backend"]
-
-[[example]]
-name = "deck"
-required-features = ["gamepad"]
+# Invented games and projects for the integration tests (`fixtures`); the program has none.
+fixtures = ["reclaw-games/fixtures"]
 
 [dependencies]
 freya = { version = "=0.5.0-rc.8", features = ["router", "radio", "query", "borderless", "titlebar", "markdown", "engine"] }
@@ -24,9 +22,12 @@ reclaw-runtime = { path = "../reclaw-runtime" }
 reclaw-games = { path = "../reclaw-games" }
 reclaw-config = { path = "../reclaw-config" }
 reclaw-media = { path = "../reclaw-media" }
+reclaw-catalog = { path = "../reclaw-catalog" }
+reclaw-sync = { path = "../reclaw-sync" }
 reclaw-net = { path = "../reclaw-net" }
 
 [dev-dependencies]
+reclaw-ui = { path = ".", features = ["fixtures"] }
 tempfile = "3"
 serde_json = "1"
 freya-testing = "=0.5.0-rc.8"

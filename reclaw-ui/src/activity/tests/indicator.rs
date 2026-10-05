@@ -1,5 +1,5 @@
 use super::{a_mod, progress, started};
-use crate::{activity::*, model::AppStatus, sample::sample_games};
+use crate::{activity::*, fixtures::sample_games, model::AppStatus};
 
 fn game(id: u32) -> crate::model::GameEntry {
     sample_games().into_iter().find(|g| g.id == id).expect("sample game")

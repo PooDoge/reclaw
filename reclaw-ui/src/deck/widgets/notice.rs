@@ -21,7 +21,8 @@ fn notice_look(t: &Reclaw, kind: NoticeKind) -> (IconName, Color) {
     match kind {
         NoticeKind::UpdateAvailable => (IconName::Download, t.warn),
         NoticeKind::UpdateFinished | NoticeKind::InstallFinished | NoticeKind::ModInstalled => (IconName::Check, t.ok),
-        NoticeKind::DownloadFailed => (IconName::Alert, t.danger),
+        NoticeKind::DownloadFailed | NoticeKind::Problem => (IconName::Alert, t.danger),
+        NoticeKind::Note => (IconName::Alert, t.warn),
     }
 }
 

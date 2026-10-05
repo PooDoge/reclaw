@@ -188,7 +188,7 @@ fn properties_open_from_options_and_back_returns_to_the_game_page() {
     let f = Fixture::new();
     let mut s = f.state();
     press(&mut s, &f, &[Confirm]); // Game page of Starfall 64
-    press(&mut s, &f, &[Options, go(Down), go(Down), go(Down), Confirm]);
+    press(&mut s, &f, &[Options, go(Down), go(Down), Confirm]);
     assert_eq!(s.screen(), Screen::Settings(SettingsTarget::App(1)));
     press(&mut s, &f, &[Back]);
     assert_eq!(s.screen(), Screen::Game(1));
@@ -198,7 +198,7 @@ fn properties_open_from_options_and_back_returns_to_the_game_page() {
 fn the_uninstall_row_asks_before_acting() {
     let f = Fixture::new();
     let mut s = f.state();
-    press(&mut s, &f, &[Options, go(Down), go(Down), go(Down), Confirm]); // Properties
+    press(&mut s, &f, &[Options, go(Down), go(Down), Confirm]); // Properties
     // Installed files holds the Uninstall row in its Remove group (row index 4).
     let files = section_index(&f, &s, SettingsTarget::App(1), "files");
     s.focus = ids::settings_nav(files);
@@ -212,7 +212,7 @@ fn the_uninstall_row_asks_before_acting() {
 fn launch_options_are_a_text_row() {
     let f = Fixture::new();
     let mut s = f.state();
-    press(&mut s, &f, &[Options, go(Down), go(Down), go(Down), Confirm, Confirm]);
+    press(&mut s, &f, &[Options, go(Down), go(Down), Confirm, Confirm]);
     assert_eq!(ids::row_of(s.focus()), Some((0, 0)));
     s.focus = ids::settings_row(0, 1);
     assert_eq!(press(&mut s, &f, &[Confirm]), vec![Effect::BeginTextEntry(TextField::LaunchOptions)]);

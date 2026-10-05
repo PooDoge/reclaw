@@ -1,5 +1,7 @@
-//! Sample projects for the gallery and tests. Ids match `reclaw_ui::sample::sample_games`.
-//! Not a catalog: the real one is fetched and cached by the host.
+//! Projects for tests: a handful of invented games whose declared capabilities cover every way a launch setting can be applied
+//! (command line, environment, a config file in each format). Compiled only for tests (and for the crates' tests, with the
+//! `fixtures` feature). The program has no sample data: its catalog is the real one (`reclaw-sync`). Ids match
+//! `reclaw_ui::fixtures::sample_games`.
 use crate::{
     project::{Media, Platform, ProjectInfo, Release, RepoHost, RepoRef, Requirements, SpecSheet},
     settings::{
@@ -112,6 +114,7 @@ pub fn sample_projects() -> Vec<ProjectInfo> {
     let base = |id: u32, title: &str, platform: Platform, owner: &str, name: &str, summary: &str| ProjectInfo {
         id,
         title: title.into(),
+        project: String::new(),
         summary: summary.into(),
         description: format!("{summary} Built from your own copy of the original game; nothing copyrighted is downloaded."),
         platform,

@@ -21,9 +21,9 @@ use reclaw_runtime::RunState;
 use reclaw_ui::{
     deck::ActionFeed,
     effect::Effect,
+    fixtures::sample_games,
     nav::Route,
     prelude::*,
-    sample::sample_games,
     shell::{DevOverrides, MotionOverride, Services, Shell},
     store::{AppAction, AppState, Store},
     window::{Frame, WindowHost},
@@ -61,6 +61,8 @@ pub fn running() -> RunState {
 pub struct Mount {
     pub size: (f32, f32),
     pub games: Vec<GameEntry>,
+    /// The catalog. The fixtures' by default.
+    pub projects: Vec<reclaw_games::project::ProjectInfo>,
     pub pad: Option<ControllerInfo>,
     pub script: Vec<Action>,
     pub mode: UiMode,
@@ -83,6 +85,7 @@ impl Mount {
         Self {
             size: (1280., 800.),
             games: sample_games(),
+            projects: reclaw_ui::fixtures::sample_projects(),
             pad: xbox(),
             script: vec![],
             mode: UiMode::Deck,
@@ -107,6 +110,11 @@ impl Mount {
 
     pub fn games(mut self, games: Vec<GameEntry>) -> Self {
         self.games = games;
+        self
+    }
+
+    pub fn projects(mut self, projects: Vec<reclaw_games::project::ProjectInfo>) -> Self {
+        self.projects = projects;
         self
     }
 
@@ -167,7 +175,7 @@ impl Mount {
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();
-        let Mount { size, games, pad, script, mode, dev, keyboard, theme, animated, window, media, scale } = self;
+        let Mount { size, games, projects, pad, script, mode, dev, keyboard, theme, animated, window, media, scale } = self;
         // The theme is pinned, so the settings do not switch it under a snapshot.
         let motion = dev.motion.or((!animated).then_some(MotionOverride::Reduced));
         let dev = DevOverrides { theme: dev.theme.or(Some(theme)), motion, ..dev };
@@ -177,8 +185,8 @@ impl Mount {
             move || {
                 use_init_reclaw(theme);
                 let store = Store::use_scoped({
-                    let (games, pad) = (games.clone(), pad.clone());
-                    move || AppState { games, controller: pad, keyboard_inset: keyboard, ..AppState::sample() }
+                    let (games, projects, pad) = (games.clone(), projects.clone(), pad.clone());
+                    move || AppState { games, projects, controller: pad, keyboard_inset: keyboard, ..AppState::sample() }
                 });
                 *stash.borrow_mut() = Some(store);
                 let sink = effects.clone();

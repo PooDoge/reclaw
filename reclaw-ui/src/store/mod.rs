@@ -37,6 +37,7 @@ mod handle;
 mod hooks;
 mod reduce;
 mod state;
+mod status;
 
 #[cfg(test)]
 mod tests;
@@ -48,3 +49,4 @@ pub use from_effect::ui_action;
 pub use handle::Store;
 pub use hooks::*;
 pub use state::{AppState, Mailbox};
+pub use status::{CatalogPhase, CatalogStatus, now_secs};

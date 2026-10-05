@@ -22,6 +22,7 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock | no |
 | `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
+| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and answers the screens' requests, and `main` which starts the window | yes |
 | `reclaw-ui` | Everything you see: tokens, components, the surface system, both interfaces, the store, the router, the window frame, the `Shell` | yes |
 
 Eight crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
@@ -31,7 +32,8 @@ Eight crates never import Freya, so their tests run without a window or a GPU. `
 ```
 lib.rs  prelude          tokens.rs GENERATED from design-system/tokens.json (never edit)
 theme.rs metrics.rs typography.rs icon.rs   tokens struct, layout classes + densities, text styles, Lucide icons
-model.rs sample.rs       plain data the UI shows (GameEntry, Download, AppStatus ...), sample data
+model.rs catalog_data.rs plain data the UI shows (GameEntry, AppStatus ...), and the pure mapping from the catalog and the library to it
+fixtures.rs              invented games for tests only (compiled for tests and the `fixtures` feature; the program has none)
 effect.rs                Effect: every command the UI asks of its host (both interfaces)
 app_menu.rs systems.rs   per-app Options menu as data; system badges, filter and sort by system
 catalog.rs launch.rs     one game's view-model for its page; what Play says per run state
@@ -164,9 +166,10 @@ and the media hub); the shell's own effects are handled inside it.
 
 * Deck's Catalog and Mods pages, and the README on Deck.
 * Drawing mermaid diagrams (they show as source), a cache size and "clear cache" in Settings.
-* The library and catalog on disk, the comparison that decides what is new or changed, and everything that installs (releases, downloads,
-  extraction); `docs/quiver-parity.md` has the plan. The UI still shows sample data.
-* A production host binary: only the `gallery` and `deck` examples start the app. The install backend (downloads, builds) is not here;
-  the store accepts its events (`ActivityEvent`).
+* Everything that installs: release lookup, asset choice, download and extraction into a game folder, launching what was installed,
+  update checks, mods (Thunderstore, GameBanana). Pressing Install, Play or Update says so. The pieces they will stand on exist: the
+  network layer with resumable hashed downloads, the library file, the catalog and platform metadata. `docs/quiver-parity.md` has the plan.
+* The comparison that decides what in a catalog is new or changed against the library (Add / Merge / Replace), and classifying a
+  release's files by operating system.
 * An in-app on-screen keyboard (the OS provides one; here it is simulated) and a gamepad file browser (`Effect::ChooseFile` asks the host).
 * Verification on real gamepad hardware, Wayland/GNOME, SteamOS and Windows. `docs/BUILDING.md` lists what was run and where.

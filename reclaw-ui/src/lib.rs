@@ -4,10 +4,14 @@ pub mod activity;
 pub mod app_menu;
 pub mod bootstrap;
 pub mod catalog;
+pub mod catalog_data;
 pub mod components;
 pub mod deck;
 pub mod desktop;
 pub mod effect;
+pub mod empty;
+#[cfg(any(test, feature = "fixtures"))]
+pub mod fixtures;
 
 pub mod icon;
 pub mod launch;
@@ -17,7 +21,6 @@ pub mod model;
 pub mod nav;
 pub mod notices;
 pub mod pages;
-pub mod sample;
 
 pub mod settings;
 pub mod shell;

@@ -69,6 +69,24 @@ impl AppEntry {
         same_key(&self.instance_key(), &other.instance_key())
     }
 
+    /// This catalog entry as the user's first copy of it: what the catalog says, with everything that belongs to one user (where it
+    /// is installed, what they pinned or skipped, their own name, their runner) cleared. A pinned `preferredVersion` an author
+    /// wrote is kept: it says which release the entry is about.
+    pub fn for_library(&self) -> Self {
+        Self {
+            install_path: None,
+            skipped_update_version: None,
+            custom_display_name: None,
+            auto_update: false,
+            defer_update_tracking: false,
+            linux_runner: None,
+            linux_prefix_path: None,
+            linux_proton_path: None,
+            linux_custom_launch_command: None,
+            ..self.clone()
+        }
+    }
+
     /// The system the game came from: the one the author named in the `reclaw` block, else what the tags say (see
     /// [`Platform::from_tags`]), else `Other`.
     pub fn system(&self) -> Platform {
@@ -130,5 +148,25 @@ mod tests {
         let nonsense =
             AppEntry { extension: Some(Extension { platform: Some("nonsense".into()), ..Default::default() }), ..tagged(&["n64"]) };
         assert_eq!(nonsense.system(), Platform::N64, "an unknown word falls back to the tags");
+    }
+
+    #[test]
+    fn a_catalog_entry_becomes_a_clean_first_library_entry() {
+        let catalog = AppEntry {
+            install_path: Some("/somewhere".into()),
+            preferred_version: Some("v1".into()),
+            skipped_update_version: Some("v2".into()),
+            custom_display_name: Some("Mine".into()),
+            auto_update: true,
+            linux_runner: Some("wine".into()),
+            tags: vec!["n64".into()],
+            ..hosted("o/r", "Folder")
+        };
+        let library = catalog.for_library();
+        assert_eq!((library.name.as_str(), library.repository.as_str(), library.tags.clone()), ("Game", "o/r", vec!["n64".to_string()]));
+        assert_eq!(library.preferred_version.as_deref(), Some("v1"), "what the author pinned stays");
+        assert!(library.install_path.is_none() && library.skipped_update_version.is_none() && library.custom_display_name.is_none());
+        assert!(!library.auto_update && library.linux_runner.is_none());
+        assert!(library.same_instance(&catalog), "still the same app");
     }
 }

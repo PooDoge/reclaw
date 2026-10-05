@@ -10,7 +10,7 @@ use reclaw_ui::{
     shell::{DevOverrides, KeyboardStart},
 };
 
-const DESKTOP_MARK: &str = "Library synced"; // the desktop's status bar
+const DESKTOP_MARK: &str = "Catalog not loaded yet"; // the desktop's status bar
 const DECK_MARK: &str = "Continue"; // Deck home's first shelf
 
 fn in_desktop(s: &Session) -> bool {

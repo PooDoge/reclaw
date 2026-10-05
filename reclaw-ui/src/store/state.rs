@@ -12,6 +12,8 @@ use crate::{
     settings::{SettingsValues, persist},
 };
 
+use super::status::CatalogStatus;
+
 /// One-shot messages from the host to the UI: set by the host, taken (cleared) by the UI.
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct Mailbox {
@@ -27,6 +29,8 @@ pub struct AppState {
     /// What the catalog says about every project, installed or not.
     pub projects: Vec<ProjectInfo>,
     pub mods: Vec<ModEntry>,
+    /// Whether the catalog is loading, how fresh it is, and what went wrong with it.
+    pub catalog: CatalogStatus,
     pub activity: ActivityBoard,
     pub notices: Notices,
 
@@ -61,6 +65,7 @@ impl AppState {
             games: Vec::new(),
             projects: Vec::new(),
             mods: Vec::new(),
+            catalog: CatalogStatus::default(),
             activity: ActivityBoard::new(),
             notices: Notices::default(),
             settings: persist::from_prefs(&prefs.global, &prefs.apps),
@@ -85,17 +90,6 @@ impl AppState {
             launch: self.launch.clone(),
             favorites: self.favorites.clone(),
             window: self.window.clone(),
-        }
-    }
-
-    /// A state with sample data and no saved settings: the gallery and the tests.
-    pub fn sample() -> Self {
-        Self {
-            games: crate::sample::sample_games(),
-            projects: crate::sample::sample_projects(),
-            mods: crate::sample::sample_mods(),
-            activity: crate::sample::sample_activity(),
-            ..Self::default()
         }
     }
 }

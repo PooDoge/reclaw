@@ -33,6 +33,7 @@ fn rows(target: SettingsTarget) -> Vec<Row> {
                 tags: Vec::new(),
                 platform: reclaw_games::project::Platform::Other,
                 art: Default::default(),
+                in_library: false,
                 run: RunState::Idle,
             };
             app_properties(&placeholder, &[])

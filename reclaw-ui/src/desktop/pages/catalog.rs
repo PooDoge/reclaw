@@ -1,12 +1,15 @@
 use freya::prelude::*;
 
-use super::common::{capsule_grid, columns_for, empty_state, page_scroll, tab_header};
+use super::common::{capsule_grid, columns_for, empty_state, page_scroll, tab_header_with};
 use crate::{
     catalog::{catalog_entries, platforms},
     desktop::use_desktop_ui,
+    effect::Effect,
     metrics::*,
+    nav::use_nav,
     prelude::*,
-    store::{use_games, use_projects, use_settings},
+    shell::use_shell,
+    store::{CatalogPhase, now_secs, use_catalog_status, use_games, use_projects, use_settings},
     systems::Sort,
 };
 
@@ -19,8 +22,9 @@ impl Component for CatalogPage {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
         let ui = use_desktop_ui();
+        let nav = use_nav();
         let env = *ui.env.read();
-        let (games, projects, settings) = (use_games(), use_projects(), use_settings());
+        let (games, projects, settings, status, shell) = (use_games(), use_projects(), use_settings(), use_catalog_status(), use_shell());
         let mut platform = ui.platform;
         let current = *platform.read();
 
@@ -37,17 +41,27 @@ impl Component for CatalogPage {
             .children(platforms(&projects).into_iter().map(|(p, n)| chip(p.label(), n, Some(p)).into_element()));
 
         let body = if entries.is_empty() {
-            empty_state(&t, "No projects match", "Try another platform or a different search.")
+            {
+                let say = crate::empty::catalog(&status, projects.len());
+                empty_state(&t, say.title, say.text)
+            }
         } else {
-            capsule_grid(&entries, columns_for(&env), Some(ui.selected))
+            capsule_grid(&entries, columns_for(&env), Some(ui.selected), nav)
         };
+        let on_effect = shell.on_effect.clone();
+        let refresh = ActionButton::new(ButtonVariant::Ghost)
+            .icon(IconName::Refresh)
+            .label("Refresh")
+            .enabled(status.phase != CatalogPhase::Loading)
+            .on_press(move |_| on_effect.call(Effect::RefreshCatalog))
+            .into_element();
         page_scroll(
             &env,
             rect()
                 .vertical()
                 .spacing(SPACE_4)
                 .width(Size::fill())
-                .child(tab_header(&t, &env, "Catalog", format!("{} recompilation projects", projects.len()), ui.search))
+                .child(tab_header_with(&t, &env, "Catalog", status.line(projects.len(), now_secs()), ui.search, Some(refresh)))
                 .child(chips)
                 .child(body),
         )

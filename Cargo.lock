@@ -3941,6 +3941,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430"
 
 [[package]]
+name = "reclaw"
+version = "0.1.0"
+dependencies = [
+ "freya",
+ "futures-util",
+ "reclaw-catalog",
+ "reclaw-config",
+ "reclaw-games",
+ "reclaw-input",
+ "reclaw-media",
+ "reclaw-net",
+ "reclaw-sync",
+ "reclaw-ui",
+ "tempfile",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "reclaw-catalog"
 version = "0.1.0"
 dependencies = [
@@ -3969,6 +3987,7 @@ dependencies = [
 name = "reclaw-games"
 version = "0.1.0"
 dependencies = [
+ "reclaw-games",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -4045,12 +4064,15 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "png 0.17.16",
+ "reclaw-catalog",
  "reclaw-config",
  "reclaw-games",
  "reclaw-input",
  "reclaw-media",
  "reclaw-net",
  "reclaw-runtime",
+ "reclaw-sync",
+ "reclaw-ui",
  "serde_json",
  "tempfile",
 ]

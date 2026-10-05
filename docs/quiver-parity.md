@@ -26,18 +26,18 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 
 | Area | Quiver | Reclaw | Next |
 |---|---|---|---|
-| Library file `apps.json` (read, write, identity, dedupe, backups) | `AppCatalogService`, `LibraryStore` | **done** read/write text (`reclaw-catalog`); no disk, lock, hashed backups or fail-closed recovery | M1 |
+| Library file `apps.json` (read, write, identity, dedupe, backups) | `AppCatalogService`, `LibraryStore` | **done**: strict read, atomic write, lock, hashed backups, fail-closed (`reclaw-sync`) | |
 | Catalog lists, community index, platform index | `Catalog*`, `CommunityCatalog*`, `PublishedPlatform*` | **done** parse and validate; checked on the real catalog | M1 |
 | Normalisation (tags, files, mods, display name) | `TagHelper`, `AppFilesToAddService`, `GameModsConfig`, `AppDisplayName` | **done** | |
 | Systems from tags | (tags only) | **done** 22 systems, specificity rules | |
 | Catalog compare and review (4-pass match, New / Changed / Local only, Add / Merge / Replace, ignore, hide, bulk, pending counts, auto-acknowledge) | `CatalogCompareService`, `CatalogSyncViewModel` | **no** | M1 |
-| Catalog sources (subscribe, refresh, cache, ETag, 30-minute client timeout) | `AppCatalogService`, `CommunityCatalogBootstrap` | **no** | M1 |
+| Catalog sources (subscribe, refresh, cache, ETag) | `AppCatalogService`, `CommunityCatalogBootstrap` | **done** for the community catalog (`reclaw-sync`); user-added lists **no** | M1 |
 | Platform eligibility (classify a release's assets as Windows / Linux / Mac / Android) | `PlatformAssetMatcher`, `CatalogPlatformSupport` | **no** | M1 |
-| Library UI: grid / list / compact, search, sort, tag filters, context menu | `Views/Library*` | **ui** (sample data) | wire to the store |
-| Catalog UI | `Views/Catalog*` | **ui** (sample data) | wire |
-| Release fetching GitHub / GitLab, rate limits, token, request coordinator | `ReleaseRequestCoordinator`, `GitHubApiCache` | **no** | M2 |
+| Library UI: grid / list / compact, search, sort, tag filters, context menu | `Views/Library*` | **done** over the real library; Add / Remove from the Manage menu | name styles, tag filters, per-user tags |
+| Catalog UI | `Views/Catalog*` | **done** over the real 232 apps with system chips, search, status line and Refresh; the review flow (New / Changed) is **no** | review (M1) |
+| Release fetching GitHub / GitLab, rate limits, token, request coordinator | `ReleaseRequestCoordinator`, `GitHubApiCache` | the client under it is **done** (`reclaw-net`: retries, `Retry-After`, ETag, per-host limits, tokens); the release lists and their paging **no** | M2 |
 | Choosing the asset for this OS and CPU | `DownloadAssetPolicy`, `PlatformAssetMatcher` | **no** (and Linux offers Windows builds beside native ones) | M2 |
-| Download, extract (zip 7z rar tar), flatten one wrapper folder, find the executable, `chmod +x` | `GameInstallationService`, `GameDownloadService` | **no** | M2 |
+| Download, extract (zip 7z rar tar), flatten one wrapper folder, find the executable, `chmod +x` | `GameInstallationService`, `GameDownloadService` | download **done** (streamed, hashed, resumable, cancellable); extraction and the rest **no** | M2 |
 | Status machine and version comparison (`ReleaseVersionIdentity`) | `GameStatusService`, `GameInfo` | **no**; Reclaw has `AppStatus` for the UI only | M2 |
 | Launch (native, Wine / Proton, AppImage env, Flatpak), process tracking | `GameLaunchService`, `WindowsRunnerService` | partial: `reclaw-runtime` starts and stops process groups; no runner choice | M2 |
 | Uninstall to trash, Locate install, Open folder, Force update, change version | `LibraryActions` | **ui** menu entries only | M2 |

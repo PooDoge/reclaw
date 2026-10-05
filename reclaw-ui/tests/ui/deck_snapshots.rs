@@ -3,7 +3,7 @@
 use crate::common::*;
 use reclaw_input::{Action::*, ControllerInfo, Direction::*};
 use reclaw_runtime::{Outcome, RunState};
-use reclaw_ui::sample::sample_games;
+use reclaw_ui::fixtures::sample_games;
 
 fn shot(name: &str, mount: Mount) {
     mount.start().snapshot(&format!("deck-{name}"));

@@ -68,7 +68,7 @@ pub fn mark_mod_installing(mods: &mut [ModEntry], provider: ModProvider, id: &st
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sample::{sample_games, sample_mods};
+    use crate::fixtures::{sample_games, sample_mods};
 
     #[test]
     fn tags_follow_the_saved_set_both_ways() {

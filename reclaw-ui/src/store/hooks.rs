@@ -9,6 +9,7 @@ use reclaw_input::ControllerInfo;
 use super::{
     channel::AppChannel,
     state::{AppState, Mailbox},
+    status::CatalogStatus,
 };
 use crate::{
     activity::ActivityBoard,
@@ -36,6 +37,10 @@ pub fn use_games() -> Vec<GameEntry> {
 
 pub fn use_projects() -> Vec<ProjectInfo> {
     read(AppChannel::Projects, |s| s.projects.clone())
+}
+
+pub fn use_catalog_status() -> CatalogStatus {
+    read(AppChannel::Catalog, |s| s.catalog.clone())
 }
 
 pub fn use_mods() -> Vec<ModEntry> {

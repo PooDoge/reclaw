@@ -21,6 +21,11 @@ impl AppState {
             }
             AppAction::SetProjects(projects) => set_if_changed(&mut self.projects, projects, AppChannel::Projects),
             AppAction::SetMods(mods) => set_if_changed(&mut self.mods, mods, AppChannel::Mods),
+            AppAction::Catalog(status) => set_if_changed(&mut self.catalog, status, AppChannel::Catalog),
+            AppAction::Notify(notice) => {
+                self.notices.push(notice);
+                vec![AppChannel::Notices]
+            }
             AppAction::SetRun { id, run } => match self.games.iter_mut().find(|g| g.id == id) {
                 Some(game) if game.run != run => {
                     game.run = run;

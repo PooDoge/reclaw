@@ -17,7 +17,7 @@ keep out of each other's way by remembering the route each last asked for.
 
 `Route` (`nav/route.rs`) is one enum under one layout, `AppLayout`: Library, Catalog, Game, Install, GameSettings (and a section),
 Mods, ModDetail, Downloads, Settings (and a section). `freya-router` derives each route's path from it, so a route is a link, a saved
-location, or a command-line argument (`gallery --open /game/4`). There are no nested layouts: a section such as Mods is a set of
+location, or a command-line argument (`reclaw --open /game/4`). There are no nested layouts: a section such as Mods is a set of
 sibling routes, so a transition never animates a layout around an outlet.
 
 `Route::kind()` says what a page is: a **root** (a tab), a **detail** page, a **form** (kept out of the recent pages), or settings.

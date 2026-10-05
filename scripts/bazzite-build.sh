@@ -41,18 +41,15 @@ distrobox enter "$NAME" -- bash -lc "
   fi
   . \"\$HOME/.cargo/env\"
   cd '$ROOT'
-  CARGO_TARGET_DIR='$TARGET_DIR' cargo build --locked --release -p reclaw-ui --example deck --example gallery --features gamepad
+  CARGO_TARGET_DIR='$TARGET_DIR' cargo build --locked --release -p reclaw --features gamepad
 "
 
-for example in deck gallery; do
-  [ -x "$TARGET_DIR/release/examples/$example" ] || { echo "the build finished but $TARGET_DIR/release/examples/$example is missing"; exit 1; }
-  echo "built: $TARGET_DIR/release/examples/$example"
-done
+[ -x "$TARGET_DIR/release/reclaw" ] || { echo "the build finished but $TARGET_DIR/release/reclaw is missing"; exit 1; }
+echo "built: $TARGET_DIR/release/reclaw"
 
 if [ "${1:-}" = "--install" ]; then
-  install -Dm755 "$TARGET_DIR/release/examples/deck" "$HOME/.local/bin/reclaw-deck"
-  install -Dm755 "$TARGET_DIR/release/examples/gallery" "$HOME/.local/bin/reclaw-gallery"
+  install -Dm755 "$TARGET_DIR/release/reclaw" "$HOME/.local/bin/reclaw"
   install -Dm644 "$ROOT/packaging/dev.reclaw.Reclaw.desktop" "$HOME/.local/share/applications/dev.reclaw.Reclaw.desktop"
   update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
-  echo "installed ~/.local/bin/reclaw-deck, ~/.local/bin/reclaw-gallery and the applications menu entry (log out and in if GNOME does not show it)"
+  echo "installed ~/.local/bin/reclaw and the applications menu entry (log out and in if GNOME does not show it)"
 fi

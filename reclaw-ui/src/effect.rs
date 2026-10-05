@@ -66,11 +66,12 @@ pub enum Effect {
     CheckUpdate(u32),
     Uninstall(u32),
     ToggleFavorite(u32),
-    AddToCollection {
-        app: u32,
-        name: &'static str,
-    },
-    NewCollection(u32),
+    /// Keep this catalog project in the library (the user's own list, `apps.json`).
+    AddToLibrary(u32),
+    /// Forget it. Files it installed are not touched.
+    RemoveFromLibrary(u32),
+    /// Load the catalog again now.
+    RefreshCatalog,
     /// Stop a download or install. The host answers with an `ActivityEvent::Cancelled`.
     CancelActivity(ActivityId),
     /// Remove a finished or failed row from the Downloads list.

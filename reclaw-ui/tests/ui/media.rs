@@ -1,6 +1,6 @@
 //! Pictures and READMEs from the internet, against a fake one: what is asked for and how often,
 //! what shows while waiting and after, what happens when it fails or is switched off.
-use reclaw_games::sample::sample_projects;
+use reclaw_games::fixtures::sample_projects;
 use reclaw_media::readme::ReadmeContext;
 use reclaw_ui::{
     effect::Effect,
@@ -16,7 +16,7 @@ const HERO: &str = "https://art.example.com/hero/1.png";
 
 /// The sample library with the first game (the one the wide Library shows a hero for) given a banner.
 fn games_with_art() -> Vec<reclaw_ui::model::GameEntry> {
-    let mut games = reclaw_ui::sample::sample_games();
+    let mut games = reclaw_ui::fixtures::sample_games();
     games[0].art = Art { capsule: None, hero: Some(HERO.to_string()) };
     games
 }

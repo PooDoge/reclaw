@@ -1,7 +1,7 @@
 # Catalog and library format (Quiver-compatible)
 
 - last-verified: 2026-10-05
-- owner-paths: reclaw-catalog/src/**, reclaw-catalog/tests/real_catalog.rs, reclaw-games/src/platform.rs, reclaw-sync/src/**, reclaw-sync/tests/sync.rs
+- owner-paths: reclaw-catalog/src/**, reclaw-catalog/tests/real_catalog.rs, reclaw-games/src/platform.rs, reclaw-sync/src/**, reclaw-sync/tests/sync.rs, reclaw-ui/src/catalog_data.rs, reclaw-app/src/**
 
 Reclaw reads and writes the same four documents as the Quiver launcher, so the community catalog works unchanged and a catalog
 Reclaw publishes can be read by Quiver. The crate is `reclaw-catalog`: plain data in and out, no network, no disk, no window.
@@ -79,6 +79,18 @@ block is dropped without failing the entry. `summary`, `description`, `heroUrl`,
 On 2026-10-04 that is 4 lists and 232 apps: none skipped or merged away, every entry writes back to the same JSON apart from one hand-edited
 duplicate tag, all 232 have platform metadata, all 232 have a system. The catalog's own data is **not** copied into this repository (no licence).
 Reading the C# is how the rules above were found; nothing was run against Quiver itself.
+
+## On the screens (`catalog_data`, `reclaw-app`)
+
+`catalog_data::load(catalog, library)` turns the sync's apps and the library into the `ProjectInfo`s of the Catalog and game page and the
+`GameEntry`s of the Library. Title, project (the port's name), tags and system come from the entry; the latest release tag and its page
+from the platform metadata; the picture is the `reclaw` block's capsule if the entry has one, else `appIconUrl`; summary, description,
+screenshots, requirements and launch capabilities exist only where a `reclaw` block gives them (none of the 232 do yet), and the game
+page fetches the project's README itself. A game's number is the hash of its identity key (ADR 0012).
+
+The host (`reclaw-app/src/host.rs`) loads the saved catalog before the first frame, refreshes in the background (one refresh at a time),
+keeps the library file (`Add to library`, `Remove from library`; a library that cannot be read is left untouched and read-only), opens
+links (public https only), and answers every request for something not built yet with a note that says so.
 
 ## Not built
 

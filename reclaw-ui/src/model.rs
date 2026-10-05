@@ -69,6 +69,8 @@ pub struct GameEntry {
     /// The system the game was recompiled from, for the badge and for browsing by system.
     pub platform: Platform,
     pub art: Art,
+    /// Whether the user has added it to their library (as opposed to a catalog project they are only looking at).
+    pub in_library: bool,
     /// Whether the app is running right now. Independent of `status`, which is install state.
     pub run: RunState,
 }
@@ -79,7 +81,7 @@ impl GameEntry {
         Self {
             id: project.id,
             title: Cow::Owned(project.title.clone()),
-            project: Cow::Owned(project.platform.label().to_string()),
+            project: Cow::Owned(if project.project.is_empty() { project.platform.label().to_string() } else { project.project.clone() }),
             version: Cow::Owned(project.latest_release().map(|r| r.tag.clone()).unwrap_or_default()),
             source: match project.repo.host {
                 RepoHost::Github => Source::GitHub,
@@ -89,6 +91,7 @@ impl GameEntry {
             tags: project.tags.iter().cloned().map(Cow::Owned).collect(),
             platform: project.platform,
             art: Art { capsule: project.capsule_url.clone(), hero: project.hero_url.clone() },
+            in_library: false,
             run: RunState::Idle,
         }
     }

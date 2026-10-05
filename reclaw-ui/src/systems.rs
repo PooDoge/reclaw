@@ -84,7 +84,7 @@ pub fn grouped(games: &[GameEntry]) -> Vec<(Platform, Vec<GameEntry>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sample::sample_games;
+    use crate::fixtures::sample_games;
 
     fn titles(games: &[GameEntry]) -> Vec<&str> {
         games.iter().map(|g| &*g.title).collect()

@@ -97,8 +97,8 @@ mod tests {
 
     use super::*;
     use crate::{
+        fixtures::{sample_games, sample_mods, sample_projects},
         model::AppStatus,
-        sample::{sample_games, sample_mods, sample_projects},
     };
 
     #[test]

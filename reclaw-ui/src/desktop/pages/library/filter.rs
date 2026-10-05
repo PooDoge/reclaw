@@ -37,7 +37,7 @@ pub fn visible(games: &[GameEntry], filter: Filter, system: Option<Platform>, qu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sample::sample_games;
+    use crate::fixtures::sample_games;
 
     fn titles(v: &[GameEntry]) -> Vec<&str> {
         v.iter().map(|g| &*g.title).collect()

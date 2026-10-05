@@ -81,7 +81,7 @@ The full machine-readable spec is `reclaw.freya.json` (`decisions`, `modes`, `in
 1. Host root: `use_init_reclaw`, own `State<Vec<GameEntry>>`, `State<Vec<Download>>`, `State<Option<ControllerInfo>>`.
 2. `backend::spawn(map)` for the pad (feature `gamepad`); forward `InputMessage::Action` into `ActionFeed::sender()` and connection messages into the controller state.
 3. `Supervisor::new(grace)`; on `SessionEvent` write `supervisor.state(app)` into the game's `run`.
-4. Pass an `on_effect` handler: `Launch` and `Stop` go to the supervisor, `InputOwner` goes to the pad handle, the rest (`Resume`, `BringLauncherToFront`, `Install`...) are window and installer work for the host. `examples/deck.rs` is the reference.
+4. Pass an `on_effect` handler: `Launch` and `Stop` go to the supervisor, `InputOwner` goes to the pad handle, the rest (`Resume`, `BringLauncherToFront`, `Install`...) are window and installer work for the host. `reclaw-app/src/main.rs` and `host.rs` are the reference.
 5. Under Steam, `map.unbind(Button::Guide)` (see `detect_environment`).
 
 ### Deck API notes (0.5.0-rc.8)
