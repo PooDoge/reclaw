@@ -1,6 +1,6 @@
 use freya::prelude::*;
 
-use crate::deck::settings::TextField;
+use crate::{deck::settings::TextField, settings::FALLBACK_LOCATION};
 
 /// The text states behind every text box in Deck mode, plus the accessibility ids that let a
 /// gamepad press focus one (so the keyboard, or the OS's on-screen keyboard, types into it).
@@ -40,10 +40,10 @@ impl TextBoxes {
     /// Hooks: call once, unconditionally, from a component.
     pub fn use_new() -> Self {
         Self {
-            install_location: use_state(|| "~/Reclaw/Apps".to_string()),
+            install_location: use_state(|| FALLBACK_LOCATION.to_string()),
             launch_options: use_state(String::new),
             sdl_override: use_state(String::new),
-            default_location: use_state(|| "~/Reclaw/Apps".to_string()),
+            default_location: use_state(String::new),
             github_token: use_state(String::new),
             gitlab_token: use_state(String::new),
             before: std::array::from_fn(|_| use_state(|| None)),
@@ -65,6 +65,14 @@ impl TextBoxes {
 
     pub fn value(&self, field: TextField) -> String {
         self.get(field).0.read().clone()
+    }
+
+    /// Replace a box's text (a page showing what is stored). Not for a box being typed into.
+    pub fn set(&self, field: TextField, value: String) {
+        let mut text = self.get(field).0;
+        if *text.peek() != value {
+            text.set(value);
+        }
     }
 
     /// Empty a box (a token that has been handed over).

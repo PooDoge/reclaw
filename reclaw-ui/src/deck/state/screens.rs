@@ -7,6 +7,7 @@ impl DeckState {
         self.leave_scope();
         self.stack.push(self.screen);
         self.screen = screen;
+        self.seed_texts_for_screen();
         self.enter_scope(view);
         self.request_route();
     }
@@ -15,6 +16,7 @@ impl DeckState {
     pub(super) fn go_back(&mut self, view: &DeckView) {
         self.leave_scope();
         self.screen = self.stack.pop().unwrap_or(Screen::Home);
+        self.seed_texts_for_screen();
         self.enter_scope(view);
         self.request_back();
     }

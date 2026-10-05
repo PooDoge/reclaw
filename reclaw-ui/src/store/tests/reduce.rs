@@ -150,8 +150,6 @@ fn the_mailbox_holds_a_request_until_the_ui_takes_it() {
     assert_eq!(s.mailbox.open, Some(Route::Mods {}));
     s.reduce(AppAction::Open(None));
     assert_eq!(s.mailbox.open, None);
-    s.reduce(AppAction::ChosenFile(Some("/games/rom.z64".into())));
-    assert_eq!(s.mailbox.chosen_file.as_deref(), Some("/games/rom.z64"));
 }
 
 #[test]

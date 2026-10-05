@@ -35,7 +35,7 @@ pub(super) struct Dispatcher {
 impl Dispatcher {
     /// Run `f` on the state with a fresh view of the host's data, then forward its effects.
     pub fn run(&self, f: impl FnOnce(&mut DeckState, &DeckView) -> Vec<Effect>) {
-        let effects = {
+        let (effects, seeds) = {
             let mut deck = self.deck;
             let recents = self.nav.recents();
             self.store.with(|s| {
@@ -52,9 +52,14 @@ impl Dispatcher {
                 let mut state = deck.write();
                 // The settings live in the store, which both interfaces share; the reducer works on a copy.
                 state.sync_values(&s.settings);
-                f(&mut state, &view)
+                let effects = f(&mut state, &view);
+                (effects, state.take_text_seeds())
             })
         };
+        // A page with text boxes was just shown: they start from the stored settings, not from what the last visit left.
+        for (field, value) in seeds {
+            self.texts.set(field, value);
+        }
         self.forward(effects);
     }
 
@@ -66,7 +71,6 @@ impl Dispatcher {
                     self.on_effect.call(Effect::StartInstall {
                         app,
                         location: self.texts.value(TextField::InstallLocation),
-                        game_file: draft.game_file,
                         shortcut: draft.shortcut,
                         prerelease: draft.prerelease,
                     });

@@ -47,7 +47,6 @@ impl AppState {
             AppAction::SetKeyboardInset(px) => set_if_changed(&mut self.keyboard_inset, px, AppChannel::Keyboard),
             AppAction::SetDisplay(display) => set_if_changed(&mut self.display, display, AppChannel::Display),
             AppAction::Open(route) => set_if_changed(&mut self.mailbox.open, route, AppChannel::Mailbox),
-            AppAction::ChosenFile(path) => set_if_changed(&mut self.mailbox.chosen_file, path, AppChannel::Mailbox),
 
             AppAction::ToggleFavorite(id) => {
                 if !self.games.iter().any(|g| g.id == id) && !self.favorites.contains(&id) {

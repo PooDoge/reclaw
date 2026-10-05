@@ -19,7 +19,6 @@ use super::status::CatalogStatus;
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct Mailbox {
     pub open: Option<Route>,
-    pub chosen_file: Option<String>,
 }
 
 /// Everything shared. Plain data: no handles, no Freya types, so the rules that change it are

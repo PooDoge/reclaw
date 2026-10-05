@@ -53,8 +53,6 @@ pub enum AppAction {
     SetDisplay(DisplayEnvironment),
     /// A page the host wants shown (a deep link, a clicked notification). The UI takes it with `Open(None)`.
     Open(Option<Route>),
-    /// The file the user picked for an install. The UI takes it with `ChosenFile(None)`.
-    ChosenFile(Option<String>),
 
     // What the user changed.
     ToggleFavorite(u32),

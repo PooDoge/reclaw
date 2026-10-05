@@ -17,8 +17,15 @@ const HERO: &str = "https://art.example.com/hero/1.png";
 /// The sample library with the first game (the one the wide Library shows a hero for) given a banner.
 fn games_with_art() -> Vec<reclaw_ui::model::GameEntry> {
     let mut games = reclaw_ui::fixtures::sample_games();
-    games[0].art = Art { capsule: None, hero: Some(HERO.to_string()) };
+    games[0].art = Art { capsule: None, hero: Some(HERO.to_string()), repo: None };
     games
+}
+
+/// How many pictures the Library draws with no artwork at all (system icons and the like), to compare against.
+fn baseline_pictures() -> usize {
+    let mut s = Mount::desktop().games(games_with_art()).start();
+    s.pump(300);
+    s.pictures()
 }
 
 /// Scroll the game page down to its last sections, where the README is.
@@ -45,25 +52,25 @@ fn a_banner_picture_replaces_its_placeholder_and_is_fetched_once() {
     let mut s = Mount::desktop().games(games_with_art()).media(rig.hub.clone()).start();
     s.pump(300);
     s.runner.sync_and_update();
-    assert!(!s.has_label("HERO 16:5"), "the picture replaced it: {:?}", s.labels());
+    assert!(s.pictures() >= 1, "the picture is on screen");
     assert_eq!(rig.web.asked_for(HERO), 1, "every redraw shares one request: {:?}", rig.web.asked());
     s.snapshot("desktop-library-art");
 }
 
 #[test]
-fn without_a_hub_nothing_is_asked_for_and_the_placeholder_stays() {
+fn without_a_hub_nothing_is_asked_for_and_no_picture_is_drawn() {
     let mut s = Mount::desktop().games(games_with_art()).start();
     s.pump(300);
-    assert!(s.has_label("HERO 16:5"), "{:?}", s.labels());
+    assert_eq!(s.pictures(), baseline_pictures(), "{:?}", s.labels());
 }
 
 #[test]
-fn a_picture_that_cannot_be_fetched_leaves_the_placeholder() {
+fn a_picture_that_cannot_be_fetched_is_not_drawn() {
     let rig = Rig::new(); // serves nothing: a 404
     let mut s = Mount::desktop().games(games_with_art()).media(rig.hub.clone()).start();
     s.pump(400);
     assert_eq!(rig.web.asked_for(HERO), 1);
-    assert!(s.has_label("HERO 16:5"), "still a placeholder: {:?}", s.labels());
+    assert_eq!(s.pictures(), baseline_pictures(), "nothing to draw: {:?}", s.labels());
 }
 
 #[test]
@@ -75,7 +82,7 @@ fn switching_downloads_off_asks_for_nothing() {
     s.dispatch(AppAction::SetGames(games_with_art()));
     s.pump(400);
     assert!(rig.web.asked().is_empty(), "{:?}", rig.web.asked());
-    assert!(s.has_label("HERO 16:5"), "the placeholder stays: {:?}", s.labels());
+    assert_eq!(s.pictures(), baseline_pictures(), "nothing is drawn: {:?}", s.labels());
 }
 
 #[test]

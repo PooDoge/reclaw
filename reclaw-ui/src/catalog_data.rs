@@ -135,7 +135,11 @@ pub fn game_from(entry: &AppEntry, release: Option<&str>, id: u32) -> GameEntry 
         status: AppStatus::Available,
         tags: entry.tags.iter().cloned().map(Cow::Owned).collect(),
         platform: entry.system(),
-        art: Art { capsule: extension.capsule_url.or_else(|| entry.icon_url.clone()), hero: extension.hero_url },
+        art: Art {
+            capsule: extension.capsule_url.or_else(|| entry.icon_url.clone()),
+            hero: extension.hero_url,
+            repo: (!entry.is_manual()).then(|| repo_ref(entry)),
+        },
         in_library: true,
         run: RunState::Idle,
     }

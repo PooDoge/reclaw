@@ -210,11 +210,14 @@ fn global_sections(displays: &DisplayEnvironment) -> Schema {
                         toggle(KEY_REMOTE_MEDIA, "Download artwork and READMEs", true)
                             .described("Off keeps everything offline; pictures stay placeholders."),
                     ]),
-                    Group::new(vec![Row::new(
-                        "default_location",
-                        "Default install location",
-                        RowKind::Text { field: TextField::DefaultLocation, placeholder: "~/Reclaw/Apps" },
-                    )])
+                    Group::new(vec![
+                        Row::new(
+                            super::location::KEY_DEFAULT_LOCATION,
+                            "Default install location",
+                            RowKind::Text { field: TextField::DefaultLocation, placeholder: super::location::FALLBACK_LOCATION },
+                        )
+                        .described("Each app gets its own folder inside. Empty uses the folder shown."),
+                    ])
                     .headed("Install location"),
                 ],
             },

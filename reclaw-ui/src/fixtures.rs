@@ -26,7 +26,7 @@ pub fn sample_games() -> Vec<GameEntry> {
     vec![
         g(1, "Starfall 64", "N64Recomp", "v1.4.2", Source::GitHub, AppStatus::Installed, &["n64"]),
         g(2, "Skyward Quest", "Zelda-style port", "v0.9.1", Source::GitLab, AppStatus::UpdateReady, &["n64", "mods"]),
-        g(3, "Kart Ruins", "N64Recomp", "v0.3.0", Source::GitHub, AppStatus::NeedsFile, &["n64"]),
+        g(3, "Kart Ruins", "N64Recomp", "v0.3.0", Source::GitHub, AppStatus::Available, &["n64"]),
         g(4, "Dino Rush", "PS2 recomp", "", Source::GitHub, AppStatus::Available, &["ps2"]),
         g(5, "Moon Garden", "GBA recomp", "v2.0.0", Source::GitHub, AppStatus::Failed, &["gba"]),
         g(6, "Tide Racer", "N64Recomp", "v1.0.0", Source::GitHub, AppStatus::Installed, &["n64"]),

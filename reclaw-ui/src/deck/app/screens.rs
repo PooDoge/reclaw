@@ -92,7 +92,7 @@ pub(super) fn install(f: &Frame, app: u32) -> Element {
     page(f)
         .title(format!("Install {title}"))
         .body(InstallBody::new(state.install_draft().clone(), f.texts, state.focus(), f.ring, f.click.clone()))
-        .footer(install_footer(state.install_draft(), state.focus(), f.ring, f.click.clone()))
+        .footer(install_footer(state.focus(), f.ring, f.click.clone()))
         .hints(hints(f, list))
         .reveal(f.reveal)
         .build()

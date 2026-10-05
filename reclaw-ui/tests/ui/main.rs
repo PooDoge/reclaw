@@ -8,11 +8,12 @@
 //! * `credentials`: the Network and Diagnostics settings, and that a pasted token leaves the page once, as a secret
 //! * `desktop_*`, `nav_stage`: the desktop interface and the router
 //! * `recents`: the Recent menu (desktop) and the Quick access list (Deck)
-//! * `media`: artwork and READMEs against a fake internet
+//! * `media`: artwork and READMEs against a fake internet; `banner`: what the game page shows when the catalog has no banner
 //! * `real_data`: data arriving after the first frame, and (with `QUIVER_CATALOG_DIR`) the real catalog on both interfaces
 //! * `systems`: the system badge, the System filter and Sort in the Library, shelves per system in Deck mode
 //! * `window_chrome`: the custom title bar and the Screen settings
 //! * `shell_modes`: switching interface; `tokens_in_sync`: the design tokens against the Rust constants
+mod banner;
 mod common;
 mod credentials;
 mod deck_input;

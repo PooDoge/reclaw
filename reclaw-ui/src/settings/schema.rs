@@ -45,7 +45,7 @@ impl TextField {
             Self::InstallLocation | Self::GithubToken | Self::GitlabToken => None,
             Self::LaunchOptions => Some("launch_options"),
             Self::SdlOverride => Some("sdl_override"),
-            Self::DefaultLocation => Some("default_location"),
+            Self::DefaultLocation => Some(super::location::KEY_DEFAULT_LOCATION),
         }
     }
 }

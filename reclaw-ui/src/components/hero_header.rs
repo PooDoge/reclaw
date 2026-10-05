@@ -1,6 +1,6 @@
 use freya::prelude::*;
 
-use super::{ArtPlaceholder, PressHandler, RemoteArt, StatusBadge, pointer_cursor};
+use super::{BannerArt, PressHandler, StatusBadge, pointer_cursor};
 use crate::{
     launch::{LaunchVerb, launch_verb},
     metrics::*,
@@ -8,6 +8,9 @@ use crate::{
     prelude::*,
     typography::TypeStyle,
 };
+
+/// How far above its parent the title strip is painted: more than the deepest element of the banner's art.
+const STRIP_LAYER: i16 = 12;
 
 /// Game page top: banner, project eyebrow, title, and one action bar holding the single install
 /// verb, version, source and secondary actions.
@@ -124,17 +127,20 @@ impl Component for HeroHeader {
             .width(Size::fill())
             .map(self.on_open.clone(), |el, h| pointer_cursor(el).on_press(h))
             .child(rect().width(Size::fill()).height(Size::px(art_height)).overflow(Overflow::Clip).child(
-                rect().width(Size::fill()).height(Size::fill()).scale(banner_zoom).child(RemoteArt::new(
-                    self.game.art.hero.clone(),
-                    ArtPlaceholder::hero(art_height),
-                    Size::fill(),
-                    Size::px(art_height),
+                rect().width(Size::fill()).height(Size::fill()).scale(banner_zoom).child(BannerArt::new(
+                    self.game.art.clone(),
+                    self.game.title.to_string(),
+                    art_height,
+                    strip_height,
                 )),
             ))
             .child(
                 // The title sits on a solid strip so it holds 4.5:1 over any banner image.
                 // Absolute `bottom` does not anchor as CSS does in torin, so place by `top` with a fixed height.
+                // Freya paints deeper elements over shallower ones, whatever the order of siblings, and the
+                // banner's pictures sit several levels down: lift the strip above all of them.
                 rect()
+                    .layer(Layer::Relative(STRIP_LAYER))
                     .position(Position::new_absolute().top(art_height - strip_height).left(0.))
                     .width(Size::fill())
                     .height(Size::px(strip_height))

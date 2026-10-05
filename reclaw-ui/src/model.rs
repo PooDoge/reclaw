@@ -10,6 +10,8 @@ pub use reclaw_runtime::RunState;
 pub struct Art {
     pub capsule: Option<String>,
     pub hero: Option<String>,
+    /// Where more pictures can be found when `hero` is missing: the repository's README (see `components::BannerArt`).
+    pub repo: Option<reclaw_games::project::RepoRef>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -19,8 +21,6 @@ pub enum AppStatus {
     Installing,
     Failed,
     Available,
-    /// The project ships no copyrighted assets; the user must supply their own game file.
-    NeedsFile,
 }
 
 impl AppStatus {
@@ -31,7 +31,6 @@ impl AppStatus {
             Self::Installing => "Installing",
             Self::Failed => "Failed",
             Self::Available => "Not installed",
-            Self::NeedsFile => "Needs your game file",
         }
     }
 
@@ -90,7 +89,7 @@ impl GameEntry {
             status: AppStatus::Available,
             tags: project.tags.iter().cloned().map(Cow::Owned).collect(),
             platform: project.platform,
-            art: Art { capsule: project.capsule_url.clone(), hero: project.hero_url.clone() },
+            art: Art { capsule: project.capsule_url.clone(), hero: project.hero_url.clone(), repo: Some(project.repo.clone()) },
             in_library: false,
             run: RunState::Idle,
         }

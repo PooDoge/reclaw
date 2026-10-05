@@ -334,8 +334,7 @@ impl Host {
             | Effect::Uninstall(app)
             | Effect::Verify(app)
             | Effect::CheckUpdate(app)
-            | Effect::OpenFolder(app)
-            | Effect::ChooseFile(app) => {
+            | Effect::OpenFolder(app) => {
                 let title = self.title_of(*app);
                 self.not_yet(what_is_missing(effect), title.as_deref());
             }

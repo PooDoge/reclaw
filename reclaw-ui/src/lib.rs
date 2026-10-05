@@ -3,6 +3,7 @@
 pub mod about;
 pub mod activity;
 pub mod app_menu;
+pub mod banner;
 pub mod bootstrap;
 pub mod catalog;
 pub mod catalog_data;

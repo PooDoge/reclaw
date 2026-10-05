@@ -52,6 +52,7 @@ impl DeckState {
         self.stack.clear();
         self.screen = screen;
         self.section = section;
+        self.seed_texts_for_screen();
         self.enter_scope(view);
         true
     }

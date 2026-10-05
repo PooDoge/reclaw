@@ -241,7 +241,7 @@ fn an_install_keeps_the_app_and_says_plainly_that_installing_is_not_built() {
     let rig = rig(Some(catalog_server()), None);
     rig.host.run_refresh(&rig.sync);
     let id = id_of(&rig, "One");
-    rig.host.handle(&Effect::StartInstall { app: id, location: "/games".into(), game_file: None, shortcut: false, prerelease: false });
+    rig.host.handle(&Effect::StartInstall { app: id, location: "/games".into(), shortcut: false, prerelease: false });
     assert_eq!(rig.sink.last_games().map(|g| g.len()), Some(1), "the app is in the library");
     let note = rig.sink.notices().pop().expect("a note");
     assert_eq!(note.kind, NoticeKind::Note);
