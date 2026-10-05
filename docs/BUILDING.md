@@ -18,6 +18,35 @@ desktop and Deck mode, **F9** shows a simulated on-screen keyboard. Settings, fa
 `RECLAW_HOME=/tmp/reclaw-try` keeps all of Reclaw's folders (settings, library, caches) out of your real profile. `RECLAW_CATALOG_INDEX=<url>`
 points it at another catalog index, which is how a catalog of your own would be tried.
 
+## Getting the code, and keeping it current
+
+The first time, on the machine that will run it (Bazzite shown; `cargo build --release -p reclaw` replaces the last line elsewhere):
+
+```sh
+git clone https://github.com/PooDoge/reclaw && cd reclaw
+git checkout claude/game-installer-design-system-m3amsa    # the branch the work is on; main until it is merged
+scripts/bazzite-build.sh --install                         # builds in a distrobox, installs ~/.local/bin/reclaw
+```
+
+After that, either `scripts/update.sh` in a terminal, or **Settings, About, Update from source** inside Reclaw: both fetch the branch you are
+on, fast-forward it, rebuild, and say to quit and start again (`docs/specs/updates.md`). They never reset, stash or discard anything; if
+you have edited a tracked file, or your branch has commits the remote does not, they stop and say so. About shows the commit that is
+running, so you can tell whether the new build is the one you are looking at.
+
+## When something goes wrong
+
+Reclaw logs everything that fails, to `~/.local/state/reclaw/logs/reclaw.log` (or `$RECLAW_HOME/logs`). **Settings, Diagnostics** opens the
+folder, sets how much is logged, and **Save a diagnostics report** writes one file with the versions, the system, what every service
+answers from your machine and the end of the log: attach that when you report a problem. `docs/troubleshooting.md` lists the lines.
+
+## GitHub and GitLab tokens
+
+GitHub allows 60 requests an hour to a client without a token and 5,000 with one, and the token needs **no permissions**. **Settings,
+Network** has Create a token (opens GitHub with the name filled in), a box to paste it, Save token (checks it with GitHub and shows how many
+requests are left), Check token and Remove. The token is kept in `~/.config/reclaw/secrets.toml`, readable only by you, and sent only to
+`api.github.com`. `GITHUB_TOKEN` in the environment works too and is used when nothing is saved. GitLab's token is optional (`read_api`).
+Nothing in Reclaw calls GitHub's API yet except this check; the token pays off when releases are fetched (`docs/quiver-parity.md`).
+
 ## When a download fails
 
 `cargo run -p reclaw-net --example probe` contacts every host the program uses, from your machine, and says for each whether the name
@@ -30,6 +59,7 @@ limit (`docs/specs/network.md`). Run it first; it shows what the program sees, w
 |---|---|
 | `RECLAW_HOME` | Put the config, data and cache folders under one root. |
 | `RECLAW_CATALOG_INDEX` | The address of a community catalog index other than Quiver's. |
+| `RECLAW_LOG=<filter>` | The log detail, as `reclaw_net=debug,warn` (a module or crate, a level; the rest default). Replaces the Settings choice. |
 | `RECLAW_MODE=deck\|desktop` | Start in an interface (otherwise it is detected: SteamOS, gamescope and Steam variables mean Deck). |
 | `RECLAW_WINDOW_FRAME=native` | Use the window manager's border and title bar instead of Reclaw's own. The fallback if a compositor mishandles transparent, undecorated windows. |
 | `RECLAW_LAYOUT`, `RECLAW_DENSITY`, `RECLAW_THEME`, `RECLAW_MOTION`, `RECLAW_KEYBOARD`, `RECLAW_SIM_KEYBOARD` | Push any build into any form factor, theme or motion setting without a device. See `reclaw-ui/src/shell/overrides.rs`. |
@@ -75,21 +105,23 @@ Steam (`SteamGameId` is detected and the Guide button is unbound).
 
 ### A first run, in order
 
-Start with `RECLAW_HOME=/tmp/reclaw-try RECLAW_LIVE_SAMPLE=1 reclaw-deck` (an empty profile each time, real artwork on two games).
+Start with `RECLAW_HOME=/tmp/reclaw-try reclaw` (an empty profile each time; the real catalog is fetched).
 
 | Look at | What right looks like | Verified elsewhere? |
 |---|---|---|
 | The window | A title bar with minimize, maximize and close; drag it to move; double-press it to maximize; resize from every edge and corner; rounded corners with nothing black behind them | X11 only |
-| Library | A sidebar with an *Updates* section (three rows with icons), system badges (N64, PS2, GBA), the *Recent* and *Deck mode* buttons, downloads below the hero | X11 |
-| A game page | Select Starfall 64, press *Details*: a real hero picture and screenshot, then About, requirements, and further down the real README (collapsed; *Show the whole README*) | X11, over the real network |
+| Catalog | After a second or two the bottom strip reads "232 apps" and "Catalog updated just now"; system chips (N64, PS2 ...) filter; artwork fills in | X11, over the real network |
+| Library | Empty, with *Browse the catalog*. In the Catalog, open an app's menu, *Add to library*: it appears in the Library and survives a restart | X11 |
+| Settings, Network | GitHub's status reads "No token (60 requests an hour)" (or "From GITHUB_TOKEN"). *Check token* shows a notice with the allowance left. Pasting a token and *Save token* checks it and keeps it only if GitHub accepts it | headless tests; the check against the real GitHub through a proxy |
+| Settings, Diagnostics | *Open the log folder* shows `reclaw.log`; *Save a diagnostics report* writes `diagnostics-<time>.txt` and a notice names it | headless tests; the log read from a real run |
+| Settings, About | *Build* shows the commit that is running; *Update from source* runs `scripts/update.sh` and ends with a notice | the script against real git repositories; **the button on a desktop: nothing yet** |
+| Deck mode (**F10**) | The window fills the screen with no title bar; **F10** again gives the window back | X11 |
+| The toast | When a notice appears (try *Check token*), bottom right: *Hold for details* (X) and *Hold to dismiss all* (Y), with a ring that fills while the key is down. Hold `x` for 0.9 s for the details; hold `y` for 1.2 s to dismiss | X11, keyboard only |
 | Mouse back/forward buttons, Alt+Left/Right | Move through pages like a browser; *Recent* lists the last pages | headless tests |
-| Scripted update | Select Skyward Quest, press *Update*. The Updates row and the progress follow; when it finishes a notice is made | X11 |
-| Deck mode (**F10**) | The window fills the screen with no title bar; cards show icon chips and progress bars; **F10** again gives the window back | X11 |
-| The toast | After the update finishes, bottom right: *Hold for details* (X) and *Hold to dismiss all* (Y), with a ring that fills while the key is down. Hold `x` for 0.9 s for the details; hold `y` for 1.2 s to dismiss | X11, keyboard only |
-| A gamepad | The same as the keyboard, with the controller's own glyphs on the hints; the toast's X and Y are the pad's | **nothing yet** |
+| A gamepad | The same as the keyboard, with the controller's own glyphs on the hints | **nothing yet** |
 | Scale and monitors | Settings > Screen: UI scale; Deck monitor with two or more screens. At 125% or 150% fractional scaling text stays sharp and pointer targets line up | **nothing yet** |
 
-If a row goes wrong, the terminal output and which variable above got it working are the most useful report.
+If a row goes wrong, **Settings, Diagnostics, Save a diagnostics report** and the file it names are the most useful report.
 
 ### Not verified on Bazzite
 
@@ -100,7 +132,8 @@ Nobody has run Reclaw on Bazzite yet. What is known and what is not:
 | Verified (Ubuntu 24.04, X11 under Xvfb with openbox, software rendering) | The build, all tests, and `scripts/x11-smoke.sh`: the custom title bar's buttons, dragging, the resize bands, fullscreen in Deck mode and back, closing, and the window's size and place restored on the next start. |
 | Verified on native Wayland (sway, headless, `scripts/wayland-smoke.sh`) | The window opens; the resize cursor appears on every edge and corner and a drag resizes, at scales 1.0, 1.5 and 2.0. |
 | Verified against the live internet (2026-10-05, the real `reclaw` binary under Xvfb) | The catalog (index, four lists, platform metadata) loaded and was saved; 232 projects drawn with their systems; 56 icons hosted on `raw.githubusercontent.com` fetched and drawn; the `probe` example classified every host. Hosts the build sandbox's proxy refuses (`thunderstore.io`, `gamebanana.com`, `cdn2.steamgriddb.com`) were reported as refused and their pictures stayed placeholders. |
-| Not verified | Downloading a real release asset (github.com was unreachable from the build sandbox); the mod sites' real responses; the Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; GNOME's compositor (Mutter: dragging and resizing, transparency and rounded corners); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
+| Verified this session (2026-10-05) | The log: the real binary under Xvfb wrote `reclaw.log` with the version and commit, the detected environment, the token check, the catalog load (232 apps, 1.5 s cold, 35 ms from the saved copy), the window system's warnings (no Vulkan driver, a 0 mm display) and, when pointed at a host the network refuses, the whole failure from the refusal to the notice shown; the sandbox's real token appeared nowhere in the log, settings or cache. Against the live GitHub API (through the sandbox's gateway, which answers for its own account): the allowance check and its fields, the token-expiry header, and that a conditional request answered `304` costs nothing. `scripts/update.sh` against real git repositories: fast-forward, up to date, ahead, diverged, local changes, no upstream, detached head, unreachable remote, build success, build failure. |
+| Not verified | The `401` GitHub gives a refused token and `X-OAuth-Scopes` on a real classic token (the sandbox's proxy substitutes its own credential, so a made-up token was "accepted"); anything GitLab does with a token; the Settings > About update button on a desktop and the real build step; the log folder on Windows and macOS; downloading a real release asset (github.com was unreachable from the build sandbox); the mod sites' real responses; the Fedora package names above (mapped from the Ubuntu ones that built); the distrobox script; GNOME's compositor (Mutter: dragging and resizing, transparency and rounded corners); more than one monitor, and choosing the monitor Deck mode fills; a high-DPI screen; real gamepad hardware and the hold-to-act timing; SteamOS / gamescope. |
 
 If one of those fails, the terminal output and whichever variable above got it working are the most useful report.
 

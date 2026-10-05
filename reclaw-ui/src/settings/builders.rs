@@ -1,6 +1,7 @@
 //! The two schemas Reclaw ships: per-app Properties and global Settings. Both interfaces show these,
 //! so a row added here appears in both.
 use reclaw_games::settings::{DisplayEnvironment, DisplayServer, Group as LaunchGroup, Monitor, SettingKey, SettingSpec};
+use reclaw_net::Provider;
 
 use super::schema::*;
 use crate::model::GameEntry;
@@ -17,6 +18,8 @@ pub const CONFIRM_OPTIONS: &[&str] = &["Bottom button (A, cross)", "Right button
 pub const CHANNEL_OPTIONS: &[&str] = &["Stable", "Pre-release"];
 /// In the order of `systems::Sort::ALL`: the saved choice is a position.
 pub const SORT_OPTIONS: &[&str] = &["Added", "Title", "System"];
+/// In the order of `reclaw_log::LogLevel::ALL`: the saved choice is a position.
+pub const LOG_LEVEL_OPTIONS: &[&str] = &["Problems only", "Normal", "Detailed"];
 
 /// Keys that need more than a stored value when they change.
 pub const KEY_INTERFACE_MODE: &str = "interface_mode";
@@ -34,6 +37,7 @@ pub const KEY_LIBRARY_SORT: &str = "library_sort";
 pub const KEY_REMOTE_MEDIA: &str = "remote_media";
 pub const KEY_DECK_FULLSCREEN: &str = "deck_fullscreen";
 pub const KEY_DECK_DISPLAY: &str = "deck_display";
+pub const KEY_LOG_LEVEL: &str = "log_level";
 
 fn toggle(key: &'static str, label: &'static str, default: bool) -> Row {
     Row::new(key, label, RowKind::Toggle { default })
@@ -214,16 +218,79 @@ fn global_sections(displays: &DisplayEnvironment) -> Schema {
                     .headed("Install location"),
                 ],
             },
+            network_section(),
+            Section {
+                id: "diagnostics",
+                title: "Diagnostics",
+                groups: vec![
+                    Group::new(vec![
+                        choice(KEY_LOG_LEVEL, "Log detail", LOG_LEVEL_OPTIONS, 1)
+                            .described("Normal records what happened. Detailed records every request: use it to chase a problem."),
+                        Row::new("open_logs", "Open the log folder", RowKind::Global { action: GlobalAction::OpenLogFolder }),
+                        Row::new(
+                            "save_diagnostics",
+                            "Save a diagnostics report",
+                            RowKind::Global { action: GlobalAction::SaveDiagnostics },
+                        )
+                        .described("Versions, settings, what each service answers, and the end of the log. Contains no tokens."),
+                    ])
+                    .noted("Reclaw logs everything that goes wrong. Attach the log or the report when you ask for help."),
+                ],
+            },
             Section {
                 id: "about",
                 title: "About",
-                groups: vec![Group::new(vec![
-                    Row::new("version", "Reclaw", RowKind::Info { value: env!("CARGO_PKG_VERSION").to_string() }),
-                    Row::new("toolkit", "Interface toolkit", RowKind::Info { value: "Freya 0.5".to_string() }),
-                ])],
+                groups: vec![
+                    Group::new(vec![
+                        Row::new("version", "Reclaw", RowKind::Info { value: env!("CARGO_PKG_VERSION").to_string() }),
+                        Row::new("build", "Build", RowKind::Info { value: crate::about::build().summary() }),
+                        Row::new("toolkit", "Interface toolkit", RowKind::Info { value: "Freya 0.5".to_string() }),
+                    ]),
+                    Group::new(vec![
+                        Row::new("update_sources", "Update from source", RowKind::Global { action: GlobalAction::UpdateSources })
+                            .described("Fetches the newest commits, rebuilds, and tells you to restart."),
+                    ])
+                    .headed("Updates")
+                    .noted("For a copy built from a git checkout. In a terminal: scripts/update.sh"),
+                ],
             },
         ],
     }
+}
+
+/// Access tokens: one group per service, in the order a person does things (paste, save, check).
+fn network_section() -> Section {
+    Section { id: "network", title: "Network", groups: Provider::ALL.into_iter().map(credential_group).collect() }
+}
+
+fn credential_group(provider: Provider) -> Group {
+    use CredentialPart::*;
+    // A group note is one line in Deck mode, about a hundred characters; the rest of the advice goes on the row it is about.
+    let (heading, note, create, advice) = match provider {
+        Provider::GitHub => (
+            "GitHub",
+            "A token raises GitHub's limit from 60 to 5,000 requests an hour. It needs no permissions.",
+            "Create a token on GitHub",
+            "Leave every permission box unticked.",
+        ),
+        Provider::GitLab => (
+            "GitLab",
+            "Optional. A token raises GitLab's limits and opens private projects.",
+            "Create a token on GitLab",
+            "Give it the read_api permission.",
+        ),
+    };
+    let row = |part: CredentialPart, label: &'static str| Row::new(part.key(provider), label, RowKind::Credential { provider, part });
+    Group::new(vec![
+        row(Status, "Status"),
+        row(Token, "Token").described("Paste it here, then choose Save token. It is not shown again."),
+        row(Save, "Save token"),
+        row(Check, "Check token"),
+        row(Create, create).described(advice),
+        row(Remove, "Remove the saved token"),
+    ])
+    .headed(heading)
+    .noted(note)
 }
 
 const MONITOR_LABELS: [(&str, &str); 4] =

@@ -1,0 +1,14 @@
+[package]
+name = "reclaw-log"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+# `tracing` is already in the tree (the UI toolkit emits through it), so the toolkit's own warnings land in the same file.
+tracing = "0.1"
+# No `ansi` (no colour codes in a file), no `env-filter` (a regex engine to read one directive string is not worth it).
+tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "registry", "tracing-log", "smallvec"] }
+
+[dev-dependencies]
+tempfile = "3"

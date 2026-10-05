@@ -22,12 +22,14 @@ dm = d["dataModel"]
 dm["DeckState"] = ("{section, screen: Home|Game(id)|Install(id)|Settings(Global|App(id)), stack, overlay: None|MainMenu|QuickAccess|Menu(Options(id)|Choice(target,key))|Confirm(Uninstall(id)), "
                    "focus, memory per scope, in_front, last_input, owner, window:(w,h), menu: Option<MenuState<MenuAction>>, settings_section, drilled, values: SettingsValues, install: InstallDraft, text entry: Option<TextField>}")
 dm["Effect"] = ("Launch(id) | Resume(id) | Stop(id) | StartInstall{app,location,game_file,shortcut,prerelease} | Update(id) | ChooseFile(id) | OpenFolder(id) | Verify(id) | CheckUpdate(id) | Uninstall(id) | "
-                "ToggleFavorite(id) | AddToLibrary(id) | RemoveFromLibrary(id) | RefreshCatalog | CancelDownload(id) | Search | SwitchToDesktop | SetMode(Auto|Desktop|Deck) | Setting(change) | BeginTextEntry(field) | "
+                "ToggleFavorite(id) | AddToLibrary(id) | RemoveFromLibrary(id) | RefreshCatalog | SaveToken{provider,token: Secret} | SubmitToken(provider) | RemoveToken(provider) | CheckToken(provider) | OpenLogFolder | SaveDiagnostics | UpdateSources | CancelDownload(id) | Search | SwitchToDesktop | SetMode(Auto|Desktop|Deck) | Setting(change) | BeginTextEntry(field) | "
                 "EndTextEntry(field) | TextCommitted{app,field,value} | BringLauncherToFront | SendLauncherToBack | InputOwner(Launcher|App). Defined in reclaw_ui::effect, shared by both interfaces. "
-                "SubmitInstall is internal: DeckApp turns it into StartInstall because it holds the form's text.")
+                "SubmitInstall is internal: DeckApp turns it into StartInstall because it holds the form's text; SubmitToken likewise becomes SaveToken, whose token is a Secret that prints as nothing.")
 dm["HostState"] = "{games: State<Vec<GameEntry>>, downloads: State<Vec<Download>>, controller: State<Option<ControllerInfo>>, keyboard_inset: State<f32>, chosen_file: State<Option<String>>}. The host creates and writes it; both interfaces read it."
+dm["CredentialsStatus"] = ("{github, gitlab: TokenStatus{source: None|Saved|Environment(name), check: Unchecked|Checking|Accepted{had_token,quota,expires,extra_permissions}|Rejected|Failed}}. "
+                           "reclaw_ui::credentials; in AppState, set by the host through AppAction::Credentials. It never holds a token.")
 dm["MenuAction"] = "ToggleFavorite | AddToLibrary | RemoveFromLibrary | OpenFolder | Verify | CheckUpdate | Uninstall | Properties | Cancel | Choice(i). reclaw_ui::app_menu; options_menu(game, with_properties) builds the menu."
-dm["Settings"] = "Schema{title, sections:[Section{id,title,groups:[Group{heading?,note?,rows:[Row{key,label,description?,kind: Toggle|Choice|Text|Action|Info}]}]}]}; values keyed (target: Global|App(id), key). reclaw_ui::deck::settings."
+dm["Settings"] = "Schema{title, sections:[Section{id,title,groups:[Group{heading?,note?,rows:[Row{key,label,description?,kind: Toggle|Choice|Text|Action|Info|Launch|Credential{provider,part: Status|Token|Save|Check|Create|Remove}|Global{OpenLogFolder|SaveDiagnostics|UpdateSources}}]}]}]}; values keyed (target: Global|App(id), key). reclaw_ui::deck::settings."
 
 # ---- surfaces
 presentation = [

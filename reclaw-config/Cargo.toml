@@ -7,6 +7,8 @@ publish = false
 [dependencies]
 reclaw-games = { path = "../reclaw-games" }
 serde = { version = "1", features = ["derive"] }
+reclaw-log = { path = "../reclaw-log" }
+tracing = "0.1"
 toml = "1"
 thiserror = "2"
 directories = "6"

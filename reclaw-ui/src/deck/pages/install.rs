@@ -42,7 +42,7 @@ impl Component for InstallBody {
             .child(
                 SettingRow::new(
                     "Install location",
-                    RowControl::Text { input, placeholder: "Choose a folder".into(), a11y },
+                    RowControl::Text { input, placeholder: "Choose a folder".into(), a11y, secret: false },
                     Density::Controller,
                 )
                 .focused(focused(ids::INSTALL_LOCATION))

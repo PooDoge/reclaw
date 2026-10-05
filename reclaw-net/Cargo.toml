@@ -10,6 +10,8 @@ testing = []
 
 [dependencies]
 thiserror = "2"
+tracing = "0.1"
+reclaw-log = { path = "../reclaw-log" }
 url = "2"
 sha2 = "0.10"
 httpdate = "1"

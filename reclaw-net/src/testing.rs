@@ -175,6 +175,10 @@ impl Drop for TestServer {
 
 /// A configuration for talking to a server on this machine: no proxy, quick retries, the test address policy.
 pub fn local_config() -> NetConfig {
+    // Every test that talks to a local server builds its configuration here, so this is where a failing test gets to show what the
+    // network layer logged (the output is captured and printed only for a test that fails). A test that installs the real logger
+    // calls `init` before this, and then this does nothing.
+    reclaw_log::init_for_tests();
     NetConfig {
         address_policy: AddressPolicy::AnyHttpForTests,
         proxy: ProxyMode::None,

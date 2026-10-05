@@ -5,6 +5,8 @@ edition = "2024"
 publish = false
 description = "The Reclaw launcher: the catalog, the library, and both interfaces."
 
+build = "build.rs"
+
 [lib]
 name = "reclaw_app"
 path = "src/lib.rs"
@@ -20,10 +22,12 @@ gamepad = ["reclaw-ui/gamepad"]
 [dependencies]
 freya = { version = "=0.5.0-rc.8", features = ["router", "radio", "query", "borderless", "titlebar", "markdown", "engine"] }
 thiserror = "2"
+tracing = "0.1"
 futures-util = { version = "0.3", default-features = false }
 reclaw-catalog = { path = "../reclaw-catalog" }
 reclaw-config = { path = "../reclaw-config" }
 reclaw-input = { path = "../reclaw-input" }
+reclaw-log = { path = "../reclaw-log" }
 reclaw-media = { path = "../reclaw-media" }
 reclaw-net = { path = "../reclaw-net" }
 reclaw-sync = { path = "../reclaw-sync" }

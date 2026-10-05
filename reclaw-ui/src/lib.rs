@@ -1,11 +1,13 @@
 //! Reclaw UI: Freya components generated from the design system contract (reclaw.freya.json).
 
+pub mod about;
 pub mod activity;
 pub mod app_menu;
 pub mod bootstrap;
 pub mod catalog;
 pub mod catalog_data;
 pub mod components;
+pub mod credentials;
 pub mod deck;
 pub mod desktop;
 pub mod effect;

@@ -235,3 +235,94 @@ fn freya_stays_on_the_release_the_docs_were_checked_against() {
         }
     }
 }
+
+// ---- logging and secrets ----------------------------------------------------------------------------
+
+/// Source files the rule about printing applies to: a crate's `src/`, minus the logger itself, and only the code above its tests.
+fn production_source() -> Vec<(PathBuf, String)> {
+    all_rust_files()
+        .into_iter()
+        .filter(|path| {
+            let shown = show(path);
+            // The program's own crates; `tools/` holds stand-alone command-line helpers whose output is their job.
+            shown.starts_with("reclaw-")
+                && shown.contains("/src/")
+                && !shown.starts_with("reclaw-log/")
+                && !shown.contains("/tests/")
+                && !shown.contains("/examples/")
+                && !shown.ends_with("/tests.rs")
+        })
+        .filter_map(|path| {
+            let text = fs::read_to_string(&path).ok()?;
+            let production = text.split("#[cfg(test)]").next().unwrap_or_default().to_string();
+            Some((path, production))
+        })
+        .collect()
+}
+
+#[test]
+fn nothing_prints_to_the_terminal_instead_of_the_log() {
+    // A launcher is started from a menu entry, where standard error goes nowhere: what is only printed cannot be found afterwards.
+    // `tracing::warn!` and friends reach the log file and, in a terminal, the terminal (AGENTS.md, rule 12).
+    let offenders: Vec<String> = production_source()
+        .into_iter()
+        .flat_map(|(path, text)| {
+            let shown = show(&path);
+            text.lines()
+                .enumerate()
+                .filter(|(_, l)| {
+                    let code = l.trim_start();
+                    !code.starts_with("//") && ["println!", "eprintln!", "print!(", "eprint!(", "dbg!("].iter().any(|p| code.contains(p))
+                })
+                .map(|(n, l)| format!("{shown}:{}: {}", n + 1, l.trim()))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    assert!(offenders.is_empty(), "say it with tracing (warn!, error!, info!) instead:\n{}", offenders.join("\n"));
+}
+
+#[test]
+fn every_crate_of_the_workspace_is_one_of_the_loggers_own_targets() {
+    // The log shows our crates at `info` and everyone else's at `warn`. A crate missing from the list would be logged like a
+    // dependency, and its `info` lines would silently not be written.
+    let manifest = fs::read_to_string(workspace_root().join("Cargo.toml")).expect("the workspace manifest");
+    let members: Vec<&str> = manifest
+        .lines()
+        .find(|l| l.trim_start().starts_with("members"))
+        .map(|l| l.split('"').skip(1).step_by(2).collect())
+        .expect("a members list");
+    assert!(members.len() >= 10, "found only {members:?}");
+    let ours = reclaw_log::OUR_TARGETS;
+    for member in members {
+        let target = member.replace('-', "_");
+        assert!(
+            ours.contains(&target.as_str()),
+            "reclaw-log/src/level.rs OUR_TARGETS lacks `{target}` ({member}'s messages would be logged as a dependency's)"
+        );
+    }
+    assert!(ours.contains(&"reclaw"), "the launcher binary's own target is the bare name `reclaw`");
+}
+
+#[test]
+fn a_secret_is_never_formatted_into_a_log_line_or_a_message_by_name() {
+    // The redaction (reclaw-log) is the second defence; this is the first: code that holds a token does not put it in a message.
+    // `.expose()` is how a token's text is reached, so it appears only where the token is used or stored.
+    let allowed = [
+        "reclaw-net/src/credentials.rs",
+        "reclaw-config/src/secrets.rs",
+        "reclaw-app/src/host/credentials.rs",
+        "reclaw-log/src/secret.rs",
+        "reclaw-net/src/config.rs",
+        "reclaw-ui/src/desktop/pages/settings/form.rs",
+    ];
+    let offenders: Vec<String> = production_source()
+        .into_iter()
+        .filter(|(path, text)| text.contains(".expose()") && !allowed.iter().any(|a| show(path) == *a))
+        .map(|(path, _)| show(&path))
+        .collect();
+    assert!(
+        offenders.is_empty(),
+        "these read a token's text; add them to the list only if they must, and never to a message:\n{}",
+        offenders.join("\n")
+    );
+}

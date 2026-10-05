@@ -22,6 +22,13 @@ impl AppState {
             AppAction::SetProjects(projects) => set_if_changed(&mut self.projects, projects, AppChannel::Projects),
             AppAction::SetMods(mods) => set_if_changed(&mut self.mods, mods, AppChannel::Mods),
             AppAction::Catalog(status) => set_if_changed(&mut self.catalog, status, AppChannel::Catalog),
+            AppAction::Credentials { provider, status } => {
+                if self.credentials.of(provider) == &status {
+                    return Vec::new();
+                }
+                self.credentials.set(provider, status);
+                vec![AppChannel::Credentials]
+            }
             AppAction::Notify(notice) => {
                 self.notices.push(notice);
                 vec![AppChannel::Notices]

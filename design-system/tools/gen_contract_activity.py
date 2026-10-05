@@ -22,7 +22,7 @@ def comp(name, freya, rust, **kw):
 # ---- data model
 dm = d["dataModel"]
 dm["Effect"] = ("Launch(id) | Resume(id) | Stop(id) | StartInstall{app,location,game_file,shortcut,prerelease} | Update(id) | ChooseFile(id) | OpenFolder(id) | Verify(id) | "
-                "CheckUpdate(id) | Uninstall(id) | ToggleFavorite(id) | AddToLibrary(id) | RemoveFromLibrary(id) | RefreshCatalog | CancelActivity(id) | DismissActivity(id) | DismissNotice(id) | "
+                "CheckUpdate(id) | Uninstall(id) | ToggleFavorite(id) | AddToLibrary(id) | RemoveFromLibrary(id) | RefreshCatalog | SaveToken{provider,token: Secret} | SubmitToken(provider) | RemoveToken(provider) | CheckToken(provider) | OpenLogFolder | SaveDiagnostics | UpdateSources | CancelActivity(id) | DismissActivity(id) | DismissNotice(id) | "
                 "DismissAllNotices | Search | InstallMod{provider,id} | RemoveMod{provider,id} | OpenUrl(url) | SwitchToDesktop | Navigate(Route) | Back | LaunchSetting{app,key,value} | "
                 "SetMode(Auto|Desktop|Deck) | Setting(change) | BeginTextEntry(field) | EndTextEntry(field) | TextCommitted{app,field,value} | BringLauncherToFront | SendLauncherToBack | "
                 "InputOwner(Launcher|App) | NoticeHolds(bool) | Window(WindowCommand). Defined in reclaw_ui::effect, shared by both interfaces. The Shell handles Window and mode effects itself; "

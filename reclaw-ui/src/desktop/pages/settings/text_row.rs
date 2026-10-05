@@ -48,8 +48,11 @@ impl Component for TextRow {
                 on_change.call(text);
             }
         });
-        let mut row =
-            SettingRow::new(self.label, RowControl::Text { input, placeholder: self.placeholder.to_string(), a11y }, self.density);
+        let mut row = SettingRow::new(
+            self.label,
+            RowControl::Text { input, placeholder: self.placeholder.to_string(), a11y, secret: false },
+            self.density,
+        );
         if let Some(d) = self.description {
             row = row.description(d);
         }

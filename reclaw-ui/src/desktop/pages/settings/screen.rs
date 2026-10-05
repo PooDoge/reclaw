@@ -1,6 +1,6 @@
 use freya::prelude::*;
 
-use super::form::Form;
+use super::{form::Form, tokens::TokenBoxes};
 use crate::{
     catalog::GameView,
     desktop::{
@@ -12,7 +12,7 @@ use crate::{
     prelude::*,
     settings::{LaunchContext, Schema, SettingsTarget, app_properties, global_settings},
     shell::use_shell,
-    store::{use_display, use_games, use_launch, use_mods, use_projects, use_settings},
+    store::{use_credentials, use_display, use_games, use_launch, use_mods, use_projects, use_settings},
     typography::TypeStyle,
 };
 
@@ -47,6 +47,8 @@ impl Component for SettingsScreen {
         let (shell, ui, nav) = (use_shell(), use_desktop_ui(), use_nav());
         let (values, launch, display) = (use_settings(), use_launch(), use_display());
         let (games, projects, mods) = (use_games(), use_projects(), use_mods());
+        // Hooks, before the page can return early.
+        let (credentials, tokens) = (use_credentials(), TokenBoxes::use_new());
         let env = *ui.env.read();
 
         let ctx = LaunchContext { env: &display, projects: &projects, prefs: &launch };
@@ -105,6 +107,8 @@ impl Component for SettingsScreen {
             density: env.density,
             on_effect: shell.on_effect.clone(),
             dialogs: ui.dialogs,
+            credentials,
+            tokens,
         };
         // On a phone the page is the list, or one section with its title.
         let show_list = phone && self.section.is_none();

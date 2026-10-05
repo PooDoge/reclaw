@@ -2,9 +2,9 @@
 //! connection; the environment adjusts it for the situations that need it (a proxy, a company certificate, a GitHub token).
 use std::{fmt, path::PathBuf, time::Duration};
 
-use sha2::{Digest, Sha256};
+use reclaw_log::Secret;
 
-use crate::address::AddressPolicy;
+use crate::{address::AddressPolicy, credentials::Provider};
 
 /// Where this program says it comes from. GitHub requires a user agent and asks for one that identifies the client.
 pub const PROJECT_URL: &str = "https://github.com/poodoge/reclaw";
@@ -37,8 +37,9 @@ pub struct NetConfig {
     pub attempts: u32,
     /// Where cached answers are kept. Without it nothing is cached.
     pub cache_dir: Option<PathBuf>,
-    /// `(host, token)`: sent as a bearer token to exactly that host and never anywhere a redirect leads.
-    pub tokens: Vec<(String, String)>,
+    /// `(host, token)` to start with: sent to exactly that host and never anywhere a redirect leads. Tokens can be changed while
+    /// running (`Net::set_token`).
+    pub tokens: Vec<(String, Secret)>,
     /// Threads of the runtime that carries the requests.
     pub worker_threads: usize,
 }
@@ -98,31 +99,12 @@ impl NetConfig {
         if let Some(proxy) = var(&["RECLAW_PROXY"]) {
             config.proxy = if proxy.eq_ignore_ascii_case("none") { ProxyMode::None } else { ProxyMode::Url(proxy) };
         }
-        for (names, host) in
-            [(&["RECLAW_GITHUB_TOKEN", "GITHUB_TOKEN"][..], "api.github.com"), (&["RECLAW_GITLAB_TOKEN", "GITLAB_TOKEN"][..], "gitlab.com")]
-        {
-            if let Some(token) = var(names) {
-                config.tokens.push((host.to_string(), token));
+        for provider in Provider::ALL {
+            if let Some(token) = var(&provider.env_names()) {
+                config.tokens.push((provider.host().to_string(), Secret::new(token)));
             }
         }
         (config, problems)
-    }
-
-    /// The token for exactly this host, if there is one.
-    pub fn token_for(&self, host: &str) -> Option<&str> {
-        self.tokens.iter().find(|(h, _)| h.eq_ignore_ascii_case(host)).map(|(_, t)| t.as_str())
-    }
-
-    /// What separates one identity's cached answers from another's: a private repository's answer must not be served to a
-    /// request without the token. `anon`, or a short fingerprint of the token (never the token).
-    pub fn credential_tag(&self, host: &str) -> String {
-        match self.token_for(host) {
-            None => "anon".to_string(),
-            Some(token) => {
-                let digest = Sha256::digest(token.as_bytes());
-                digest.iter().take(6).map(|b| format!("{b:02x}")).collect()
-            }
-        }
     }
 }
 

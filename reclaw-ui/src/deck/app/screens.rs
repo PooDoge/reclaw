@@ -119,6 +119,7 @@ pub(super) fn settings(f: &Frame, target: SettingsTarget) -> Element {
         target,
         values: state.values().clone(),
         launch_text: shown.launch_text.clone(),
+        credentials: shown.credentials.clone(),
         section: state.settings_section(),
         two_pane: two,
         drilled: state.drilled(),

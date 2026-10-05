@@ -50,7 +50,11 @@ impl HttpFetcher {
 impl Fetch for HttpFetcher {
     fn get(&self, url: &MediaUrl, max_bytes: u64) -> Result<Fetched, FetchError> {
         let request = Request::get(url.as_str()).max_bytes(max_bytes).timeout(self.timeout);
-        let fetched = self.net.fetch(&request).map_err(classify)?;
+        // The network layer has already logged what went wrong; here it is only the picture that did not come.
+        let fetched = self.net.fetch(&request).map_err(|error| {
+            tracing::debug!(url = %url.as_str().split('?').next().unwrap_or_default(), %error, "artwork or document not fetched");
+            classify(error)
+        })?;
         Ok(Fetched { bytes: fetched.body, content_type: fetched.content_type })
     }
 }

@@ -13,6 +13,8 @@ pub struct AppDirs {
     pub config: PathBuf,
     pub data: PathBuf,
     pub cache: PathBuf,
+    /// The log files (`reclaw.log`): state, not configuration, and not something to throw away with the cache.
+    pub logs: PathBuf,
 }
 
 impl AppDirs {
@@ -21,15 +23,28 @@ impl AppDirs {
     pub fn locate(get: impl Fn(&str) -> Option<String>) -> Option<Self> {
         if let Some(home) = get("RECLAW_HOME").filter(|h| !h.is_empty()) {
             let root = PathBuf::from(home);
-            return Some(Self { config: root.join("config"), data: root.join("data"), cache: root.join("cache") });
+            return Some(Self { config: root.join("config"), data: root.join("data"), cache: root.join("cache"), logs: root.join("logs") });
         }
         let dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)?;
-        Some(Self { config: dirs.config_dir().to_path_buf(), data: dirs.data_dir().to_path_buf(), cache: dirs.cache_dir().to_path_buf() })
+        // `state_dir` is XDG's place for logs (`~/.local/state`); the other platforms have no such folder, so the logs sit in
+        // the local data folder, where Windows and macOS applications keep them.
+        let logs = dirs.state_dir().map_or_else(|| dirs.data_local_dir().join("logs"), |state| state.join("logs"));
+        Some(Self {
+            config: dirs.config_dir().to_path_buf(),
+            data: dirs.data_dir().to_path_buf(),
+            cache: dirs.cache_dir().to_path_buf(),
+            logs,
+        })
     }
 
     /// The settings file.
     pub fn prefs_file(&self) -> PathBuf {
         self.config.join("settings.toml")
+    }
+
+    /// Access tokens (GitHub, GitLab), apart from the settings: a settings file gets pasted into bug reports, this one must not.
+    pub fn secrets_file(&self) -> PathBuf {
+        self.config.join("secrets.toml")
     }
 
     /// The user's library of apps (`apps.json`, Quiver's format; see `reclaw-sync`).
@@ -58,7 +73,9 @@ mod tests {
         assert_eq!(dirs.prefs_file(), PathBuf::from("/tmp/portable/config/settings.toml"));
         assert_eq!(dirs.media_cache(), PathBuf::from("/tmp/portable/cache/media"));
         assert_eq!(dirs.library_file(), PathBuf::from("/tmp/portable/data/apps.json"));
+        assert_eq!(dirs.secrets_file(), PathBuf::from("/tmp/portable/config/secrets.toml"));
         assert_eq!(dirs.http_cache(), PathBuf::from("/tmp/portable/cache/http"));
+        assert_eq!(dirs.logs, PathBuf::from("/tmp/portable/logs"));
     }
 
     #[test]

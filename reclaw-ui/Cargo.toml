@@ -25,6 +25,8 @@ reclaw-media = { path = "../reclaw-media" }
 reclaw-catalog = { path = "../reclaw-catalog" }
 reclaw-sync = { path = "../reclaw-sync" }
 reclaw-net = { path = "../reclaw-net" }
+reclaw-log = { path = "../reclaw-log" }
+tracing = "0.1"
 
 [dev-dependencies]
 reclaw-ui = { path = ".", features = ["fixtures"] }

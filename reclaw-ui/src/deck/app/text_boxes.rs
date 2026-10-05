@@ -17,9 +17,12 @@ pub struct TextBoxes {
     launch_options: State<String>,
     sdl_override: State<String>,
     default_location: State<String>,
+    /// A token being pasted. These two are emptied the moment the token is handed over: a token is not kept in the page's state.
+    github_token: State<String>,
+    gitlab_token: State<String>,
     /// What a box held before `begin` cleared it.
-    before: [State<Option<String>>; 4],
-    ids: [AccessibilityId; 4],
+    before: [State<Option<String>>; 6],
+    ids: [AccessibilityId; 6],
 }
 
 fn slot(field: TextField) -> usize {
@@ -28,6 +31,8 @@ fn slot(field: TextField) -> usize {
         TextField::LaunchOptions => 1,
         TextField::SdlOverride => 2,
         TextField::DefaultLocation => 3,
+        TextField::GithubToken => 4,
+        TextField::GitlabToken => 5,
     }
 }
 
@@ -39,8 +44,10 @@ impl TextBoxes {
             launch_options: use_state(String::new),
             sdl_override: use_state(String::new),
             default_location: use_state(|| "~/Reclaw/Apps".to_string()),
-            before: [use_state(|| None), use_state(|| None), use_state(|| None), use_state(|| None)],
-            ids: [use_a11y(), use_a11y(), use_a11y(), use_a11y()],
+            github_token: use_state(String::new),
+            gitlab_token: use_state(String::new),
+            before: std::array::from_fn(|_| use_state(|| None)),
+            ids: std::array::from_fn(|_| use_a11y()),
         }
     }
 
@@ -50,12 +57,20 @@ impl TextBoxes {
             TextField::LaunchOptions => self.launch_options,
             TextField::SdlOverride => self.sdl_override,
             TextField::DefaultLocation => self.default_location,
+            TextField::GithubToken => self.github_token,
+            TextField::GitlabToken => self.gitlab_token,
         };
         (state, self.ids[slot(field)])
     }
 
     pub fn value(&self, field: TextField) -> String {
         self.get(field).0.read().clone()
+    }
+
+    /// Empty a box (a token that has been handed over).
+    pub fn clear(&self, field: TextField) {
+        let mut text = self.get(field).0;
+        text.set(String::new());
     }
 
     /// Start typing into the box: focus it, clearing it first when `replace` is set (see the type docs).

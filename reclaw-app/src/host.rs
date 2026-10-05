@@ -1,7 +1,14 @@
 //! The part of the program that does what the screens ask: loading the catalog (in the background, so the window never waits for the
-//! network), keeping the library file, opening links, and saying plainly when something is not built yet. It owns no windows; it
-//! answers [`Effect`]s and sends [`AppAction`]s back through a [`Sink`], so all of it is tested without a window.
+//! network), keeping the library file and the access tokens, opening links and folders, writing the diagnostics report, and saying
+//! plainly when something is not built yet. It owns no windows; it answers [`Effect`]s and sends [`AppAction`]s back through a
+//! [`Sink`], so all of it is tested without a window.
+//!
+//! * this file: [`Host`], [`HostConfig`], the catalog refresh and the library
+//! * `credentials`: saving, checking and removing access tokens, and telling the screens what each service allows
+//! * `report`: the diagnostics report
+//! * `update`: updating a development copy from the git checkout it was built from
 use std::{
+    path::PathBuf,
     sync::{
         Arc, Mutex, MutexGuard,
         atomic::{AtomicBool, Ordering},
@@ -10,16 +17,26 @@ use std::{
 };
 
 use reclaw_catalog::AppEntry;
+use reclaw_log::{LogLevel, Logging};
 use reclaw_net::Net;
 use reclaw_sync::{CatalogApp, CatalogSnapshot, CatalogSync, LibraryError, LibraryStore};
 use reclaw_ui::{
     catalog_data::{self, IdMap, Loaded, key_of},
+    credentials::CredentialsStatus,
     effect::Effect,
     notices::Notice,
+    settings::KEY_LOG_LEVEL,
     store::{AppAction, CatalogPhase, CatalogStatus, StoreFeed},
 };
 
 use crate::browse;
+
+mod credentials;
+mod report;
+mod update;
+
+pub use credentials::{Checker, EnvToken};
+pub use update::UpdateSource;
 
 /// Where actions for the screens go. The real one is the store's feed; tests collect them.
 pub trait Sink: Send + Sync {
@@ -33,10 +50,47 @@ impl Sink for StoreFeed {
     }
 }
 
+/// What the host is given to work with. Everything but the library file is optional: with no network layer the program runs from
+/// what is on disk, with no folder for tokens a token lasts for the session, with no log the report simply has no log in it.
+pub struct HostConfig {
+    pub net: Option<Net>,
+    pub library_file: PathBuf,
+    /// Another catalog index than the community one.
+    pub index_url: Option<String>,
+    /// The tokens file. `None`: no folder was found, so a pasted token is used for this run only.
+    pub secrets_file: Option<PathBuf>,
+    pub logs_dir: Option<PathBuf>,
+    pub logging: Option<Arc<Logging>>,
+    /// Tokens the environment supplies (`GITHUB_TOKEN`...): used when nothing is saved.
+    pub env_tokens: Vec<EnvToken>,
+    /// How a service is asked about its token. `None`: over the network. A test supplies its own.
+    pub checker: Option<Checker>,
+    /// The git checkout this copy was built from, if it is still there: what Update from source works on.
+    pub update: Option<UpdateSource>,
+}
+
+impl HostConfig {
+    pub fn new(net: Option<Net>, library_file: PathBuf) -> Self {
+        Self {
+            net,
+            library_file,
+            index_url: None,
+            secrets_file: None,
+            logs_dir: None,
+            logging: None,
+            env_tokens: Vec::new(),
+            checker: None,
+            update: None,
+        }
+    }
+}
+
 /// Everything the screens start with.
 pub struct Initial {
     pub loaded: Loaded,
     pub status: CatalogStatus,
+    /// Which services have a token and where it came from (not yet asked of the services; see `Host::check_tokens`).
+    pub credentials: CredentialsStatus,
     /// Things to tell the user once the window is up (the library could not be read, ...).
     pub notices: Vec<Notice>,
 }
@@ -50,11 +104,18 @@ struct State {
 }
 
 struct Inner {
+    net: Option<Net>,
     sync: Option<CatalogSync>,
     store: LibraryStore,
     sink: Arc<dyn Sink>,
     state: Mutex<State>,
     refreshing: AtomicBool,
+    tokens: credentials::TokenBook,
+    checker: Option<Checker>,
+    update: Option<UpdateSource>,
+    updating: AtomicBool,
+    logs_dir: Option<PathBuf>,
+    logging: Option<Arc<Logging>>,
 }
 
 #[derive(Clone)]
@@ -79,9 +140,10 @@ fn status_from(snapshot: &CatalogSnapshot) -> CatalogStatus {
 }
 
 impl Host {
-    /// Read the library, and whatever catalog was saved by an earlier run (no network), so the first frame already has data.
-    /// `net` is `None` when the network layer could not start: the program then runs from what is on disk.
-    pub fn open(net: Option<Net>, library_file: std::path::PathBuf, index_url: Option<String>, sink: Arc<dyn Sink>) -> (Self, Initial) {
+    /// Read the library, the saved tokens and whatever catalog was saved by an earlier run (no network), so the first frame already
+    /// has data. `config.net` is `None` when the network layer could not start: the program then runs from what is on disk.
+    pub fn open(config: HostConfig, sink: Arc<dyn Sink>) -> (Self, Initial) {
+        let HostConfig { net, library_file, index_url, secrets_file, logs_dir, logging, env_tokens, checker, update } = config;
         let store = LibraryStore::new(library_file);
         let mut notices = Vec::new();
         let (library, library_writable) = match store.load() {
@@ -95,7 +157,10 @@ impl Host {
                 (Vec::new(), false)
             }
         };
-        let sync = net.map(|net| {
+        let (tokens, token_notices) = credentials::TokenBook::open(secrets_file, env_tokens, net.as_ref());
+        notices.extend(token_notices);
+        let credentials = tokens.status();
+        let sync = net.clone().map(|net| {
             let sync = CatalogSync::new(net);
             match index_url {
                 Some(url) => sync.with_index_url(url),
@@ -110,14 +175,34 @@ impl Host {
         let loaded = catalog_data::load(&catalog, &library);
         let host = Self {
             inner: Arc::new(Inner {
+                net,
                 sync,
                 store,
                 sink,
                 state: Mutex::new(State { library, catalog, library_writable, status: status.clone() }),
                 refreshing: AtomicBool::new(false),
+                tokens,
+                checker,
+                update,
+                updating: AtomicBool::new(false),
+                logs_dir,
+                logging,
             }),
         };
-        (host, Initial { loaded, status, notices })
+        host.watch_for_refused_tokens();
+        // Read under one lock: a second `state()` in the same statement would wait for the first for ever.
+        let (apps_in_library, apps_in_catalog) = {
+            let state = host.state();
+            (state.library.len(), state.catalog.len())
+        };
+        tracing::info!(
+            library = apps_in_library,
+            catalog = apps_in_catalog,
+            github = ?credentials.github.source,
+            gitlab = ?credentials.gitlab.source,
+            "host opened"
+        );
+        (host, Initial { loaded, status, credentials, notices })
     }
 
     fn state(&self) -> MutexGuard<'_, State> {
@@ -198,14 +283,43 @@ impl Host {
 
     /// Answer one effect. The ones the shell handles itself (navigation, the window, settings) are not here.
     pub fn handle(&self, effect: &Effect) {
+        // The effect's name, not its contents: some carry text (a launch option) and the log needs only what was asked.
+        let text = format!("{effect:?}");
+        tracing::debug!(effect = text.split(['(', ' ', '{']).next().unwrap_or_default(), "asked of the host");
         match effect {
             Effect::RefreshCatalog => self.refresh(),
+            Effect::SaveToken { provider, token } => self.save_token(*provider, token),
+            Effect::RemoveToken(provider) => self.remove_token(*provider),
+            Effect::CheckToken(provider) => self.spawn_check(*provider, credentials::Reason::Asked),
+            Effect::OpenLogFolder => match &self.inner.logs_dir {
+                Some(dir) => {
+                    if let Err(error) = browse::open_folder(dir) {
+                        tracing::warn!(dir = %dir.display(), %error, "the log folder could not be opened");
+                        self.tell(Notice::problem(
+                            "The log folder could not be opened",
+                            &error.to_string(),
+                            vec![format!("It is {}", dir.display())],
+                        ));
+                    }
+                }
+                None => self.tell(Notice::problem("There is no log folder", "No folder for Reclaw's files was found", vec![])),
+            },
+            Effect::SaveDiagnostics => self.save_report(),
+            Effect::UpdateSources => self.update_sources(),
+            Effect::Setting(change) if change.app.is_none() && change.key == KEY_LOG_LEVEL => {
+                if let (Some(logging), reclaw_ui::settings::SettingValue::Choice(i)) = (&self.inner.logging, change.value) {
+                    let level = LogLevel::from_index(i);
+                    tracing::info!(?level, "the log level was changed in Settings");
+                    logging.set_level(level);
+                }
+            }
             Effect::AddToLibrary(id) => {
                 self.add_to_library(*id);
             }
             Effect::RemoveFromLibrary(id) => self.remove_from_library(*id),
             Effect::OpenUrl(url) => {
                 if let Err(error) = browse::open_url(url) {
+                    tracing::warn!(%error, "a link could not be opened");
                     self.tell(Notice::problem("A link could not be opened", &error.to_string(), vec![]));
                 }
             }

@@ -11,7 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use reqwest::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_RANGE, ETAG, HeaderValue, IF_RANGE, LAST_MODIFIED, RANGE};
+use reqwest::header::{ACCEPT, ACCEPT_ENCODING, CONTENT_RANGE, ETAG, HeaderValue, IF_RANGE, LAST_MODIFIED, RANGE};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio::io::{AsyncWriteExt, BufWriter};
@@ -190,6 +190,26 @@ impl Net {
         on_progress: &mut dyn FnMut(&Progress),
     ) -> Result<Downloaded, NetError> {
         let url = self.parse(&request.url)?;
+        let (label, started) = (crate::address::describe(&url), Instant::now());
+        tracing::info!(url = %label, dest = %request.dest.display(), expected_bytes = request.expected_size, "download starting");
+        let result = self.download_loop(request, &url, cancel, on_progress).await;
+        let ms = started.elapsed().as_millis() as u64;
+        match &result {
+            Ok(done) if done.already_present => tracing::info!(url = %label, bytes = done.bytes, "already downloaded and verified"),
+            Ok(done) => tracing::info!(url = %label, bytes = done.bytes, resumed_from = done.resumed_from, ms, "download finished"),
+            Err(NetError::Cancelled) => tracing::info!(url = %label, ms, "download cancelled; the partial file is kept"),
+            Err(error) => tracing::warn!(url = %label, %error, hint = error.hint(), ms, "download failed"),
+        }
+        result
+    }
+
+    async fn download_loop(
+        &self,
+        request: &DownloadRequest,
+        url: &url::Url,
+        cancel: &Cancel,
+        on_progress: &mut dyn FnMut(&Progress),
+    ) -> Result<Downloaded, NetError> {
         if let Some(dir) = request.dest.parent().filter(|d| !d.as_os_str().is_empty()) {
             tokio::fs::create_dir_all(dir).await.map_err(|e| from_io(&e))?;
         }
@@ -203,7 +223,7 @@ impl Net {
                 return Err(NetError::Cancelled);
             }
             total_attempts += 1;
-            match self.download_once(request, &url, cancel, on_progress).await {
+            match self.download_once(request, url, cancel, on_progress).await {
                 Ok(done) => return Ok(done),
                 Err(failed) => {
                     if !failed.retry || cancel.is_cancelled() {
@@ -214,6 +234,14 @@ impl Net {
                         return Err(failed.error);
                     }
                     let wait = failed.wait.unwrap_or_else(|| retry::delay(failures.saturating_sub(1), retry::jitter()));
+                    tracing::warn!(
+                        url = %crate::address::describe(url),
+                        attempt = total_attempts,
+                        progressed = failed.progressed,
+                        wait_ms = wait.as_millis() as u64,
+                        error = %failed.error,
+                        "download interrupted; continuing"
+                    );
                     tokio::time::sleep(wait).await;
                 }
             }
@@ -256,11 +284,16 @@ impl Net {
             Some(n) if n.url == url.as_str() && on_disk > 0 => on_disk,
             _ => 0,
         };
+        if resume_from > 0 {
+            tracing::info!(url = %crate::address::describe(url), resume_from, "continuing a partial download");
+        } else if on_disk > 0 {
+            tracing::info!(url = %crate::address::describe(url), on_disk, "a partial file is not of this download; starting over");
+        }
 
         let mut builder =
             self.inner.files.get(url.clone()).header(ACCEPT_ENCODING, "identity").header(ACCEPT, "application/octet-stream, */*;q=0.8");
-        if let Some(auth) = self.auth_header(url) {
-            builder = builder.header(AUTHORIZATION, auth);
+        if let Some((name, value)) = self.auth_header(url) {
+            builder = builder.header(name, value);
         }
         if resume_from > 0 {
             builder = builder.header(RANGE, format!("bytes={resume_from}-"));

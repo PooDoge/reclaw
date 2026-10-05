@@ -114,5 +114,10 @@ fn ipv6_ok(ip: Ipv6Addr) -> Result<(), UrlError> {
     Ok(())
 }
 
+/// How a request is named in the log: the host and the path, never the query (which is where a credential would be) or a user.
+pub fn describe(url: &Url) -> String {
+    format!("{}{}", url.host_str().unwrap_or("?"), url.path())
+}
+
 #[cfg(test)]
 mod tests;

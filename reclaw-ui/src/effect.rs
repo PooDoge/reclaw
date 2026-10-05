@@ -2,6 +2,8 @@
 //! emits an [`Effect`] and the host (or the `Shell`) does the work. Both interfaces, desktop and
 //! Deck, speak the same vocabulary.
 use reclaw_input::InputOwner;
+use reclaw_log::Secret;
+use reclaw_net::Provider;
 
 use reclaw_games::settings::{SettingKey, SettingValue};
 
@@ -41,7 +43,8 @@ impl Effect {
 /// What the host must do. The state never touches processes, windows or files itself.
 ///
 /// `SubmitInstall` is handled inside `DeckApp`, which holds the form's text and turns it into
-/// `StartInstall` for the host; likewise `EndTextEntry` becomes `TextCommitted`.
+/// `StartInstall` for the host; likewise `EndTextEntry` becomes `TextCommitted` (except for a token's box, whose text never
+/// travels as a plain string: `SubmitToken` becomes `SaveToken`).
 #[derive(Clone, PartialEq, Debug)]
 pub enum Effect {
     Launch(u32),
@@ -72,6 +75,23 @@ pub enum Effect {
     RemoveFromLibrary(u32),
     /// Load the catalog again now.
     RefreshCatalog,
+    /// Use this access token for the service from now on, and keep it. The text is a [`Secret`]: it prints as nothing.
+    SaveToken {
+        provider: Provider,
+        token: Secret,
+    },
+    /// Deck mode: the Save token row was pressed (internal; `DeckApp` holds the typed text and turns this into `SaveToken`).
+    SubmitToken(Provider),
+    /// Stop using the saved token and forget it.
+    RemoveToken(Provider),
+    /// Ask the service whether the token works and how many requests it allows.
+    CheckToken(Provider),
+    /// Show the folder the log files are in.
+    OpenLogFolder,
+    /// Pull the newest commits of the checkout this copy was built from and rebuild it (`scripts/update.sh`).
+    UpdateSources,
+    /// Write a report of this installation (versions, settings, what each service answers, the end of the log) and show where.
+    SaveDiagnostics,
     /// Stop a download or install. The host answers with an `ActivityEvent::Cancelled`.
     CancelActivity(ActivityId),
     /// Remove a finished or failed row from the Downloads list.

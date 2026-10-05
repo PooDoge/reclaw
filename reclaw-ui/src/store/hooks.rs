@@ -43,6 +43,10 @@ pub fn use_catalog_status() -> CatalogStatus {
     read(AppChannel::Catalog, |s| s.catalog.clone())
 }
 
+pub fn use_credentials() -> crate::credentials::CredentialsStatus {
+    read(AppChannel::Credentials, |s| s.credentials.clone())
+}
+
 pub fn use_mods() -> Vec<ModEntry> {
     read(AppChannel::Mods, |s| s.mods.clone())
 }

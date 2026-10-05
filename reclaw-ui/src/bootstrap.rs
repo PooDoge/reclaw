@@ -42,7 +42,7 @@ pub fn open_media(dirs: Option<&AppDirs>, net: Option<&Net>) -> Option<MediaHub>
     match MediaHub::start(cache, MEDIA_WORKERS) {
         Ok(hub) => Some(hub),
         Err(e) => {
-            eprintln!("reclaw: artwork will not be downloaded: {e}");
+            tracing::warn!(error = %e, "artwork will not be downloaded: the fetch workers did not start");
             None
         }
     }
@@ -76,7 +76,7 @@ pub fn open_store(get: impl Fn(&str) -> Option<String>, seed: impl FnOnce(&mut A
     state.settings_warning = warning.clone();
     let store = Store::create_global(state);
     if let (Some(file), false) = (file, read_only) {
-        let writer = PrefsWriter::spawn(file, SAVE_DELAY, |e| eprintln!("reclaw: could not save settings: {e}"));
+        let writer = PrefsWriter::spawn(file, SAVE_DELAY, |e| tracing::error!(error = %e, "settings could not be saved"));
         if writer.is_running() {
             store.attach_persistence(writer);
         } else {

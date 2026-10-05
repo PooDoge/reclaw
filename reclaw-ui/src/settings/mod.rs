@@ -15,5 +15,5 @@ pub mod values;
 pub use builders::*;
 pub use geometry::{RowSlot, section_slots};
 pub use launch::{LaunchContext, LaunchControl, LaunchOption};
-pub use schema::{Group, Row, RowAction, RowKind, Schema, Section, TextField};
+pub use schema::{CredentialPart, GlobalAction, Group, Row, RowAction, RowKind, Schema, Section, TextField};
 pub use values::{SettingChange, SettingValue, SettingsTarget, SettingsValues};

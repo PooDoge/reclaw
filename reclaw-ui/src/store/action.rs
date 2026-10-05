@@ -5,8 +5,11 @@ use reclaw_games::{
 use reclaw_input::ControllerInfo;
 use reclaw_runtime::RunState;
 
+use reclaw_net::Provider;
+
 use crate::{
     activity::ActivityEvent,
+    credentials::TokenStatus,
     model::{AppStatus, GameEntry, ModEntry, ModProvider, ModStatus},
     nav::Route,
     notices::{Notice, NoticeId},
@@ -24,6 +27,11 @@ pub enum AppAction {
     SetMods(Vec<ModEntry>),
     /// The catalog loader's progress and findings.
     Catalog(super::status::CatalogStatus),
+    /// What is known about one service's access token.
+    Credentials {
+        provider: Provider,
+        status: TokenStatus,
+    },
     /// Tell the user something (a notice from the host that is not about one download).
     Notify(Notice),
     SetRun {

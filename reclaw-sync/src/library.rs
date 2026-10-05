@@ -122,7 +122,7 @@ impl LibraryStore {
             self.prune(&dir)
         })();
         if let Err(e) = result {
-            eprintln!("reclaw: could not back up the library before saving: {e}");
+            tracing::warn!(dir = %dir.display(), error = %e, "could not back up the library before saving; saving anyway");
         }
     }
 

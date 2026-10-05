@@ -68,6 +68,12 @@ impl HostGate {
         });
     }
 
+    /// Forget any wait recorded for `host`. A different identity (a new token) has its own allowance, so a wait that was earned
+    /// anonymously does not apply to it.
+    pub fn clear(&self, host: &str) {
+        self.with_host(host, |h| h.blocked = None);
+    }
+
     /// Take a place in line for `host`, or say how long it is blocked.
     pub async fn enter(&self, host: &str) -> Result<OwnedSemaphorePermit, NetError> {
         if let Some(error) = self.blocked(host) {

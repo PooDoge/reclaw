@@ -13,9 +13,11 @@ Everything the program fetches goes through `reclaw_net::Net` (ADR 0010, 0011). 
   (`address.rs`). Tests use `AddressPolicy::AnyHttpForTests`; nothing in the program selects it.
 * **Proxy and certificates**: the system's proxy settings (`HTTPS_PROXY`, `NO_PROXY`; `RECLAW_PROXY=none|<url>` overrides); the system's
   trust store plus the bundled public roots; `SSL_CERT_FILE` adds a PEM bundle.
-* **Tokens** (`GITHUB_TOKEN`, `GITLAB_TOKEN`, or the `RECLAW_` forms) are sent as `Authorization: Bearer` to `api.github.com` and
-  `gitlab.com` only, are marked sensitive, are dropped when a redirect leaves the host, never appear in `Debug` output, and separate the
-  cache (an authenticated answer is never served to an anonymous request).
+* **Tokens** are sent as `Authorization: Bearer` to `api.github.com` and `gitlab.com` only, are marked sensitive, are dropped when a
+  redirect leaves the host, never appear in `Debug` output, and separate the cache (an authenticated answer is never served to an
+  anonymous request). They can be changed while running, a refused one stops being sent, and they can be checked: `credentials.md`.
+* **Two askers, one question**: requests that share a cache rule and an address and identity queue on a lock, so the second reads what
+  the first saved (`Net::fetch` with `cached(...)`).
 * **Retries** (default 3 tries) with 0.5 s doubling to 8 s, jittered, for connection failures, timeouts, 408/425/500/502/503/504. A 404
   or 403 is an answer and is not retried. Policy refusals and bot checks are not retried.
 * **Rate limits** are read from `Retry-After`, `x-ratelimit-*` and `ratelimit-*`. A wait up to 5 s is slept through; a longer one is

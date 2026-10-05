@@ -71,8 +71,8 @@ impl Net {
         let host = url.host_str().unwrap_or_default().to_string();
         let mut builder =
             self.inner.api.get(url.clone()).timeout(Duration::from_secs(20)).header(RANGE, HeaderValue::from_static("bytes=0-1023"));
-        if let Some(auth) = self.auth_header(&url) {
-            builder = builder.header(reqwest::header::AUTHORIZATION, auth);
+        if let Some((name, value)) = self.auth_header(&url) {
+            builder = builder.header(name, value);
         }
         let response = builder.send().await.map_err(|e| match self.transport(&host, &e) {
             Attempt::Retry { error, .. } | Attempt::Stop(error) => error,

@@ -13,7 +13,7 @@ use reclaw_ui::notices::NoticeKind;
 use super::*;
 
 #[derive(Default)]
-struct Collector(Mutex<Vec<AppAction>>);
+pub(super) struct Collector(Mutex<Vec<AppAction>>);
 
 impl Sink for Collector {
     fn send(&self, action: AppAction) {
@@ -22,11 +22,11 @@ impl Sink for Collector {
 }
 
 impl Collector {
-    fn all(&self) -> Vec<AppAction> {
+    pub(super) fn all(&self) -> Vec<AppAction> {
         self.0.lock().expect("lock").clone()
     }
 
-    fn notices(&self) -> Vec<Notice> {
+    pub(super) fn notices(&self) -> Vec<Notice> {
         self.all().into_iter().filter_map(|a| if let AppAction::Notify(n) = a { Some(n) } else { None }).collect()
     }
 
@@ -90,7 +90,8 @@ fn rig(server: Option<TestServer>, library_text: Option<&str>) -> Rig {
     let net = Net::new(config).expect("net");
     let url = server.as_ref().map(|s| s.url("/index.json")).unwrap_or_else(|| "http://127.0.0.1:1/index.json".into());
     let sink = Arc::new(Collector::default());
-    let (host, initial) = Host::open(Some(net.clone()), library_file.clone(), Some(url.clone()), sink.clone());
+    let (host, initial) =
+        Host::open(HostConfig { index_url: Some(url.clone()), ..HostConfig::new(Some(net.clone()), library_file.clone()) }, sink.clone());
     let sync = CatalogSync::new(net).with_index_url(url);
     Rig { host, sync, sink, initial, library_file, _dir: dir, _server: server }
 }
@@ -147,7 +148,13 @@ fn what_one_run_saved_is_there_at_the_next_start_before_any_network() {
     config.cache_dir = Some(dir_rig._dir.path().join("http"));
     config.attempts = 1;
     let sink = Arc::new(Collector::default());
-    let (_host, initial) = Host::open(Some(Net::new(config).expect("net")), dir_rig.library_file.clone(), Some(dir_rig.sync_url()), sink);
+    let (_host, initial) = Host::open(
+        HostConfig {
+            index_url: Some(dir_rig.sync_url()),
+            ..HostConfig::new(Some(Net::new(config).expect("net")), dir_rig.library_file.clone())
+        },
+        sink,
+    );
     assert_eq!(initial.loaded.projects.len(), 2, "the first frame already has the catalog");
     assert_eq!(initial.status.phase, CatalogPhase::Ready);
 }
@@ -207,8 +214,10 @@ fn the_library_a_run_saved_is_there_at_the_next_start() {
     rig.host.handle(&Effect::AddToLibrary(id));
     let mut config = local_config();
     config.cache_dir = Some(rig._dir.path().join("http"));
-    let (_host, initial) =
-        Host::open(Some(Net::new(config).expect("net")), rig.library_file.clone(), Some(rig.sync_url()), Arc::new(Collector::default()));
+    let (_host, initial) = Host::open(
+        HostConfig { index_url: Some(rig.sync_url()), ..HostConfig::new(Some(Net::new(config).expect("net")), rig.library_file.clone()) },
+        Arc::new(Collector::default()),
+    );
     let titles: Vec<_> = initial.loaded.games.iter().map(|g| g.title.to_string()).collect();
     assert_eq!(titles, ["Two"]);
     assert_eq!(initial.loaded.games[0].id, id, "the same number as before: favorites and settings stay attached");

@@ -172,6 +172,8 @@ impl Mount {
     }
 
     pub fn start_at(self, start: Route) -> Session {
+        // What the code logs is shown with a failing test.
+        reclaw_log::init_for_tests();
         let effects: Rc<RefCell<Vec<Effect>>> = Rc::default();
         let stash: Rc<RefCell<Option<Store>>> = Rc::default();
         let (tx, feed) = ActionFeed::new();

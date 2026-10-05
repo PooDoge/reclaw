@@ -18,14 +18,15 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), controller `InputProfile` | no |
 | `reclaw-games` | What a project is (catalog metadata, art, media, releases), the systems games came from (`platform`), launch-setting capabilities and how a launch plan is built (`settings`) | no |
 | `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format) | no |
-| `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, `probe` (spec: network) | no |
+| `reclaw-log` | The log file, its redaction of credentials, the panic hook, the `Secret` type; no dependency on the rest (spec: logging) | no |
+| `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, access tokens that can change and be checked, `probe` (specs: network, credentials) | no |
 | `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock | no |
-| `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save | no |
+| `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save; the access tokens in their own private file | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
-| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and answers the screens' requests, and `main` which starts the window | yes |
+| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and the tokens, writes the diagnostics report, updates from source, and answers the screens' requests; `main` starts the log and the window | yes |
 | `reclaw-ui` | Everything you see: tokens, components, the surface system, both interfaces, the store, the router, the window frame, the `Shell` | yes |
 
-Eight crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
+Nine crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
 
 ## Inside `reclaw-ui/src`
 
@@ -137,6 +138,25 @@ which adds an address policy (https, standard port, nothing on the local network
 detection from the bytes and an on-disk cache. Components ask `use_remote_file(url)` and get a path in the cache or a placeholder.
 READMEs are cut into blocks before the stock markdown viewer sees them (ADR 0004). The toolkit's own fetching is switched off (ADR 0003).
 
+## Logging
+
+`main` starts the log before anything else (`reclaw-log`, ADR 0013) and every crate writes with `tracing`; nothing prints. The file is
+`reclaw.log` in the state folder, rotated by size, with credentials removed on the way in (the `Secret` type, registered exact values, and
+patterns). Every notice the user is shown is also logged, from `Store::dispatch`. Settings, Diagnostics opens the folder, changes the
+detail, and writes a report (versions, system, what each service answers, the end of the log). `docs/troubleshooting.md` lists the
+lines and what to do. Spec: logging.
+
+## Access tokens
+
+Held in two places only: `secrets.toml` (private, beside the settings) and the network layer, which sends a token to its own service's
+API host, checks it when it is pasted, and stops sending one the service refuses. The screens know only a `TokenStatus`. Settings, Network
+is the one place to change them, on both interfaces. Spec: credentials (ADR 0014).
+
+## Updating from source
+
+For a copy built from a checkout: `scripts/update.sh` (a terminal) or Settings, About, "Update from source" (the same script, its output
+going to the log) fast-forwards the branch, rebuilds and says to restart; it never resets or discards anything. Spec: updates (ADR 0015).
+
 ## Switching interfaces
 
 `Shell` is the root. It chooses desktop or Deck from `detect_environment` (`RECLAW_MODE`, SteamOS variables), and the user can change it:
@@ -157,6 +177,8 @@ and the media hub); the shell's own effects are handled inside it.
 | `reclaw-*/tests/` | Crate-level tests: config files in a temp dir, a fake network for media, the real-network round trip (`--ignored`). |
 | `tests/ui/` (one binary, `main.rs` lists the modules) | The real `Shell` mounted headless: `Mount::deck()` / `Mount::desktop()`, `Session` presses keys, sends pad actions, reads labels and positions, writes PNGs to `reclaw-ui/target/snapshots/`. |
 | `deck_input`, `deck_routes`, `deck_notices`, `deck_surfaces`, `deck_snapshots`, `deck_lifecycle` | Deck: keys to effects and screen, routes, toasts and holds, pages at each form factor, a real child process (Unix). |
+| `credentials` | The Network and Diagnostics settings on both interfaces: a pasted token leaves the page once, as a secret. |
+| `reclaw-app/tests/update_script.rs`, `reclaw-net/tests/{credentials,logging}.rs`, `reclaw-log/tests/logging.rs` | The update script against real git repositories; tokens against a local server; the log file as a program writes it. `reclaw-net/tests/live.rs` (`--ignored`) asks the real GitHub. |
 | `desktop_pages`, `desktop_settings`, `desktop_surfaces`, `desktop_snapshots` | Desktop pages, settings, dialogs and menus at each form factor. |
 | `nav_stage`, `recents`, `shell_modes`, `window_chrome`, `systems`, `media` | Transitions, recents, mode switching, window commands, system badges and filter, artwork and README. |
 | `tokens_in_sync.rs`, `tests/repo_hygiene.rs` | Token drift, file-size cap, `//!` headers, docs rules. |

@@ -9,7 +9,9 @@ reclaw-catalog = { path = "../reclaw-catalog" }
 reclaw-net = { path = "../reclaw-net" }
 sha2 = "0.10"
 thiserror = "2"
+tracing = "0.1"
 
 [dev-dependencies]
 reclaw-net = { path = "../reclaw-net", features = ["testing"] }
 tempfile = "3"
+reclaw-log = { path = "../reclaw-log" }

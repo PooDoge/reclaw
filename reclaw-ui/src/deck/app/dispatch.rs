@@ -76,6 +76,19 @@ impl Dispatcher {
                     self.texts.begin(field, !by_pointer);
                     self.on_effect.call(Effect::BeginTextEntry(field));
                 }
+                Effect::SubmitToken(provider) => {
+                    // The typed text becomes a `Secret` here and the box is emptied: nothing keeps the token but the host.
+                    let field = TextField::for_provider(provider);
+                    let token = reclaw_log::Secret::new(self.texts.value(field).trim());
+                    self.texts.clear(field);
+                    self.on_effect.call(Effect::SaveToken { provider, token });
+                }
+                Effect::EndTextEntry(field) if field.is_secret() => {
+                    // A token box keeps what was typed until Save token is pressed; it is not a setting and is not reported.
+                    self.root_focus.request_focus();
+                    self.texts.finish(field);
+                    self.on_effect.call(Effect::EndTextEntry(field));
+                }
                 Effect::EndTextEntry(field) => {
                     // Give the keyboard back to the page, then report what was typed.
                     self.root_focus.request_focus();

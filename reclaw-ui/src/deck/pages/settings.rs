@@ -5,7 +5,7 @@ use crate::{
     deck::{
         TextBoxes, ids,
         settings::{
-            RowKind, Schema, Section, SettingsTarget, SettingsValues,
+            CredentialPart, RowKind, Schema, Section, SettingsTarget, SettingsValues, TextField,
             geometry::{GROUP_GAP, HEADING_H, NOTE_H, ROW_GAP},
         },
     },
@@ -61,6 +61,8 @@ pub struct SettingsBody {
     pub values: SettingsValues,
     /// The text on each launch row ("Default (1920x1080)", "Game's own", "Off"), by setting.
     pub launch_text: std::collections::HashMap<reclaw_games::settings::SettingKey, String>,
+    /// What is known about the access tokens, for the Network section's status lines.
+    pub credentials: crate::credentials::CredentialsStatus,
     pub section: usize,
     pub two_pane: bool,
     pub drilled: bool,
@@ -100,8 +102,18 @@ impl SettingsBody {
             },
             RowKind::Text { field, placeholder } => {
                 let (input, a11y) = self.texts.get(*field);
-                RowControl::Text { input, placeholder: (*placeholder).to_string(), a11y }
+                RowControl::Text { input, placeholder: (*placeholder).to_string(), a11y, secret: field.is_secret() }
             }
+            RowKind::Credential { provider, part } => match part {
+                CredentialPart::Status => RowControl::Value { text: self.credentials.of(*provider).short(*provider), opens_menu: false },
+                CredentialPart::Token => {
+                    let (input, a11y) = self.texts.get(TextField::for_provider(*provider));
+                    RowControl::Text { input, placeholder: "Paste your token".to_string(), a11y, secret: true }
+                }
+                CredentialPart::Remove => RowControl::Action { danger: true },
+                CredentialPart::Save | CredentialPart::Check | CredentialPart::Create => RowControl::Action { danger: false },
+            },
+            RowKind::Global { .. } => RowControl::Action { danger: false },
             RowKind::Action { danger, .. } => RowControl::Action { danger: *danger },
             RowKind::Info { value } => RowControl::Value { text: value.clone(), opens_menu: false },
             RowKind::Launch { key } => RowControl::Value { text: self.launch_text.get(key).cloned().unwrap_or_default(), opens_menu: true },

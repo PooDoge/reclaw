@@ -20,6 +20,7 @@ pub struct SettingsShown {
     pub target: SettingsTarget,
     pub schema: Schema,
     pub launch_text: std::collections::HashMap<reclaw_games::settings::SettingKey, String>,
+    pub credentials: crate::credentials::CredentialsStatus,
 }
 
 /// Everything one render needs, gathered once so the page and overlay builders are plain

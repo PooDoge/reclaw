@@ -1,11 +1,13 @@
 # Application state and persistence
 
 - last-verified: 2026-10-05
-- owner-paths: reclaw-ui/src/store/**, reclaw-ui/src/bootstrap.rs, reclaw-ui/src/settings/**, reclaw-config/src/**, reclaw-ui/tests/ui/shell_modes.rs
+- owner-paths: reclaw-ui/src/store/**, reclaw-ui/src/notices/log.rs, reclaw-ui/src/bootstrap.rs, reclaw-ui/src/settings/**, reclaw-config/src/**, reclaw-ui/tests/ui/shell_modes.rs
 
 What state exists, where each kind lives, how it changes, and what survives a restart.
 
 **The catalog and the library** are shared state set by the host (`SetProjects`, `SetGames`), with their own small status (`AppState::catalog`: loading, ready, failed, how fresh, saved copy or not, what went wrong) on its own channel, so a refresh redraws the Catalog's header and the bottom strip and nothing else. The host also queues notices (`AppAction::Notify`: a note passes, a problem stays until dismissed) for things that are not about one download. The library file itself is the host's (`catalog-format.md`); the store only holds what the screens show.
+
+**Access tokens' state** (`AppState::credentials`, `AppAction::Credentials`, the `Credentials` channel, `use_credentials()`): for each service, where its token came from, and what the service last said (allowance left, refused, could not be asked). The host fills it in. It is not saved, and it never holds a token (`credentials.md`); a pasted token reaches the host as an `Effect::SaveToken` carrying a `Secret`, not through the store. Every `Notify` is also written to the log by `Store::dispatch` before it is reduced, which keeps `reduce` pure (`logging.md`).
 
 ## Three kinds of state
 

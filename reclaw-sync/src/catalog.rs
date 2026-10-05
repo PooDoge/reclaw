@@ -69,6 +69,33 @@ impl CatalogSync {
     }
 
     fn load(&self, mode: Mode) -> Result<CatalogSnapshot, SyncError> {
+        let started = std::time::Instant::now();
+        let online = mode == Mode::Online;
+        if online {
+            tracing::info!(index = %self.index_url, "refreshing the catalog");
+        }
+        let result = self.load_parts(mode);
+        let ms = started.elapsed().as_millis() as u64;
+        match &result {
+            Ok(snapshot) => {
+                // A refresh is news; reading the saved copy at start is routine.
+                let (apps, lists, problems) = (snapshot.apps().len(), snapshot.lists.len(), snapshot.problems.len());
+                if online {
+                    tracing::info!(apps, lists, problems, platform = snapshot.platform.is_some(), ms, "catalog loaded");
+                    for problem in &snapshot.problems {
+                        tracing::warn!(what = %problem.what, detail = %problem.detail, hint = problem.hint.as_deref(), "catalog problem");
+                    }
+                } else {
+                    tracing::debug!(apps, lists, problems, ms, "saved catalog read");
+                }
+            }
+            Err(error) if online => tracing::error!(%error, hint = error.hint(), ms, "the catalog could not be loaded"),
+            Err(error) => tracing::debug!(%error, "no saved catalog"),
+        }
+        result
+    }
+
+    fn load_parts(&self, mode: Mode) -> Result<CatalogSnapshot, SyncError> {
         let mut problems = Vec::new();
         let fetched = self.get(mode, &self.index_url, INDEX_LIMIT).map_err(SyncError::NoIndex)?;
         let index = CommunityIndex::parse(&fetched.text()).map_err(SyncError::BadIndex)?;
@@ -78,13 +105,28 @@ impl CatalogSync {
         let sources = index.sources();
         // One thread per list: a handful of small requests that the client multiplexes over one connection.
         let answers: Vec<(IndexSource, Result<Fetched, NetError>)> = thread::scope(|scope| {
-            let workers: Vec<_> = sources.iter().map(|source| scope.spawn(move || self.get(mode, &source.url, LIST_LIMIT))).collect();
+            // Named, so a line in the log says which list's request it was.
+            let workers: Vec<_> = sources
+                .iter()
+                .enumerate()
+                .map(|(n, source)| {
+                    thread::Builder::new()
+                        .name(format!("reclaw-list-{n}"))
+                        .spawn_scoped(scope, move || self.get(mode, &source.url, LIST_LIMIT))
+                })
+                .collect();
             sources
                 .iter()
                 .cloned()
                 .zip(workers)
                 .map(|(source, worker)| {
-                    (source, worker.join().unwrap_or_else(|_| Err(NetError::Other("a download worker stopped unexpectedly".into()))))
+                    let answer = match worker {
+                        Ok(worker) => {
+                            worker.join().unwrap_or_else(|_| Err(NetError::Other("a download worker stopped unexpectedly".into())))
+                        }
+                        Err(error) => Err(NetError::Other(format!("a download worker could not start: {error}"))),
+                    };
+                    (source, answer)
                 })
                 .collect()
         });

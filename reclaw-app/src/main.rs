@@ -4,13 +4,21 @@
 //!
 //! Environment (see `docs/BUILDING.md`): `RECLAW_HOME` (where its folders are), `RECLAW_MODE=deck|desktop`,
 //! `RECLAW_CATALOG_INDEX=<url>` (another catalog index), `RECLAW_WINDOW_FRAME=native`, `SSL_CERT_FILE`, `HTTPS_PROXY`,
-//! `RECLAW_PROXY`, `GITHUB_TOKEN`. `--open /game/4` starts on a page. F10 switches interface, F9 simulates the on-screen keyboard.
-use std::sync::{Arc, Mutex};
+//! `RECLAW_PROXY`, `GITHUB_TOKEN`, `RECLAW_LOG` (a log filter such as `reclaw_net=debug,warn`). `--open /game/4` starts on a page.
+//! F10 switches interface, F9 simulates the on-screen keyboard.
+//!
+//! Logging starts first: a failure while starting is then in the log too. The messages go to `reclaw.log` in the logs folder
+//! (Settings, Diagnostics, opens it), and to the terminal when there is one.
+use std::{
+    io::IsTerminal,
+    sync::{Arc, Mutex},
+};
 
 use freya::prelude::*;
-use reclaw_app::{Host, Sink};
+use reclaw_app::{EnvToken, Host, HostConfig, Sink, UpdateSource};
 use reclaw_config::AppDirs;
 use reclaw_input::{ActionMap, Button, GuideOwner, detect_environment};
+use reclaw_log::{LogConfig, LogLevel};
 use reclaw_ui::{
     bootstrap::{open_media, open_net, open_store},
     deck::ActionFeed,
@@ -78,7 +86,7 @@ fn start_pad(map: ActionMap, pad: &ActionFeed, store: Store) -> Pad {
     let (input, messages) = match backend::spawn_with(map, hold_rules()) {
         Ok((input, messages)) => (Some(input), Some(messages)),
         Err(e) => {
-            eprintln!("reclaw: the gamepad reader did not start ({e}); the keyboard still works");
+            tracing::warn!(error = %e, "the gamepad reader did not start; the keyboard still works");
             (None, None)
         }
     };
@@ -92,7 +100,7 @@ fn start_pad(map: ActionMap, pad: &ActionFeed, store: Store) -> Pad {
                 }
                 InputMessage::Connected(info) => store.dispatch(AppAction::SetController(Some(info))),
                 InputMessage::Disconnected { .. } => store.dispatch(AppAction::SetController(None)),
-                InputMessage::Unavailable(why) => eprintln!("reclaw: gamepad unavailable: {why}"),
+                InputMessage::Unavailable(why) => tracing::warn!(%why, "the gamepad is unavailable"),
             }
         }
     });
@@ -118,6 +126,7 @@ impl App for Launcher {
                     spawn(async move { store.pump(inbox).await });
                 }
                 host.refresh();
+                host.check_tokens();
                 start_pad(map, &pad, store)
             }
         });
@@ -155,7 +164,7 @@ fn start_route() -> Route {
     args.next();
     match args.next() {
         Some(path) => path.parse().unwrap_or_else(|e| {
-            eprintln!("reclaw: {path:?} is not a page ({e}); starting at the Library");
+            tracing::warn!(%path, error = %e, "--open was not given a page; starting at the Library");
             Route::Library {}
         }),
         None => Route::Library {},
@@ -164,39 +173,79 @@ fn start_route() -> Route {
 
 fn main() {
     let get = |k: &str| std::env::var(k).ok();
+    let dirs = AppDirs::locate(get);
+    // The log first, so that everything after it can say what went wrong. The level is the default until the settings are read.
+    let logging = Arc::new(reclaw_log::init(LogConfig {
+        dir: dirs.as_ref().map(|d| d.logs.clone()),
+        level: LogLevel::default(),
+        filter: get("RECLAW_LOG"),
+        stderr: std::io::stderr().is_terminal(),
+    }));
+    // What the About page shows, so that after an update it is plain whether the new build is the one running.
+    reclaw_ui::about::set_build(reclaw_ui::about::BuildInfo {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        commit: env!("RECLAW_GIT_SHA").to_string(),
+        profile: env!("RECLAW_PROFILE").to_string(),
+    });
+    tracing::info!(
+        version = env!("CARGO_PKG_VERSION"),
+        commit = env!("RECLAW_GIT_SHA"),
+        profile = env!("RECLAW_PROFILE"),
+        os = std::env::consts::OS,
+        arch = std::env::consts::ARCH,
+        log = ?logging.file(),
+        "Reclaw starting"
+    );
     let mode = detect_environment(get);
+    tracing::info!(interface = ?mode.mode, guide_owner = ?mode.guide_owner, "environment detected");
     let mut map = ActionMap::default();
     if mode.guide_owner == GuideOwner::Steam {
         map.unbind(Button::Guide);
     }
 
-    let dirs = AppDirs::locate(get);
     let (net, net_problems) = open_net(dirs.as_ref(), get);
     for problem in &net_problems {
-        eprintln!("reclaw: {problem}");
+        tracing::warn!(%problem, "a network setting was ignored");
     }
     let (store_feed, inbox) = feed();
     let sink: Arc<dyn Sink> = Arc::new(store_feed.clone());
     let library_file = dirs.as_ref().map(AppDirs::library_file).unwrap_or_else(|| std::path::PathBuf::from("apps.json"));
     if dirs.is_none() {
-        eprintln!("reclaw: no folder for Reclaw's files was found, so the library is read from and written to ./apps.json");
+        tracing::warn!("no folder for Reclaw's files was found, so the library is read from and written to ./apps.json");
     }
-    let (host, initial) = Host::open(net.clone(), library_file, get("RECLAW_CATALOG_INDEX").filter(|u| !u.is_empty()), sink);
+    let (host, initial) = Host::open(
+        HostConfig {
+            index_url: get("RECLAW_CATALOG_INDEX").filter(|u| !u.is_empty()),
+            secrets_file: dirs.as_ref().map(AppDirs::secrets_file),
+            logs_dir: dirs.as_ref().map(|d| d.logs.clone()),
+            logging: Some(logging.clone()),
+            env_tokens: EnvToken::from_env(get),
+            update: UpdateSource::detect(env!("RECLAW_SOURCE_DIR"), env!("RECLAW_PROFILE")),
+            ..HostConfig::new(net.clone(), library_file)
+        },
+        sink,
+    );
 
     let opened = open_store(get, |state| {
         state.projects = initial.loaded.projects;
         state.games = initial.loaded.games;
         state.catalog = initial.status;
+        state.credentials = initial.credentials;
     });
     if let Some(warning) = &opened.warning {
-        eprintln!("reclaw: {warning}");
+        tracing::warn!(%warning, "the settings file was not used as it was");
     }
+    // The level the person chose in Settings, now that the settings are read.
+    let chosen = opened.store.snapshot().settings.choice(
+        reclaw_ui::settings::SettingsTarget::Global,
+        reclaw_ui::settings::KEY_LOG_LEVEL,
+        LogLevel::default().index(),
+    );
+    logging.set_level(LogLevel::from_index(chosen));
     // Things to say once the window is up go through the same path as everything else that arrives from another thread.
-    for notice in initial
-        .notices
-        .into_iter()
-        .chain(net_problems.into_iter().map(|p| reclaw_ui::notices::Notice::note("Network setting ignored", &p, vec![])))
-    {
+    let startup_problems =
+        logging.problems().iter().chain(net_problems.iter()).map(|p| reclaw_ui::notices::Notice::note("Startup note", p, vec![]));
+    for notice in initial.notices.into_iter().chain(startup_problems) {
         store_feed.send(AppAction::Notify(notice));
     }
     let store = opened.store;

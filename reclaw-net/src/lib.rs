@@ -5,6 +5,8 @@
 //!
 //! * `address`: which addresses may be fetched (https, standard port, nothing on the local network, also after redirects)
 //! * `config`: [`NetConfig`], its defaults and the environment variables that adjust it
+//! * `credentials`: [`Provider`] and the tokens, changeable while running, sent to their own host only, dropped once refused
+//! * `check`: asking a service whether a token works and how many requests it allows
 //! * `error`: [`NetError`], failures by kind (policy refusal, bot check, rate limit, TLS, DNS ...) with a hint for each
 //! * `limits`, `challenge`, `retry`: pure rules about rate limits, bot-check pages and backoff
 //! * `gate`: requests in flight per host, and the memory of "wait"
@@ -21,7 +23,9 @@
 pub mod address;
 pub mod cache;
 pub mod challenge;
+pub mod check;
 pub mod config;
+pub mod credentials;
 pub mod diagnose;
 pub mod download;
 pub mod error;
@@ -34,7 +38,9 @@ pub mod retry;
 pub mod testing;
 
 pub use address::{AddressPolicy, UrlError};
+pub use check::{Quota, TokenInfo, Verdict};
 pub use config::{NetConfig, PROJECT_URL, ProxyMode};
+pub use credentials::{Provider, TokenState};
 pub use download::{Cancel, DownloadRequest, Downloaded, Progress};
 pub use error::NetError;
 pub use net::Net;

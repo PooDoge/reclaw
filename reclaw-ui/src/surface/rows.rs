@@ -17,6 +17,8 @@ pub enum RowControl {
         input: State<String>,
         placeholder: String,
         a11y: AccessibilityId,
+        /// Show the text as dots (a token being pasted).
+        secret: bool,
     },
     /// The row is the button.
     Action {
@@ -170,9 +172,10 @@ impl Component for SettingRow {
             )
             .child(top);
 
-        if let RowControl::Text { input, placeholder, a11y } = &self.control {
+        if let RowControl::Text { input, placeholder, a11y, secret } = &self.control {
+            let mode = if *secret { InputMode::new_password() } else { InputMode::default() };
             card = card.child(rect().padding(Gaps::new(SPACE_2, 0., 0., 0.)).child(
-                Input::new(*input).placeholder(placeholder.clone()).width(Size::fill()).a11y_id(*a11y).theme_colors(
+                Input::new(*input).mode(mode).placeholder(placeholder.clone()).width(Size::fill()).a11y_id(*a11y).theme_colors(
                     InputColorsThemePartial {
                         background: Some(t.bg_base.into()),
                         focus_background: Some(t.bg_base.into()),

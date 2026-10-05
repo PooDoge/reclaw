@@ -11,6 +11,8 @@ pub enum AppChannel {
     Mods,
     /// The catalog loader's status.
     Catalog,
+    /// Whether each service has an access token and what it allows.
+    Credentials,
     /// Any activity changed.
     Activity,
     /// One game's activity changed. Notifies [`Activity`](Self::Activity) readers too.

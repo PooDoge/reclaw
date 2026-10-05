@@ -6,6 +6,7 @@ use reclaw_input::ControllerInfo;
 
 use crate::{
     activity::ActivityBoard,
+    credentials::CredentialsStatus,
     model::{GameEntry, ModEntry},
     nav::Route,
     notices::Notices,
@@ -31,6 +32,8 @@ pub struct AppState {
     pub mods: Vec<ModEntry>,
     /// Whether the catalog is loading, how fresh it is, and what went wrong with it.
     pub catalog: CatalogStatus,
+    /// The access tokens' state (never the tokens). The host fills it in and keeps it current.
+    pub credentials: CredentialsStatus,
     pub activity: ActivityBoard,
     pub notices: Notices,
 
@@ -66,6 +69,7 @@ impl AppState {
             projects: Vec::new(),
             mods: Vec::new(),
             catalog: CatalogStatus::default(),
+            credentials: CredentialsStatus::default(),
             activity: ActivityBoard::new(),
             notices: Notices::default(),
             settings: persist::from_prefs(&prefs.global, &prefs.apps),

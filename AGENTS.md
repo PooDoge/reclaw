@@ -15,13 +15,16 @@ QUIVER_CATALOG_DIR=<checkout> cargo test -p reclaw-catalog   # also check the re
 cargo run -p reclaw                         # the launcher with the real catalog (F10: Deck mode, F9: simulated keyboard)
 cargo run -p reclaw --features gamepad      # with a real gamepad reader
 cargo run -p reclaw-net --example probe     # what each host the program needs does from this machine
+RECLAW_LOG=reclaw_net=debug,warn cargo run -p reclaw   # a log filter; the file is ~/.local/state/reclaw/logs/reclaw.log (docs/troubleshooting.md)
+cargo test -p reclaw-net --test live -- --ignored --nocapture   # the real GitHub (a few requests); RECLAW_LIVE_REPO=owner/name picks the repository
+scripts/update.sh                           # fast-forward this checkout and rebuild; never discards anything (spec: updates)
 scripts/x11-smoke.sh                        # a real window under Xvfb: drag, resize, maximize, close (not part of cargo test)
 ```
 
 Linux needs `libudev-dev` and the GL/EGL dev packages (`libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libwayland-dev`).
 Snapshot PNGs land in `reclaw-ui/target/snapshots/`; look at them after changing any layout.
 Bazzite (immutable) builds in a distrobox: `docs/BUILDING.md`, `scripts/bazzite-build.sh`.
-Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog -p reclaw-net -p reclaw-sync -p reclaw`
+Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog -p reclaw-net -p reclaw-sync -p reclaw-log -p reclaw`
 keeps the compiled dependencies and drops only ours. Test executables from every feature set pile up in `target/debug/deps` (23 GB were seen, and
 the linker then dies with a bus error): delete the executables over 50 MB there and `target/debug/incremental`, and build with `CARGO_INCREMENTAL=0`.
 
@@ -47,7 +50,11 @@ the linker then dies with a bus error): delete the executables over 50 MB there 
     the window frame is verified on X11 only. `docs/BUILDING.md` has the table.
 11. **Shared state has one home.** Anything two windows, both interfaces, or a background thread must agree on lives in `AppState` and
     changes through an `AppAction` (`store/`); one window's own state stays in `use_state`. Do not mirror store data into local state.
-12. **Docs move with behavior.** A change in behavior updates `docs/specs/<area>.md` in the same commit (and its `last-verified` date).
+12. **Failures are logged, nothing is printed, and a secret is never formatted.** Say what went wrong with `tracing` (`warn!`/`error!`, with the
+    facts you would be asked for next as fields: host, path, attempt, error), where it is decided. No `println!`/`eprintln!` in the
+    program's crates (`tests/repo_hygiene.rs` checks). A token is a `reclaw_log::Secret`; its text is read with `.expose()` only where it
+    is used or stored, and never put in a message. A failure the user is shown is a `Notice` (it is logged for you); give it details.
+13. **Docs move with behavior.** A change in behavior updates `docs/specs/<area>.md` in the same commit (and its `last-verified` date).
     A decision that has a rejected alternative gets an ADR in `docs/adr/`. `tests/repo_hygiene.rs` checks the shape of both.
 
 ## Adding things

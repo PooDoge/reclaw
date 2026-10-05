@@ -4,7 +4,10 @@ use reclaw_input::{FocusId, FocusNode};
 
 use super::{DeckState, DeckView, Effect, Screen, ids, nodes::node, scope::SettingsPane, types::*};
 use crate::{
-    deck::settings::{RowAction, RowKind, Schema, SettingValue, SettingsTarget, app_properties, global_settings, section_slots},
+    deck::settings::{
+        CredentialPart, GlobalAction, RowAction, RowKind, Schema, SettingValue, SettingsTarget, TextField, app_properties, global_settings,
+        section_slots,
+    },
     metrics::*,
 };
 
@@ -105,6 +108,19 @@ impl DeckState {
             RowKind::Text { field, .. } => self.begin_entry(*field, fx),
             RowKind::Action { action, .. } => self.run_row_action(target, *action, view, fx),
             RowKind::Launch { key } => self.open_launch_choice(target, row, *key, view),
+            RowKind::Credential { provider, part } => match part {
+                CredentialPart::Status => {}
+                CredentialPart::Token => self.begin_entry(TextField::for_provider(*provider), fx),
+                CredentialPart::Save => fx.push(Effect::SubmitToken(*provider)),
+                CredentialPart::Check => fx.push(Effect::CheckToken(*provider)),
+                CredentialPart::Create => fx.push(Effect::OpenUrl(provider.token_page().to_string())),
+                CredentialPart::Remove => fx.push(Effect::RemoveToken(*provider)),
+            },
+            RowKind::Global { action } => fx.push(match action {
+                GlobalAction::OpenLogFolder => Effect::OpenLogFolder,
+                GlobalAction::SaveDiagnostics => Effect::SaveDiagnostics,
+                GlobalAction::UpdateSources => Effect::UpdateSources,
+            }),
             RowKind::Info { .. } => {}
         }
     }

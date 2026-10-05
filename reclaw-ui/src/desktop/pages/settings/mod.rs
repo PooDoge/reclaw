@@ -3,10 +3,11 @@
 //! appears in both interfaces. Launch rows appear only where the game and the display support them.
 //!
 //! * `screen`: the section list and the rows, at each layout class; `form`: one section's rows
-//! * `text_row`: a text row, which owns its field
+//! * `text_row`: a text row, which owns its field; `tokens`: the boxes access tokens are pasted into
 mod form;
 mod screen;
 mod text_row;
+mod tokens;
 
 use freya::prelude::*;
 

@@ -60,6 +60,10 @@ impl Store {
     ///
     /// Call from handlers and tasks, not from render, and not while holding a read of the state.
     pub fn dispatch(self, action: AppAction) {
+        // The reducer stays pure; the log is written here, where every notice passes once.
+        if let AppAction::Notify(notice) = &action {
+            crate::notices::log(notice);
+        }
         let mut station = self.station;
         let touched = {
             // Quiet has no readers, so this write notifies nobody; the channels are notified below.

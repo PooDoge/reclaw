@@ -1,6 +1,7 @@
 //! Settings as data: sections of groups of rows. Pages render a schema; the reducer edits values
 //! by key. Nothing here knows about Freya.
 use reclaw_games::settings::SettingKey;
+use reclaw_net::Provider;
 
 /// Which text box a gamepad press should start typing into.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -9,14 +10,39 @@ pub enum TextField {
     LaunchOptions,
     SdlOverride,
     DefaultLocation,
+    /// A token being typed. Its text is never stored as a setting or passed around as a plain string: see `Effect::SaveToken`.
+    GithubToken,
+    GitlabToken,
 }
 
 impl TextField {
+    /// The box a service's token is typed into.
+    pub fn for_provider(provider: Provider) -> Self {
+        match provider {
+            Provider::GitHub => Self::GithubToken,
+            Provider::GitLab => Self::GitlabToken,
+        }
+    }
+
+    /// The service this box holds a token for, if it is a token box.
+    pub fn token_provider(self) -> Option<Provider> {
+        match self {
+            Self::GithubToken => Some(Provider::GitHub),
+            Self::GitlabToken => Some(Provider::GitLab),
+            _ => None,
+        }
+    }
+
+    /// Text typed here is shown as dots and never saved with the settings.
+    pub fn is_secret(self) -> bool {
+        self.token_provider().is_some()
+    }
+
     /// The settings key the text is stored under, or `None` for a text that belongs to a form, not
     /// to the settings (the install location is typed fresh for each install).
     pub fn key(self) -> Option<&'static str> {
         match self {
-            Self::InstallLocation => None,
+            Self::InstallLocation | Self::GithubToken | Self::GitlabToken => None,
             Self::LaunchOptions => Some("launch_options"),
             Self::SdlOverride => Some("sdl_override"),
             Self::DefaultLocation => Some("default_location"),
@@ -32,6 +58,50 @@ pub enum RowAction {
     CheckUpdate,
     /// Goes through a confirmation first.
     Uninstall,
+}
+
+/// The rows of a service's access-token group, top to bottom.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum CredentialPart {
+    /// Read-only: what is known about the token.
+    Status,
+    /// The box the token is pasted into.
+    Token,
+    /// Keep what was pasted.
+    Save,
+    Check,
+    /// Open the service's page for making a token.
+    Create,
+    Remove,
+}
+
+impl CredentialPart {
+    /// The key of this row (unique within the Network section).
+    pub fn key(self, provider: Provider) -> &'static str {
+        match (provider, self) {
+            (Provider::GitHub, Self::Status) => "github_status",
+            (Provider::GitHub, Self::Token) => "github_token",
+            (Provider::GitHub, Self::Save) => "github_save",
+            (Provider::GitHub, Self::Check) => "github_check",
+            (Provider::GitHub, Self::Create) => "github_create",
+            (Provider::GitHub, Self::Remove) => "github_remove",
+            (Provider::GitLab, Self::Status) => "gitlab_status",
+            (Provider::GitLab, Self::Token) => "gitlab_token",
+            (Provider::GitLab, Self::Save) => "gitlab_save",
+            (Provider::GitLab, Self::Check) => "gitlab_check",
+            (Provider::GitLab, Self::Create) => "gitlab_create",
+            (Provider::GitLab, Self::Remove) => "gitlab_remove",
+        }
+    }
+}
+
+/// What a global action row does (rows about Reclaw itself rather than one app).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum GlobalAction {
+    OpenLogFolder,
+    SaveDiagnostics,
+    /// Fetch the newest commits of the checkout this copy was built from, and rebuild.
+    UpdateSources,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -54,6 +124,16 @@ pub enum RowKind {
     /// Read-only value.
     Info {
         value: String,
+    },
+    /// One row of a service's access-token group. What each shows comes from the store's credentials status, so the schema stays
+    /// the same for everyone and the text is worked out when it is drawn.
+    Credential {
+        provider: Provider,
+        part: CredentialPart,
+    },
+    /// An action on Reclaw itself.
+    Global {
+        action: GlobalAction,
     },
     /// A launch setting from the games engine: its options, its value and where the value comes
     /// from depend on the display and the game, so they are worked out when shown (see `launch`).
@@ -80,8 +160,9 @@ impl Row {
         self
     }
 
+    /// Whether the row has a text box under its label (and so is taller).
     pub fn is_text(&self) -> bool {
-        matches!(self.kind, RowKind::Text { .. })
+        matches!(self.kind, RowKind::Text { .. } | RowKind::Credential { part: CredentialPart::Token, .. })
     }
 }
 

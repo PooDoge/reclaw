@@ -27,6 +27,9 @@ pub enum NetError {
     Status { host: String, status: u16 },
     #[error("{host} is limiting requests; try again in {} seconds", retry_in.as_secs())]
     RateLimited { host: String, retry_in: Duration },
+    /// The service refused the token that was sent. The token is not sent again; the request is repeated without it.
+    #[error("{host} refused the access token (it may have expired or been revoked)")]
+    Unauthorized { host: String },
     /// The site answered with a page meant for a browser to solve. Reclaw says who it is and does not pretend to be one.
     #[error("{host} is asking for a web browser (a bot check, status {status})")]
     BotChallenge { host: String, status: u16 },
@@ -82,7 +85,8 @@ impl NetError {
             Self::BotChallenge { .. } => {
                 "The site wants a real browser. Reclaw identifies itself honestly and does not imitate one; use the site's API with a token, or a mirror."
             }
-            Self::RateLimited { .. } => "Wait, or add an access token (for GitHub, set GITHUB_TOKEN) to raise the limit.",
+            Self::RateLimited { .. } => "Wait, or add an access token in Settings (Network) to raise the limit.",
+            Self::Unauthorized { .. } => "Make a new token and paste it in Settings (Network). Until then requests go out without one.",
             Self::Tls { .. } => "The certificate was not trusted. On a network that re-signs traffic, set SSL_CERT_FILE to its CA bundle.",
             Self::Dns { .. } => "Check the network connection and DNS settings.",
             Self::DiskFull => "Free some disk space and try again; the partial download is kept.",

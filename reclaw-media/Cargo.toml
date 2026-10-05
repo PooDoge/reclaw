@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 thiserror = "2"
+tracing = "0.1"
 url = "2"
 futures-channel = "0.3"
 pulldown-cmark = { version = "0.13", default-features = false }

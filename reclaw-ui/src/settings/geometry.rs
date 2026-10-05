@@ -70,6 +70,18 @@ mod tests {
     }
 
     #[test]
+    fn a_group_note_fits_on_one_line_in_deck_mode() {
+        // `NOTE_H` leaves room for one line of the Deck's small text, about a hundred characters across a two-pane page; a longer
+        // note wraps under the first row (this happened with the Network section's).
+        let schema = global_settings(&[], &reclaw_games::settings::DisplayEnvironment::unknown());
+        for section in &schema.sections {
+            for note in section.groups.iter().filter_map(|g| g.note) {
+                assert!(note.chars().count() <= 95, "{} has a note of {} characters: {note}", section.id, note.chars().count());
+            }
+        }
+    }
+
+    #[test]
     fn group_headings_push_their_rows_down() {
         let schema = global_settings(&[], &reclaw_games::settings::DisplayEnvironment::unknown());
         let library = schema.sections.iter().find(|s| s.id == "library").unwrap();

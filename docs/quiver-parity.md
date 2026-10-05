@@ -21,6 +21,13 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
    sandbox (the proxy refused thunderstore.io and gamebanana.com). Those must be verified against the live services before they are built.
 6. **The network layer is `reclaw-net`** (ADR 0010, 0011): one client for the catalog, release APIs, downloads and mod providers, with the
    address policy kept for pictures and READMEs written by strangers.
+7. **Quiver keeps its GitHub token as plain text in `settings.json`, never checks it, and sends it to `github.com` and
+   `raw.githubusercontent.com` as well as the API** (read 2026-10-05). Its speed comes from not asking (the published platform index),
+   conditional requests, one request per address and credential, a serial queue per provider with interactive work first, and a
+   cool-down per credential. Reclaw has the first, second and third and a per-host limit instead of a serial queue; its token is a
+   private file, checked when pasted, sent to the API host only, and dropped when refused (ADR 0014). **Today nothing calls the GitHub
+   API except the token check**; the token pays off with M2's release fetching. Not taken from Quiver: the `PRIVATE-TOKEN` header
+   (it would follow a redirect), the banner with a snooze (a notice names the limit when it is hit; the snooze is not built).
 
 ## Status by area
 
@@ -35,7 +42,7 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 | Platform eligibility (classify a release's assets as Windows / Linux / Mac / Android) | `PlatformAssetMatcher`, `CatalogPlatformSupport` | **no** | M1 |
 | Library UI: grid / list / compact, search, sort, tag filters, context menu | `Views/Library*` | **done** over the real library; Add / Remove from the Manage menu | name styles, tag filters, per-user tags |
 | Catalog UI | `Views/Catalog*` | **done** over the real 232 apps with system chips, search, status line and Refresh; the review flow (New / Changed) is **no** | review (M1) |
-| Release fetching GitHub / GitLab, rate limits, token, request coordinator | `ReleaseRequestCoordinator`, `GitHubApiCache` | the client under it is **done** (`reclaw-net`: retries, `Retry-After`, ETag, per-host limits, tokens); the release lists and their paging **no** | M2 |
+| Release fetching GitHub / GitLab, rate limits, token, request coordinator | `ReleaseRequestCoordinator`, `GitHubApiCache` | the client under it is **done** (`reclaw-net`: retries, `Retry-After`, ETag, one question for two askers, per-host limits); **the token is done** (Settings, Network: private file, checked on paste, shown with its allowance, dropped when refused; spec: credentials); the release lists and their paging **no** | M2 (GraphQL batching to be decided, ADR 0014) |
 | Choosing the asset for this OS and CPU | `DownloadAssetPolicy`, `PlatformAssetMatcher` | **no** (and Linux offers Windows builds beside native ones) | M2 |
 | Download, extract (zip 7z rar tar), flatten one wrapper folder, find the executable, `chmod +x` | `GameInstallationService`, `GameDownloadService` | download **done** (streamed, hashed, resumable, cancellable); extraction and the rest **no** | M2 |
 | Status machine and version comparison (`ReleaseVersionIdentity`) | `GameStatusService`, `GameInfo` | **no**; Reclaw has `AppStatus` for the UI only | M2 |
@@ -46,7 +53,8 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 | Settings (General, Controls, Appearance, App cards, Advanced) | `settings.json`, PascalCase | different file and keys (TOML); Reclaw's own settings **done**; Quiver's import **no** | M5 |
 | Gamepad and keyboard navigation | SDL2 polling | `reclaw-input` on `gilrs` (not hardware-verified) | |
 | Window, tray, close-to-tray, placement | Avalonia | custom frame, monitors, saved placement **done**; tray **no** | |
-| Announcements, token banner, launcher self-update (Velopack) | `MainView` | **no** | M3 |
+| Announcements, token banner, launcher self-update (Velopack) | `MainView` | announcements **no**; token banner **no** (a notice appears when a limit is hit once releases are fetched); self-update for a source checkout **done** (`scripts/update.sh`, Settings, About; spec: updates), for a packaged build **no** | M3 |
+| Diagnostics (`LaunchDebugReport`) | `LaunchDebugReport` | the log file, its redaction, the diagnostics report and `docs/troubleshooting.md` are **done** (spec: logging); a per-launch debug report waits for launching | M2 |
 | CLI (`--run`, list, update) | `CLIHandler` | **no** | later |
 | Android head | `QuiverLauncher.Android` | not planned | |
 

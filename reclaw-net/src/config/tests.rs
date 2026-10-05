@@ -13,27 +13,25 @@ fn the_default_identifies_the_program_and_where_to_find_it() {
     assert!(ua.starts_with("Reclaw/") && ua.contains(PROJECT_URL), "{ua}");
 }
 
-#[test]
-fn tokens_come_from_the_environment_for_their_own_host_only() {
-    let (config, problems) = NetConfig::from_env(env(&[("GITHUB_TOKEN", " ghp_secret "), ("GITLAB_TOKEN", "")]));
-    assert!(problems.is_empty());
-    assert_eq!(config.token_for("api.github.com"), Some("ghp_secret"));
-    assert_eq!(config.token_for("API.GITHUB.COM"), Some("ghp_secret"));
-    assert_eq!(config.token_for("github.com"), None, "not sent to the website or the download hosts");
-    assert_eq!(config.token_for("gitlab.com"), None, "an empty variable is no token");
-    let own = NetConfig::from_env(env(&[("GITHUB_TOKEN", "a"), ("RECLAW_GITHUB_TOKEN", "b")])).0;
-    assert_eq!(own.token_for("api.github.com"), Some("b"), "Reclaw's own variable wins");
+fn token(config: &NetConfig, host: &str) -> Option<String> {
+    config.tokens.iter().find(|(h, _)| h == host).map(|(_, t)| t.expose().to_string())
 }
 
 #[test]
-fn a_token_never_appears_in_debug_output_or_in_a_cache_key() {
+fn tokens_come_from_the_environment_for_their_own_provider_only() {
+    let (config, problems) = NetConfig::from_env(env(&[("GITHUB_TOKEN", " ghp_secret "), ("GITLAB_TOKEN", "")]));
+    assert!(problems.is_empty());
+    assert_eq!(token(&config, "api.github.com").as_deref(), Some("ghp_secret"), "trimmed, and for the API host");
+    assert_eq!(token(&config, "gitlab.com"), None, "an empty variable is no token");
+    let own = NetConfig::from_env(env(&[("GITHUB_TOKEN", "a"), ("RECLAW_GITHUB_TOKEN", "b")])).0;
+    assert_eq!(token(&own, "api.github.com").as_deref(), Some("b"), "Reclaw's own variable wins");
+}
+
+#[test]
+fn a_token_never_appears_in_debug_output() {
     let config = NetConfig::from_env(env(&[("GITHUB_TOKEN", "ghp_verysecret")])).0;
     assert!(!format!("{config:?}").contains("verysecret"));
-    assert!(format!("{config:?}").contains("api.github.com"));
-    let tag = config.credential_tag("api.github.com");
-    assert!(!tag.contains("verysecret") && tag.len() == 12, "{tag}");
-    assert_eq!(config.credential_tag("raw.githubusercontent.com"), "anon");
-    assert_eq!(config.credential_tag("api.github.com"), tag, "stable");
+    assert!(format!("{config:?}").contains("api.github.com"), "which hosts have one is shown, not the token");
 }
 
 #[test]

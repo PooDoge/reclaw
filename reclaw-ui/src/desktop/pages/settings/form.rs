@@ -2,13 +2,17 @@ use freya::prelude::*;
 use reclaw_config::LaunchPrefs;
 use reclaw_games::{project::ProjectInfo, settings::DisplayEnvironment};
 
-use super::text_row::TextRow;
+use super::{text_row::TextRow, tokens::TokenBoxes};
 use crate::{
+    credentials::CredentialsStatus,
     desktop::{GameDialogs, OpenPicker},
     effect::Effect,
     metrics::*,
     prelude::*,
-    settings::{LaunchContext, Row, RowAction, RowKind, Schema, SettingValue, SettingsTarget, SettingsValues, geometry::GROUP_GAP},
+    settings::{
+        CredentialPart, GlobalAction, LaunchContext, Row, RowAction, RowKind, Schema, SettingValue, SettingsTarget, SettingsValues,
+        geometry::GROUP_GAP,
+    },
     surface::{RowControl, SettingRow},
     typography::TypeStyle,
 };
@@ -27,6 +31,8 @@ pub(super) struct Form {
     pub density: Density,
     pub on_effect: EventHandler<Effect>,
     pub dialogs: GameDialogs,
+    pub credentials: CredentialsStatus,
+    pub tokens: TokenBoxes,
 }
 
 impl Form {
@@ -102,6 +108,54 @@ impl Form {
             }
             RowKind::Info { value } => {
                 described(SettingRow::new(row.label, RowControl::Value { text: value.clone(), opens_menu: false }, density)).into_element()
+            }
+            RowKind::Credential { provider, part } => {
+                let provider = *provider;
+                let action = |danger: bool, press: Box<dyn Fn()>| {
+                    described(SettingRow::new(row.label, RowControl::Action { danger }, density).on_press(move |()| press())).into_element()
+                };
+                match part {
+                    CredentialPart::Status => described(SettingRow::new(
+                        row.label,
+                        RowControl::Value { text: self.credentials.of(provider).short(provider), opens_menu: false },
+                        density,
+                    ))
+                    .into_element(),
+                    CredentialPart::Token => {
+                        let (input, a11y) = self.tokens.get(provider);
+                        let control = RowControl::Text { input, placeholder: "Paste your token".to_string(), a11y, secret: true };
+                        described(SettingRow::new(row.label, control, density)).into_element()
+                    }
+                    CredentialPart::Save => {
+                        let (input, _) = self.tokens.get(provider);
+                        action(
+                            false,
+                            Box::new(move || {
+                                // The pasted text becomes a `Secret` here and the box is emptied.
+                                let mut input = input;
+                                let token = reclaw_log::Secret::new(input.peek().trim());
+                                input.set(String::new());
+                                on_effect.call(Effect::SaveToken { provider, token });
+                            }),
+                        )
+                    }
+                    CredentialPart::Check => action(false, Box::new(move || on_effect.call(Effect::CheckToken(provider)))),
+                    CredentialPart::Create => {
+                        action(false, Box::new(move || on_effect.call(Effect::OpenUrl(provider.token_page().to_string()))))
+                    }
+                    CredentialPart::Remove => action(true, Box::new(move || on_effect.call(Effect::RemoveToken(provider)))),
+                }
+            }
+            RowKind::Global { action } => {
+                let action = *action;
+                described(SettingRow::new(row.label, RowControl::Action { danger: false }, density).on_press(move |()| {
+                    on_effect.call(match action {
+                        GlobalAction::OpenLogFolder => Effect::OpenLogFolder,
+                        GlobalAction::SaveDiagnostics => Effect::SaveDiagnostics,
+                        GlobalAction::UpdateSources => Effect::UpdateSources,
+                    });
+                }))
+                .into_element()
             }
             RowKind::Launch { key } => {
                 let ctx = LaunchContext { env: &self.display, projects: &self.projects, prefs: &self.launch };

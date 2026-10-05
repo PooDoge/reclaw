@@ -191,7 +191,7 @@ fn a_token_goes_to_its_own_host_and_is_dropped_when_a_redirect_leaves_it() {
         }
     });
     let mut config = local_config();
-    config.tokens = vec![("127.0.0.1".into(), "s3cret".into())];
+    config.tokens = vec![("127.0.0.1".into(), reclaw_log::Secret::new("s3cret"))];
     let net = Net::new(config).expect("net");
     net.fetch(&Request::get(server.url("/start"))).expect("followed");
     let seen = server.requests();
@@ -207,7 +207,7 @@ fn an_authenticated_answer_is_not_served_to_an_anonymous_request() {
     let rule = |r: Request| r.cached(Duration::from_secs(3600), false);
     let mut with = local_config();
     with.cache_dir = Some(dir.path().to_path_buf());
-    with.tokens = vec![("127.0.0.1".into(), "tok".into())];
+    with.tokens = vec![("127.0.0.1".into(), reclaw_log::Secret::new("tok"))];
     let mut without = local_config();
     without.cache_dir = Some(dir.path().to_path_buf());
     assert_eq!(Net::new(with).expect("net").fetch(&rule(Request::get(server.url("/who")))).expect("a").text(), "private");

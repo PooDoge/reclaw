@@ -68,6 +68,7 @@ impl Component for DeckApp {
         let recent_routes = nav.recents();
         let (games, activity, controller, keyboard_inset) = (use_games(), use_activity(), use_controller(), use_keyboard_inset());
         let (settings, projects, display, launch, notices) = (use_settings(), use_projects(), use_display(), use_launch(), use_notices());
+        let credentials = crate::store::use_credentials();
         let sort = Sort::from_settings(&settings);
         let (games_changed, activity_changed, notices_changed, mailbox) = (
             use_channel(AppChannel::Games),
@@ -193,7 +194,9 @@ impl Component for DeckApp {
                 _ => Default::default(),
             };
             let shown = match (target, schema) {
-                (Some(target), Some(schema)) => Some(SettingsShown { target, schema, launch_text: texts }),
+                (Some(target), Some(schema)) => {
+                    Some(SettingsShown { target, schema, launch_text: texts, credentials: credentials.clone() })
+                }
                 _ => None,
             };
             let toast = state.toast_visible(&view).then(|| view.top_notice().cloned()).flatten();

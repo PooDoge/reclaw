@@ -166,7 +166,7 @@ pub(super) fn run(command: &WindowCommand, store: Store) {
             let direction = direction_of(*edge);
             platform.with_window(id, move |window| {
                 if let Err(e) = window.drag_resize_window(direction) {
-                    eprintln!("reclaw: the window system would not start a resize: {e}");
+                    tracing::warn!(error = %e, "the window system would not start a resize");
                 }
             });
         }

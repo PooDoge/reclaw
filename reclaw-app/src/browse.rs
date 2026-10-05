@@ -1,6 +1,10 @@
 //! Opening a link in the system browser. Only public https addresses are opened: a link comes from a catalog or a README written by
 //! someone else, and it must not be able to start a program or open a file.
-use std::process::{Command, Stdio};
+use std::{
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+};
 
 use reclaw_net::AddressPolicy;
 
@@ -11,22 +15,24 @@ pub enum OpenError {
     Refused(String, reclaw_net::UrlError),
     #[error("the system's link opener could not be started ({0}); the link is {1}")]
     NoOpener(String, String),
+    #[error("{0} is not a folder that exists")]
+    NotAFolder(PathBuf),
 }
 
-/// The command that opens an address on this system.
-fn opener(url: &str) -> Command {
+/// The command that opens an address (or a path) on this system.
+fn opener(url: impl AsRef<OsStr>) -> Command {
     if cfg!(target_os = "macos") {
         let mut c = Command::new("open");
-        c.arg(url);
+        c.arg(url.as_ref());
         c
     } else if cfg!(target_os = "windows") {
         // `start` is a shell built-in; this handler is a program, and takes the address as one argument with no shell in between.
         let mut c = Command::new("rundll32");
-        c.arg("url.dll,FileProtocolHandler").arg(url);
+        c.arg("url.dll,FileProtocolHandler").arg(url.as_ref());
         c
     } else {
         let mut c = Command::new("xdg-open");
-        c.arg(url);
+        c.arg(url.as_ref());
         c
     }
 }
@@ -34,10 +40,22 @@ fn opener(url: &str) -> Command {
 /// Check the address and hand it to the system.
 pub fn open_url(url: &str) -> Result<(), OpenError> {
     let checked = AddressPolicy::Public.parse(url).map_err(|why| OpenError::Refused(url.to_string(), why))?;
-    let mut command = opener(checked.as_str());
+    launch(opener(checked.as_str()), checked.as_str())
+}
+
+/// Show one of Reclaw's own folders (the logs) in the file manager. Only ever called with a path Reclaw made itself, never one
+/// that came from a catalog.
+pub fn open_folder(path: &Path) -> Result<(), OpenError> {
+    if !path.is_dir() {
+        return Err(OpenError::NotAFolder(path.to_path_buf()));
+    }
+    launch(opener(path), &path.display().to_string())
+}
+
+fn launch(mut command: Command, what: &str) -> Result<(), OpenError> {
     command.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
-    let mut child = command.spawn().map_err(|e| OpenError::NoOpener(e.to_string(), checked.to_string()))?;
-    // Wait for it somewhere else so it does not stay a zombie; the opener returns as soon as the browser has the link.
+    let mut child = command.spawn().map_err(|e| OpenError::NoOpener(e.to_string(), what.to_string()))?;
+    // Wait for it somewhere else so it does not stay a zombie; the opener returns as soon as the other program has it.
     std::thread::spawn(move || {
         let _ = child.wait();
     });
@@ -62,6 +80,11 @@ mod tests {
         ] {
             assert!(matches!(open_url(bad), Err(OpenError::Refused(..))), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn a_folder_that_is_not_there_is_refused_before_anything_is_started() {
+        assert!(matches!(open_folder(Path::new("/nonexistent/reclaw/logs")), Err(OpenError::NotAFolder(_))));
     }
 
     #[test]
