@@ -169,6 +169,18 @@ impl Net {
         self.block(self.fetch_async(request))?
     }
 
+    /// The saved copy of `request`, of any age, without touching the network. `None` when nothing was saved (or caching is off
+    /// or the request has no cache rule). What an offline start has to show.
+    pub fn cached(&self, request: &Request) -> Option<Fetched> {
+        let url = self.parse(&request.url).ok()?;
+        let cache = self.inner.cache.as_ref()?;
+        request.cache?;
+        let credential = self.inner.cfg.credential_tag(url.host_str().unwrap_or_default());
+        let entry = cache.read(url.as_str(), &credential)?;
+        let fresh = request.cache.is_some_and(|rule| entry.age_secs(unix_now()) < rule.ttl.as_secs());
+        Some(from_entry(&entry, if fresh { Source::CacheFresh } else { Source::CacheStale }, None))
+    }
+
     pub(crate) fn parse(&self, text: &str) -> Result<Url, NetError> {
         self.inner.cfg.address_policy.parse(text).map_err(NetError::Blocked)
     }

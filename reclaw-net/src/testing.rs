@@ -1,6 +1,6 @@
 //! A small HTTP/1.1 server on this machine whose every answer a test decides: status, headers, a body that is cut off or
-//! stalls halfway, a request counter. Raw sockets, so what the client sees is exactly what the test wrote.
-#![allow(dead_code)]
+//! stalls halfway, a request counter. Raw sockets, so what the client sees is exactly what the test wrote. Compiled only with
+//! the `testing` feature, which the tests of this crate and of the crates built on it turn on.
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Write},
@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-use reclaw_net::{AddressPolicy, Net, NetConfig, ProxyMode};
+use crate::{AddressPolicy, Net, NetConfig, ProxyMode};
 
 #[derive(Clone, Debug)]
 pub struct Req {

@@ -18,11 +18,13 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), controller `InputProfile` | no |
 | `reclaw-games` | What a project is (catalog metadata, art, media, releases), the systems games came from (`platform`), launch-setting capabilities and how a launch plan is built (`settings`) | no |
 | `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format) | no |
+| `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, `probe` (spec: network) | no |
+| `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock | no |
 | `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
 | `reclaw-ui` | Everything you see: tokens, components, the surface system, both interfaces, the store, the router, the window frame, the `Shell` | yes |
 
-Six crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
+Eight crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
 
 ## Inside `reclaw-ui/src`
 

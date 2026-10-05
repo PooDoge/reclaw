@@ -1,6 +1,4 @@
 //! `Net::download` against a server on this machine that cuts connections, stalls, ignores ranges and lies.
-mod support;
-
 use std::{
     fs,
     io::Write,
@@ -8,11 +6,11 @@ use std::{
     time::Duration,
 };
 
+use reclaw_net::testing::{Reply, TestServer, local_config, local_net, pattern, sha256_hex};
 use reclaw_net::{Cancel, DownloadRequest, Net, NetError, Progress};
-use support::{Reply, TestServer, local_config, local_net, pattern, sha256_hex};
 
 /// A server that serves `data` the way a file host does: ranges, `ETag`, `If-Range`.
-fn file_server(data: Vec<u8>, etag: &'static str) -> impl Fn(&support::Req, usize) -> Reply + Send + Sync + 'static {
+fn file_server(data: Vec<u8>, etag: &'static str) -> impl Fn(&reclaw_net::testing::Req, usize) -> Reply + Send + Sync + 'static {
     move |req, _| {
         let total = data.len();
         let range = req

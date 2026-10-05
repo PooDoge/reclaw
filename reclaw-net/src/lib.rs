@@ -12,6 +12,7 @@
 //! * `request`, `net`: [`Net`] and `fetch` for small answers
 //! * `download`: `Net::download`, for files of any size: resumable, hashed, cancellable
 //! * `diagnose`: what actually happens when each host the program needs is contacted from this machine
+//! * `testing` (feature `testing`): a small HTTP server on this machine for tests
 //!
 //! A word on "CSP": a Content Security Policy is a response header that a *browser* enforces on a page. A program like this one
 //! reads the header as text and nothing happens, so there is nothing to work around, and pretending to be a browser would not
@@ -29,6 +30,8 @@ pub mod limits;
 pub mod net;
 pub mod request;
 pub mod retry;
+#[cfg(feature = "testing")]
+pub mod testing;
 
 pub use address::{AddressPolicy, UrlError};
 pub use config::{NetConfig, PROJECT_URL, ProxyMode};

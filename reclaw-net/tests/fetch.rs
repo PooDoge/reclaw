@@ -1,15 +1,13 @@
 //! `Net::fetch` against a server on this machine: what it asks, what it does with each kind of answer, and what the
 //! cache does when the answer is old, unchanged or unreachable.
-mod support;
-
 use std::{
     io::Write,
     sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
 };
 
+use reclaw_net::testing::{Reply, TestServer, local_config, local_net};
 use reclaw_net::{AddressPolicy, Net, NetConfig, NetError, ProxyMode, Request, Source, UrlError};
-use support::{Reply, TestServer, local_config, local_net};
 
 #[test]
 fn a_body_arrives_with_its_headers_and_the_request_says_who_is_asking() {

@@ -1,7 +1,7 @@
 # Catalog and library format (Quiver-compatible)
 
-- last-verified: 2026-10-04
-- owner-paths: reclaw-catalog/src/**, reclaw-catalog/tests/real_catalog.rs, reclaw-games/src/platform.rs
+- last-verified: 2026-10-05
+- owner-paths: reclaw-catalog/src/**, reclaw-catalog/tests/real_catalog.rs, reclaw-games/src/platform.rs, reclaw-sync/src/**, reclaw-sync/tests/sync.rs
 
 Reclaw reads and writes the same four documents as the Quiver launcher, so the community catalog works unchanged and a catalog
 Reclaw publishes can be read by Quiver. The crate is `reclaw-catalog`: plain data in and out, no network, no disk, no window.
@@ -85,3 +85,16 @@ Reading the C# is how the rules above were found; nothing was run against Quiver
 Writing a *catalog* to disk (only the library text is produced), the comparison that decides what is new or changed against a library
 (Add / Merge / Replace), classifying a release's assets by platform, an **overlay** list for adding `reclaw` blocks to entries in a catalog
 we do not own, and the files and network around all of this. See `docs/quiver-parity.md`.
+
+## Loading and keeping it (`reclaw-sync`)
+
+`CatalogSync::refresh` fetches the index, every list it names (in parallel) and the platform metadata through the shared client
+(`network.md`), each saved to disk with a five-minute lifetime; `saved` rebuilds the same snapshot from disk with no network at all.
+A list or the platform metadata that fails does not spoil the rest: a saved copy stands in (the snapshot says so) or the part is
+left out, and each such event is a `Problem` with a hint where there is something to do. An app in two lists appears once. Measured
+on the real catalog: 4 lists, 232 apps and 232 release records in about 650 ms cold and 30 ms from disk.
+
+`LibraryStore` keeps `apps.json`: a missing file is an empty library, but a file that cannot be read **as a whole** is an error and is
+never overwritten (the host keeps the library read-only until the person asks for it to be set aside); `save` writes a temporary file,
+flushes and renames it over, copies the file it replaces to `backups/apps-<hash>.json` (the newest 20 are kept) and takes a lock so
+two running copies cannot save at once.
