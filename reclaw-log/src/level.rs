@@ -12,6 +12,7 @@ pub const OUR_TARGETS: &[&str] = &[
     "reclaw_config",
     "reclaw_games",
     "reclaw_input",
+    "reclaw_install",
     "reclaw_log",
     "reclaw_media",
     "reclaw_net",
