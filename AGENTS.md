@@ -22,7 +22,8 @@ Linux needs `libudev-dev` and the GL/EGL dev packages (`libegl1-mesa-dev libgl1-
 Snapshot PNGs land in `reclaw-ui/target/snapshots/`; look at them after changing any layout.
 Bazzite (immutable) builds in a distrobox: `docs/BUILDING.md`, `scripts/bazzite-build.sh`.
 Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog -p reclaw-net -p reclaw-sync -p reclaw`
-keeps the compiled dependencies and drops only ours.
+keeps the compiled dependencies and drops only ours. Test executables from every feature set pile up in `target/debug/deps` (23 GB were seen, and
+the linker then dies with a bus error): delete the executables over 50 MB there and `target/debug/incremental`, and build with `CARGO_INCREMENTAL=0`.
 
 ## Rules
 
