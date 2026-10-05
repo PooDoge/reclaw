@@ -237,17 +237,6 @@ fn a_library_that_cannot_be_read_is_left_alone_and_the_user_is_told() {
 }
 
 #[test]
-fn launching_says_plainly_that_it_is_not_built_yet() {
-    let rig = rig(Some(catalog_server()), None);
-    rig.host.run_refresh(&rig.sync);
-    let id = id_of(&rig, "One");
-    rig.host.handle(&Effect::Launch(id));
-    let note = rig.sink.notices().pop().expect("a note");
-    assert_eq!(note.kind, NoticeKind::Note);
-    assert!(note.title.contains("Launching") && note.body.contains("One"), "{note:?}");
-}
-
-#[test]
 fn a_link_that_is_not_public_https_is_refused_with_a_notice() {
     let rig = rig(None, None);
     rig.host.handle(&Effect::OpenUrl("file:///etc/passwd".into()));

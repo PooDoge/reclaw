@@ -78,6 +78,9 @@ impl Supervisor {
         }
 
         let mut cmd = Command::new(&spec.program);
+        for name in &spec.env_remove {
+            cmd.env_remove(name);
+        }
         cmd.args(&spec.args).envs(spec.env.iter().map(|(k, v)| (k, v))).stdin(Stdio::null());
         if let Some(cwd) = &spec.cwd {
             cmd.current_dir(cwd);

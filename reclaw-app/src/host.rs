@@ -8,6 +8,7 @@
 //! * `report`: the diagnostics report
 //! * `update`: updating a development copy from the git checkout it was built from
 //! * `install`: installing, updating, uninstalling and checking apps (one thread per job, reported as activity)
+//! * `launch`: starting and stopping apps, through a Windows runner when needed, and following how they end
 use std::{
     path::PathBuf,
     sync::{
@@ -26,6 +27,7 @@ use reclaw_ui::{
     catalog_data::{self, IdMap, InstallState, InstallStates, Loaded, key_of},
     credentials::CredentialsStatus,
     effect::Effect,
+    launch_request::LaunchRequest,
     notices::Notice,
     settings::{FALLBACK_LOCATION, KEY_LOG_LEVEL, TextField},
     store::{AppAction, CatalogPhase, CatalogStatus, StoreFeed},
@@ -35,6 +37,7 @@ use crate::browse;
 
 mod credentials;
 mod install;
+mod launch;
 mod report;
 mod update;
 
@@ -78,6 +81,10 @@ pub struct HostConfig {
     pub home: Option<PathBuf>,
     /// Folders an uninstall must never delete or contain: Reclaw's own.
     pub protect: Vec<PathBuf>,
+    /// How long a graceful Stop may take before the app is killed. `None`: eight seconds.
+    pub grace: Option<std::time::Duration>,
+    /// Where to look for Wine and Proton. `None`: the search path and the home folder.
+    pub probe: Option<reclaw_runtime::Probe>,
     /// Another release API than GitHub's and GitLab's (a test's own server).
     pub api: Option<Api>,
     /// The platform to install builds for. `None`: the one this program was built for.
@@ -100,6 +107,8 @@ impl HostConfig {
             default_location: None,
             home: None,
             protect: Vec::new(),
+            grace: None,
+            probe: None,
             api: None,
             platform: None,
         }
@@ -141,6 +150,7 @@ struct Inner {
     logs_dir: Option<PathBuf>,
     logging: Option<Arc<Logging>>,
     installs: install::Installs,
+    runs: launch::Runs,
     protected: Vec<PathBuf>,
 }
 
@@ -183,6 +193,8 @@ impl Host {
             default_location,
             home,
             protect,
+            grace,
+            probe,
             api,
             platform,
         } = config;
@@ -222,6 +234,7 @@ impl Host {
             Installer::new(net, source, downloads_dir.unwrap_or_else(|| std::env::temp_dir().join("reclaw-downloads")))
         });
         let installs = scan_installs(&library, &default_location, home.as_deref());
+        let (supervisor, session_events) = reclaw_runtime::Supervisor::new(grace.unwrap_or(launch::STOP_GRACE));
         let loaded = catalog_data::load(&catalog, &library, &installs);
         let host = Self {
             inner: Arc::new(Inner {
@@ -237,10 +250,18 @@ impl Host {
                 updating: AtomicBool::new(false),
                 logs_dir,
                 logging,
-                installs: install::Installs::new(installer, platform, home),
+                installs: install::Installs::new(installer, platform, home.clone()),
+                runs: {
+                    let runs = launch::Runs::new(supervisor, home.as_deref());
+                    match probe {
+                        Some(probe) => runs.with_probe(probe),
+                        None => runs,
+                    }
+                },
                 protected: protect,
             }),
         };
+        host.watch_sessions(session_events);
         host.watch_for_refused_tokens();
         // Read under one lock: a second `state()` in the same statement would wait for the first for ever.
         let (apps_in_library, apps_in_catalog) = {
@@ -406,10 +427,11 @@ impl Host {
             Effect::Verify(app) => self.verify(*app),
             Effect::CancelActivity(id) => self.cancel_activity(*id),
             Effect::TextCommitted { app: None, field: TextField::DefaultLocation, value } => self.set_default_location(value),
-            Effect::Launch(app) | Effect::Resume(app) => {
-                let title = self.title_of(*app);
-                self.not_yet(what_is_missing(effect), title.as_deref());
-            }
+            // The entry point attaches the person's launch settings (`launch_request`) and calls `launch` itself; a plain press has none.
+            Effect::Launch(app) => self.launch(*app, &LaunchRequest::default()),
+            Effect::Stop(app) => self.stop(*app),
+            // Bringing a running app forward is the window system's business (and the pad's, which the shell has already given it).
+            Effect::Resume(app) => tracing::debug!(app, "Resume: the app already has the screen"),
             Effect::InstallMod { .. } | Effect::RemoveMod { .. } => self.not_yet("Installing mods", None),
             // The rest is the shell's (pages, the window, settings, text boxes) or the gamepad's.
             _ => {}
@@ -499,13 +521,6 @@ fn find(state: &State, id: u32) -> Option<(bool, AppEntry)> {
         .find(|a| ids.get(&key_of(a)) == Some(id))
         .map(|a| (true, a.clone()))
         .or_else(|| state.catalog.iter().find(|a| ids.get(&key_of(&a.entry)) == Some(id)).map(|a| (false, a.entry.clone())))
-}
-
-fn what_is_missing(effect: &Effect) -> &'static str {
-    match effect {
-        Effect::Launch(_) | Effect::Resume(_) => "Launching",
-        _ => "That",
-    }
 }
 
 /// What is installed, read from the folders (a version file and no unfinished-install marker): cheap enough to do for the whole

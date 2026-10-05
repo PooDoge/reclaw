@@ -141,6 +141,22 @@ pub fn find(root: &Path, recursive: bool, platform: Platform) -> Programs {
     Programs { programs: found, needs_runner }
 }
 
+/// Make one file executable (adds the bits; never takes any away).
+#[cfg(unix)]
+pub fn make_file_runnable(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let mode = fs::metadata(path)?.permissions().mode();
+    if mode & 0o111 == 0o111 {
+        return Ok(());
+    }
+    fs::set_permissions(path, fs::Permissions::from_mode(mode | 0o111))
+}
+
+#[cfg(not(unix))]
+pub fn make_file_runnable(_path: &Path) -> std::io::Result<()> {
+    Ok(())
+}
+
 /// Make the programs in `root` executable: an archive made on Windows keeps no execute bits, and the ELF files in it are
 /// still programs. Adds the bits; never takes any away.
 #[cfg(unix)]

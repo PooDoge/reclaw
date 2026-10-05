@@ -18,6 +18,7 @@ pub mod fixtures;
 
 pub mod icon;
 pub mod launch;
+pub mod launch_request;
 pub mod media;
 pub mod metrics;
 pub mod model;

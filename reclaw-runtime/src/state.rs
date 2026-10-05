@@ -11,6 +11,8 @@ pub struct LaunchSpec {
     pub program: PathBuf,
     pub args: Vec<OsString>,
     pub env: Vec<(OsString, OsString)>,
+    /// Variables the app must not inherit from the launcher (see `hostenv`).
+    pub env_remove: Vec<OsString>,
     pub cwd: Option<PathBuf>,
     /// Append the app's stdout and stderr here. Without it they are inherited.
     pub log: Option<PathBuf>,
@@ -18,7 +20,7 @@ pub struct LaunchSpec {
 
 impl LaunchSpec {
     pub fn new(program: impl Into<PathBuf>) -> Self {
-        Self { program: program.into(), args: Vec::new(), env: Vec::new(), cwd: None, log: None }
+        Self { program: program.into(), args: Vec::new(), env: Vec::new(), env_remove: Vec::new(), cwd: None, log: None }
     }
 
     pub fn arg(mut self, arg: impl Into<OsString>) -> Self {

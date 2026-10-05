@@ -4009,6 +4009,7 @@ name = "reclaw"
 version = "0.1.0"
 dependencies = [
  "freya",
+ "futures-channel",
  "futures-util",
  "reclaw-catalog",
  "reclaw-config",
@@ -4018,6 +4019,7 @@ dependencies = [
  "reclaw-log",
  "reclaw-media",
  "reclaw-net",
+ "reclaw-runtime",
  "reclaw-sync",
  "reclaw-ui",
  "serde_json",
@@ -4139,6 +4141,7 @@ version = "0.1.0"
 dependencies = [
  "futures-channel",
  "libc",
+ "tempfile",
  "thiserror 2.0.21",
 ]
 

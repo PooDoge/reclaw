@@ -23,6 +23,7 @@ gamepad = ["reclaw-ui/gamepad"]
 freya = { version = "=0.5.0-rc.8", features = ["router", "radio", "query", "borderless", "titlebar", "markdown", "engine"] }
 thiserror = "2"
 tracing = "0.1"
+futures-channel = "0.3"
 futures-util = { version = "0.3", default-features = false }
 reclaw-catalog = { path = "../reclaw-catalog" }
 reclaw-config = { path = "../reclaw-config" }
@@ -32,6 +33,7 @@ reclaw-install = { path = "../reclaw-install" }
 reclaw-log = { path = "../reclaw-log" }
 reclaw-media = { path = "../reclaw-media" }
 reclaw-net = { path = "../reclaw-net" }
+reclaw-runtime = { path = "../reclaw-runtime" }
 reclaw-sync = { path = "../reclaw-sync" }
 reclaw-ui = { path = "../reclaw-ui" }
 

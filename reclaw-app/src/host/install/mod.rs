@@ -77,4 +77,4 @@ fn shown(path: &Path) -> String {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

@@ -141,6 +141,12 @@ impl App for Launcher {
             }
             #[cfg(not(feature = "gamepad"))]
             let _ = &pad;
+            // Play carries the person's launch settings for that app, worked out from the shared state.
+            if let Effect::Launch(app) = &effect {
+                let request = store.with(|state| reclaw_ui::launch_request::request_for(state, *app));
+                host.launch(*app, &request);
+                return;
+            }
             host.handle(&effect);
         });
 
