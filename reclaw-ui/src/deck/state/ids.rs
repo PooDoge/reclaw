@@ -12,7 +12,6 @@ pub const QA_RESUME: FocusId = FocusId(20);
 pub const QA_STOP: FocusId = FocusId(21);
 pub const QA_DOWNLOADS: FocusId = FocusId(22);
 pub const INSTALL_LOCATION: FocusId = FocusId(30);
-pub const INSTALL_SHORTCUT: FocusId = FocusId(32);
 pub const INSTALL_PRERELEASE: FocusId = FocusId(33);
 pub const INSTALL_CANCEL: FocusId = FocusId(34);
 pub const INSTALL_SUBMIT: FocusId = FocusId(35);
@@ -106,6 +105,6 @@ mod tests {
         assert_eq!(tile_game(menu(1)), None);
         assert_eq!(row_of(settings_nav(1)), None);
         assert_eq!(nav_section(settings_row(0, 1)), None);
-        assert_eq!(menu_index(INSTALL_SHORTCUT), None);
+        assert_eq!(menu_index(INSTALL_PRERELEASE), None);
     }
 }

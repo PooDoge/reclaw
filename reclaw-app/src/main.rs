@@ -221,6 +221,10 @@ fn main() {
             logging: Some(logging.clone()),
             env_tokens: EnvToken::from_env(get),
             update: UpdateSource::detect(env!("RECLAW_SOURCE_DIR"), env!("RECLAW_PROFILE")),
+            downloads_dir: dirs.as_ref().map(AppDirs::downloads_dir),
+            default_location: reclaw_ui::bootstrap::stored_default_location(dirs.as_ref()),
+            home: get("HOME").or_else(|| get("USERPROFILE")).filter(|h| !h.is_empty()).map(std::path::PathBuf::from),
+            protect: dirs.iter().flat_map(|d| [d.config.clone(), d.data.clone(), d.cache.clone(), d.logs.clone()]).collect(),
             ..HostConfig::new(net.clone(), library_file)
         },
         sink,

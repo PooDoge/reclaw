@@ -28,7 +28,7 @@ fn late_duplicate_and_unknown_events_are_ignored() {
     let mut board = board_with(vec![started(1, 2, Kind::Install, None)]);
     assert_eq!(board.apply(started(1, 9, Kind::Install, None)), None, "a repeated start does not add a second row");
     assert_eq!(board.apply(progress(77, Stage::Downloading, 1, None, None)), None);
-    board.apply(ActivityEvent::Failed { id: 1, reason: "no space".into() });
+    board.apply(ActivityEvent::Failed { id: 1, reason: "no space".into(), details: Vec::new() });
     assert_eq!(board.apply(progress(1, Stage::Downloading, 5, None, None)), None, "progress after the end is ignored");
     assert_eq!(board.apply(ActivityEvent::Finished { id: 1, changelog: None }), None, "an ended job cannot end again");
 }
@@ -48,7 +48,7 @@ fn time_left_is_only_offered_while_bytes_are_coming_in() {
     let mut board = board_with(vec![started(1, 1, Kind::Install, Some(1000))]);
     board.apply(progress(1, Stage::Downloading, 500, Some(1000), Some(50)));
     assert_eq!(board.get(1).and_then(|a| a.eta()).map(|d| d.as_secs()), Some(10));
-    board.apply(progress(1, Stage::Building, 1000, Some(1000), Some(50)));
+    board.apply(progress(1, Stage::Finishing, 1000, Some(1000), Some(50)));
     assert_eq!(board.get(1).and_then(|a| a.eta()), None, "building has no honest estimate");
     board.apply(progress(1, Stage::Downloading, 10, Some(1000), Some(0)));
     assert_eq!(board.get(1).and_then(|a| a.eta()), None, "a stalled transfer has none either");
@@ -74,7 +74,7 @@ fn the_queue_lists_running_then_failed_then_finished_newest_first() {
         started(4, 4, Kind::Update, None),
     ]);
     board.apply(ActivityEvent::Finished { id: 1, changelog: None });
-    board.apply(ActivityEvent::Failed { id: 2, reason: "x".into() });
+    board.apply(ActivityEvent::Failed { id: 2, reason: "x".into(), details: Vec::new() });
     board.apply(ActivityEvent::Finished { id: 3, changelog: None });
     let ids: Vec<u64> = board.queue().iter().map(|a| a.id).collect();
     assert_eq!(ids, vec![4, 2, 3, 1]);

@@ -10,16 +10,9 @@ use crate::{
 
 /// Values on the Install page that are plain data. The location text lives in `DeckApp` (a text
 /// box needs a Freya state); everything else is here.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct InstallDraft {
-    pub shortcut: bool,
     pub prerelease: bool,
-}
-
-impl Default for InstallDraft {
-    fn default() -> Self {
-        Self { shortcut: true, prerelease: false }
-    }
 }
 
 impl DeckState {
@@ -33,8 +26,7 @@ impl DeckState {
             y += h + gap;
             n
         };
-        let mut nodes =
-            vec![field(ids::INSTALL_LOCATION, text_h), field(ids::INSTALL_SHORTCUT, row_h), field(ids::INSTALL_PRERELEASE, row_h)];
+        let mut nodes = vec![field(ids::INSTALL_LOCATION, text_h), field(ids::INSTALL_PRERELEASE, row_h)];
         nodes.push(node(ids::INSTALL_CANCEL, 0., y + 40., 200., DECK_TARGET_MIN));
         nodes.push(node(ids::INSTALL_SUBMIT, 216., y + 40., 200., DECK_TARGET_MIN));
         nodes
@@ -48,7 +40,6 @@ impl DeckState {
     pub(super) fn activate_install(&mut self, app: u32, id: FocusId, view: &DeckView, fx: &mut Vec<Effect>) {
         match id {
             i if i == ids::INSTALL_LOCATION => self.begin_entry(TextField::InstallLocation, fx),
-            i if i == ids::INSTALL_SHORTCUT => self.install.shortcut = !self.install.shortcut,
             i if i == ids::INSTALL_PRERELEASE => self.install.prerelease = !self.install.prerelease,
             i if i == ids::INSTALL_CANCEL => self.go_back(view),
             i if i == ids::INSTALL_SUBMIT => {

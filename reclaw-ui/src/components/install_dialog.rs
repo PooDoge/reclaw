@@ -26,7 +26,6 @@ pub struct InstallDialog {
     open: bool,
     title: String,
     location: State<String>,
-    shortcut: State<bool>,
     prerelease: State<bool>,
     surface: SurfaceContext,
     window: (f32, f32),
@@ -36,12 +35,11 @@ pub struct InstallDialog {
 }
 
 impl InstallDialog {
-    pub fn new(open: bool, game_title: &str, location: State<String>, shortcut: State<bool>, prerelease: State<bool>) -> Self {
+    pub fn new(open: bool, game_title: &str, location: State<String>, prerelease: State<bool>) -> Self {
         Self {
             open,
             title: format!("Install {game_title}"),
             location,
-            shortcut,
             prerelease,
             surface: SurfaceContext::new(LayoutClass::Wide, Density::Pointer, 800.),
             window: (1100., 800.),
@@ -103,7 +101,6 @@ impl InstallDialog {
                     .child(field_label("Install location"))
                     .child(SearchField::new(self.location).icon(IconName::Folder).placeholder(FALLBACK_LOCATION).density(density)),
             )
-            .child(toggle_row("Create desktop shortcut", self.shortcut))
             .child(toggle_row("Keep pre-release builds", self.prerelease))
     }
 }

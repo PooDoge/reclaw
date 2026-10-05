@@ -48,11 +48,6 @@ impl Component for InstallBody {
                 .on_press(press(ids::INSTALL_LOCATION)),
             )
             .child(
-                SettingRow::new("Create desktop shortcut", RowControl::Toggle(self.draft.shortcut), Density::Controller)
-                    .focused(focused(ids::INSTALL_SHORTCUT))
-                    .on_press(press(ids::INSTALL_SHORTCUT)),
-            )
-            .child(
                 SettingRow::new("Keep pre-release builds", RowControl::Toggle(self.draft.prerelease), Density::Controller)
                     .focused(focused(ids::INSTALL_PRERELEASE))
                     .on_press(press(ids::INSTALL_PRERELEASE)),

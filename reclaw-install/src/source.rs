@@ -52,12 +52,19 @@ const FRESH_FOR: Duration = Duration::from_secs(5 * 60);
 /// A release list is small; a hostile answer is not allowed to be large.
 const MAX_ANSWER: u64 = 4 * 1024 * 1024;
 
-fn github_request(url: String) -> Request {
+/// `fresh`: the person asked (Install, Update, Check for updates), so a saved answer is only used if the server confirms it is
+/// still current (a conditional request, which GitHub does not count against the rate limit when nothing changed). Without it a
+/// saved answer under five minutes old is used with no question at all, which is right for a background look.
+fn ttl(fresh: bool) -> Duration {
+    if fresh { Duration::ZERO } else { FRESH_FOR }
+}
+
+fn github_request(url: String, fresh: bool) -> Request {
     Request::get(url)
         .accept("application/vnd.github+json")
         .header("X-GitHub-Api-Version", "2022-11-28")
         .max_bytes(MAX_ANSWER)
-        .cached(FRESH_FOR, true)
+        .cached(ttl(fresh), true)
 }
 
 /// A path segment: `/` inside a GitLab project path must travel as `%2F`.
@@ -99,13 +106,13 @@ impl ReleaseSource {
 
     /// The releases of `repo` (`owner/name`). With `whole_list` false, GitHub is asked for its latest release alone and the
     /// list only if that will not do (no such release, or no files in it).
-    pub fn fetch(&self, host: Host, repo: &str, whole_list: bool) -> Result<Releases, InstallError> {
+    pub fn fetch(&self, host: Host, repo: &str, whole_list: bool, fresh: bool) -> Result<Releases, InstallError> {
         if !repo_is_plain(repo) {
             return Err(InstallError::BadAnswer(format!("\"{repo}\" is not a repository name")));
         }
         let found = match host {
-            Host::GitHub => self.github(repo, whole_list)?,
-            Host::GitLab => self.gitlab(repo)?,
+            Host::GitHub => self.github(repo, whole_list, fresh)?,
+            Host::GitLab => self.gitlab(repo, fresh)?,
         };
         if found.list.is_empty() {
             tracing::info!(repo, ?host, "the repository has no releases");
@@ -122,12 +129,12 @@ impl ReleaseSource {
         Ok(found)
     }
 
-    fn github(&self, repo: &str, whole_list: bool) -> Result<Releases, InstallError> {
+    fn github(&self, repo: &str, whole_list: bool, fresh: bool) -> Result<Releases, InstallError> {
         let base = self.api.github.trim_end_matches('/');
         let mut stale = false;
         let mut latest_tag = None;
         if !whole_list {
-            match self.get(&github_request(format!("{base}/repos/{repo}/releases/latest"))) {
+            match self.get(&github_request(format!("{base}/repos/{repo}/releases/latest"), fresh)) {
                 Ok(answer) => {
                     stale = answer.is_stale();
                     let list = parse_list(&answer.body, parse_github_release).map_err(InstallError::BadAnswer)?;
@@ -141,7 +148,7 @@ impl ReleaseSource {
                 Err(error) => return Err(error.into()),
             }
         }
-        let answer = match self.get(&github_request(format!("{base}/repos/{repo}/releases?per_page=30"))) {
+        let answer = match self.get(&github_request(format!("{base}/repos/{repo}/releases?per_page=30"), fresh)) {
             Ok(answer) => answer,
             Err(NetError::Status { status: 404, .. }) => return Err(InstallError::NoReleases { repo: repo.to_string() }),
             Err(error) => return Err(error.into()),
@@ -150,12 +157,12 @@ impl ReleaseSource {
         Ok(Releases { list, latest_tag, stale: stale || answer.is_stale() })
     }
 
-    fn gitlab(&self, repo: &str) -> Result<Releases, InstallError> {
+    fn gitlab(&self, repo: &str, fresh: bool) -> Result<Releases, InstallError> {
         let base = self.api.gitlab.trim_end_matches('/');
         let request = Request::get(format!("{base}/projects/{}/releases", encode_project(repo)))
             .accept("application/json")
             .max_bytes(MAX_ANSWER)
-            .cached(FRESH_FOR, true);
+            .cached(ttl(fresh), true);
         let answer = match self.get(&request) {
             Ok(answer) => answer,
             Err(NetError::Status { status: 404, .. }) => return Err(InstallError::NoReleases { repo: repo.to_string() }),

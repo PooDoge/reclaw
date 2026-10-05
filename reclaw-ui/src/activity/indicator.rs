@@ -26,7 +26,7 @@ pub struct Indicator {
     pub kind: IndicatorKind,
     /// 0 to 1 while a transfer with a known size runs; the bar. `None` draws no bar (or an indeterminate one).
     pub progress: Option<f32>,
-    /// Short text beside the icon: "34%", "Building", "Updated", "Update ready", "Failed".
+    /// Short text beside the icon: "34%", "Finishing", "Updated", "Update ready", "Failed".
     pub label: String,
     /// Mod downloads running for this game, shown as "+2 mods".
     pub mods: usize,
@@ -43,7 +43,7 @@ fn running_kind(a: &Activity) -> IndicatorKind {
     match a.stage {
         Stage::Queued => IndicatorKind::Queued,
         Stage::Downloading => IndicatorKind::Downloading,
-        Stage::Verifying | Stage::CheckingGameFile | Stage::Building | Stage::Extracting => IndicatorKind::Installing,
+        Stage::Verifying | Stage::Extracting | Stage::Finishing => IndicatorKind::Installing,
     }
 }
 

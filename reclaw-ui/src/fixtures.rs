@@ -52,7 +52,11 @@ pub fn sample_activity() -> ActivityBoard {
             rate: Some(7_400_000),
         },
         ActivityEvent::Started { id: 2, game_id: 5, kind: Kind::Update, title: "Moon Garden v2.0.1".into(), bytes_total: None },
-        ActivityEvent::Failed { id: 2, reason: "Release asset not found. Check the repository or choose another version.".into() },
+        ActivityEvent::Failed {
+            id: 2,
+            reason: "Release asset not found. Check the repository or choose another version.".into(),
+            details: Vec::new(),
+        },
         ActivityEvent::Started {
             id: 3,
             game_id: 6,

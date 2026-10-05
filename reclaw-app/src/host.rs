@@ -7,6 +7,7 @@
 //! * `credentials`: saving, checking and removing access tokens, and telling the screens what each service allows
 //! * `report`: the diagnostics report
 //! * `update`: updating a development copy from the git checkout it was built from
+//! * `install`: installing, updating, uninstalling and checking apps (one thread per job, reported as activity)
 use std::{
     path::PathBuf,
     sync::{
@@ -17,21 +18,23 @@ use std::{
 };
 
 use reclaw_catalog::AppEntry;
+use reclaw_install::{Api, Installer, Platform, ReleaseSource};
 use reclaw_log::{LogLevel, Logging};
 use reclaw_net::Net;
 use reclaw_sync::{CatalogApp, CatalogSnapshot, CatalogSync, LibraryError, LibraryStore};
 use reclaw_ui::{
-    catalog_data::{self, IdMap, Loaded, key_of},
+    catalog_data::{self, IdMap, InstallState, InstallStates, Loaded, key_of},
     credentials::CredentialsStatus,
     effect::Effect,
     notices::Notice,
-    settings::KEY_LOG_LEVEL,
+    settings::{FALLBACK_LOCATION, KEY_LOG_LEVEL, TextField},
     store::{AppAction, CatalogPhase, CatalogStatus, StoreFeed},
 };
 
 use crate::browse;
 
 mod credentials;
+mod install;
 mod report;
 mod update;
 
@@ -67,6 +70,18 @@ pub struct HostConfig {
     pub checker: Option<Checker>,
     /// The git checkout this copy was built from, if it is still there: what Update from source works on.
     pub update: Option<UpdateSource>,
+    /// Where downloads wait until they are installed (a cut-off one continues from here). `None`: the system's temporary folder.
+    pub downloads_dir: Option<PathBuf>,
+    /// The Library setting "Default install location", as saved. `None` or empty: `~/Reclaw/Apps`.
+    pub default_location: Option<String>,
+    /// The person's home folder, for `~`.
+    pub home: Option<PathBuf>,
+    /// Folders an uninstall must never delete or contain: Reclaw's own.
+    pub protect: Vec<PathBuf>,
+    /// Another release API than GitHub's and GitLab's (a test's own server).
+    pub api: Option<Api>,
+    /// The platform to install builds for. `None`: the one this program was built for.
+    pub platform: Option<Platform>,
 }
 
 impl HostConfig {
@@ -81,6 +96,12 @@ impl HostConfig {
             env_tokens: Vec::new(),
             checker: None,
             update: None,
+            downloads_dir: None,
+            default_location: None,
+            home: None,
+            protect: Vec::new(),
+            api: None,
+            platform: None,
         }
     }
 }
@@ -101,6 +122,9 @@ struct State {
     /// False when the library file could not be read: it is left exactly as it is, and nothing is saved over it.
     library_writable: bool,
     status: CatalogStatus,
+    /// What the installer knows about each app, by key; an app with no entry is not installed.
+    installs: InstallStates,
+    default_location: String,
 }
 
 struct Inner {
@@ -116,6 +140,8 @@ struct Inner {
     updating: AtomicBool,
     logs_dir: Option<PathBuf>,
     logging: Option<Arc<Logging>>,
+    installs: install::Installs,
+    protected: Vec<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -143,7 +169,23 @@ impl Host {
     /// Read the library, the saved tokens and whatever catalog was saved by an earlier run (no network), so the first frame already
     /// has data. `config.net` is `None` when the network layer could not start: the program then runs from what is on disk.
     pub fn open(config: HostConfig, sink: Arc<dyn Sink>) -> (Self, Initial) {
-        let HostConfig { net, library_file, index_url, secrets_file, logs_dir, logging, env_tokens, checker, update } = config;
+        let HostConfig {
+            net,
+            library_file,
+            index_url,
+            secrets_file,
+            logs_dir,
+            logging,
+            env_tokens,
+            checker,
+            update,
+            downloads_dir,
+            default_location,
+            home,
+            protect,
+            api,
+            platform,
+        } = config;
         let store = LibraryStore::new(library_file);
         let mut notices = Vec::new();
         let (library, library_writable) = match store.load() {
@@ -172,14 +214,22 @@ impl Host {
             Some(snapshot) => (snapshot.apps(), status_from(snapshot)),
             None => (Vec::new(), CatalogStatus::default()),
         };
-        let loaded = catalog_data::load(&catalog, &library);
+        let default_location =
+            default_location.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()).unwrap_or_else(|| FALLBACK_LOCATION.to_string());
+        let platform = platform.unwrap_or_else(Platform::detect);
+        let installer = net.clone().map(|net| {
+            let source = ReleaseSource::new(net.clone()).with_api(api.unwrap_or_default());
+            Installer::new(net, source, downloads_dir.unwrap_or_else(|| std::env::temp_dir().join("reclaw-downloads")))
+        });
+        let installs = scan_installs(&library, &default_location, home.as_deref());
+        let loaded = catalog_data::load(&catalog, &library, &installs);
         let host = Self {
             inner: Arc::new(Inner {
                 net,
                 sync,
                 store,
                 sink,
-                state: Mutex::new(State { library, catalog, library_writable, status: status.clone() }),
+                state: Mutex::new(State { library, catalog, library_writable, status: status.clone(), installs, default_location }),
                 refreshing: AtomicBool::new(false),
                 tokens,
                 checker,
@@ -187,6 +237,8 @@ impl Host {
                 updating: AtomicBool::new(false),
                 logs_dir,
                 logging,
+                installs: install::Installs::new(installer, platform, home),
+                protected: protect,
             }),
         };
         host.watch_for_refused_tokens();
@@ -208,6 +260,29 @@ impl Host {
     fn state(&self) -> MutexGuard<'_, State> {
         // The data behind the lock is plain and consistent between statements; a panic elsewhere does not make it wrong.
         self.inner.state.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn default_location(&self) -> String {
+        self.state().default_location.clone()
+    }
+
+    /// The Library setting changed: new installs start there. Apps already installed stay where they were put.
+    fn set_default_location(&self, text: &str) {
+        let text = text.trim();
+        self.state().default_location = if text.is_empty() { FALLBACK_LOCATION.to_string() } else { text.to_string() };
+    }
+
+    /// Record what the installer now knows about an app (`None`: not installed) and show the library that way.
+    pub(crate) fn set_install_state(&self, key: &str, state: Option<InstallState>) {
+        let games = {
+            let mut guard = self.state();
+            match state {
+                Some(next) => guard.installs.insert(key.to_string(), next),
+                None => guard.installs.remove(key),
+            };
+            catalog_data::load(&guard.catalog, &guard.library, &guard.installs).games
+        };
+        self.send(AppAction::SetGames(games));
     }
 
     fn send(&self, action: AppAction) {
@@ -252,7 +327,7 @@ impl Host {
                     let mut state = self.state();
                     state.catalog = snapshot.apps();
                     state.status = status.clone();
-                    catalog_data::load(&state.catalog, &state.library)
+                    catalog_data::load(&state.catalog, &state.library, &state.installs)
                 };
                 self.send(AppAction::SetProjects(loaded.projects));
                 self.send(AppAction::SetGames(loaded.games));
@@ -323,18 +398,15 @@ impl Host {
                     self.tell(Notice::problem("A link could not be opened", &error.to_string(), vec![]));
                 }
             }
-            // An install keeps the app in the library; the install itself is the next milestone.
-            Effect::StartInstall { app, .. } => {
-                let title = self.add_to_library(*app);
-                self.not_yet("Installing", title.as_deref());
-            }
-            Effect::Update(app)
-            | Effect::Launch(app)
-            | Effect::Resume(app)
-            | Effect::Uninstall(app)
-            | Effect::Verify(app)
-            | Effect::CheckUpdate(app)
-            | Effect::OpenFolder(app) => {
+            Effect::StartInstall { app, location, prerelease } => self.start_install(*app, Some(location), *prerelease),
+            Effect::Update(app) => self.start_install(*app, None, false),
+            Effect::Uninstall(app) => self.uninstall(*app),
+            Effect::OpenFolder(app) => self.open_app_folder(*app),
+            Effect::CheckUpdate(app) => self.check_update(*app),
+            Effect::Verify(app) => self.verify(*app),
+            Effect::CancelActivity(id) => self.cancel_activity(*id),
+            Effect::TextCommitted { app: None, field: TextField::DefaultLocation, value } => self.set_default_location(value),
+            Effect::Launch(app) | Effect::Resume(app) => {
                 let title = self.title_of(*app);
                 self.not_yet(what_is_missing(effect), title.as_deref());
             }
@@ -381,7 +453,7 @@ impl Host {
         match self.inner.store.save(&next) {
             Ok(()) => {
                 state.library = next;
-                let games = catalog_data::load(&state.catalog, &state.library).games;
+                let games = catalog_data::load(&state.catalog, &state.library, &state.installs).games;
                 drop(state);
                 self.send(AppAction::SetGames(games));
                 Some(title)
@@ -406,7 +478,7 @@ impl Host {
         match self.inner.store.save(&next) {
             Ok(()) => {
                 state.library = next;
-                let games = catalog_data::load(&state.catalog, &state.library).games;
+                let games = catalog_data::load(&state.catalog, &state.library, &state.installs).games;
                 drop(state);
                 self.send(AppAction::SetGames(games));
             }
@@ -431,14 +503,23 @@ fn find(state: &State, id: u32) -> Option<(bool, AppEntry)> {
 
 fn what_is_missing(effect: &Effect) -> &'static str {
     match effect {
-        Effect::Update(_) => "Updating",
         Effect::Launch(_) | Effect::Resume(_) => "Launching",
-        Effect::Uninstall(_) => "Uninstalling",
-        Effect::Verify(_) => "Verifying files",
-        Effect::CheckUpdate(_) => "Checking for updates",
-        Effect::OpenFolder(_) => "Opening the install folder",
-        _ => "Choosing a game file",
+        _ => "That",
     }
+}
+
+/// What is installed, read from the folders (a version file and no unfinished-install marker): cheap enough to do for the whole
+/// library at start. Whether a program is really there is checked when it matters (Play, Verify).
+fn scan_installs(library: &[AppEntry], default_location: &str, home: Option<&std::path::Path>) -> InstallStates {
+    library
+        .iter()
+        .filter(|entry| !entry.is_manual())
+        .filter_map(|entry| {
+            let folder = install::paths::folder_of(entry, default_location, home).ok()?;
+            let version = reclaw_install::layout::installed_version(&folder)?;
+            Some((key_of(entry), InstallState::Installed { version, latest: None }))
+        })
+        .collect()
 }
 
 fn read_only() -> Notice {

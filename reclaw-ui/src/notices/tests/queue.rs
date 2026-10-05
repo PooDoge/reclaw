@@ -15,11 +15,11 @@ fn the_newest_notice_is_on_top_and_lists_are_newest_first() {
 #[test]
 fn a_repeat_about_the_same_game_replaces_instead_of_stacking() {
     let mut n = Notices::default();
-    n.push(Notice::download_failed(1, "A", "timeout"));
-    n.push(Notice::download_failed(1, "A", "timeout again"));
+    n.push(Notice::download_failed(1, "A", "timeout", &[]));
+    n.push(Notice::download_failed(1, "A", "timeout again", &[]));
     assert_eq!(n.len(), 1);
     assert_eq!(n.top().map(|x| x.body.as_str()), Some("timeout again"));
-    n.push(Notice::download_failed(2, "B", "x"));
+    n.push(Notice::download_failed(2, "B", "x", &[]));
     assert_eq!(n.len(), 2, "another game is another notice");
 }
 
@@ -52,7 +52,7 @@ fn a_finished_update_carries_its_release_notes_as_details() {
 fn dismissing_one_all_or_a_games_notices() {
     let mut n = Notices::default();
     let a = n.push(Notice::update_available(1, "A"));
-    n.push(Notice::download_failed(1, "A", "x"));
+    n.push(Notice::download_failed(1, "A", "x", &[]));
     n.push(Notice::update_available(2, "B"));
     assert!(n.dismiss(a) && !n.dismiss(a));
     n.dismiss_game(1);

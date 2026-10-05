@@ -58,7 +58,6 @@ pub enum Effect {
         app: u32,
         /// Where the app's folder goes; empty means the Library default (`settings::resolve_install_location`).
         location: String,
-        shortcut: bool,
         prerelease: bool,
     },
     Update(u32),

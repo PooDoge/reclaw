@@ -18,7 +18,6 @@ impl Component for InstallSheet {
         let env = *ui.env.read();
         let open = self.open;
         let location = use_state(String::new);
-        let shortcut = use_state(|| true);
         let prerelease = use_state(|| false);
         let (store, games) = (shell.store, use_games());
 
@@ -39,19 +38,14 @@ impl Component for InstallSheet {
         let close = move || open.close();
         let (close_for_cancel, close_for_confirm) = (close, close);
 
-        InstallDialog::new(game.is_some(), &title, location, shortcut, prerelease)
+        InstallDialog::new(game.is_some(), &title, location, prerelease)
             .surface(env.surface())
             .window(env.window)
             .keyboard_inset(env.keyboard_inset)
             .on_cancel(move |()| close_for_cancel())
             .on_confirm(move |()| {
                 if let Some(app) = id {
-                    close_effect.call(Effect::StartInstall {
-                        app,
-                        location: location.read().clone(),
-                        shortcut: *shortcut.read(),
-                        prerelease: *prerelease.read(),
-                    });
+                    close_effect.call(Effect::StartInstall { app, location: location.read().clone(), prerelease: *prerelease.read() });
                 }
                 close_for_confirm();
             })

@@ -71,7 +71,6 @@ impl Dispatcher {
                     self.on_effect.call(Effect::StartInstall {
                         app,
                         location: self.texts.value(TextField::InstallLocation),
-                        shortcut: draft.shortcut,
                         prerelease: draft.prerelease,
                     });
                 }

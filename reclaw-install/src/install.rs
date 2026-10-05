@@ -136,7 +136,7 @@ impl Installer {
     /// Find the release and the file to install, without downloading anything.
     pub fn resolve(&self, request: &Request) -> Result<Plan, InstallError> {
         let whole_list = request.allow_prerelease || request.preferred_version.is_some();
-        let found = self.source.fetch(request.host, &request.repo, whole_list)?;
+        let found = self.source.fetch(request.host, &request.repo, whole_list, true)?;
         let release =
             select_release(&found.list, request.preferred_version.as_deref(), found.latest_tag.as_deref(), request.allow_prerelease)
                 .ok_or_else(|| InstallError::NoDownload("No release of this app has files to install.".to_string()))?;

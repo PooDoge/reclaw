@@ -23,7 +23,7 @@ fn install_submits_straight_away_with_nothing_but_the_defaults() {
     let mut s = open_install(&f);
     // The footer buttons sit under the fields; Down from the last field lands on Install (nearest
     // by center), Left from there on Cancel.
-    press(&mut s, &f, &[go(Down), go(Down), go(Down)]);
+    press(&mut s, &f, &[go(Down), go(Down)]);
     assert_eq!(s.focus(), ids::INSTALL_SUBMIT);
     assert_eq!(press(&mut s, &f, &[Confirm]), vec![Effect::SubmitInstall(3)]);
     assert_eq!(s.screen(), Screen::Game(3), "back on the game page");
@@ -33,19 +33,21 @@ fn install_submits_straight_away_with_nothing_but_the_defaults() {
 fn cancel_is_left_of_install() {
     let f = Fixture::new();
     let mut s = open_install(&f);
-    press(&mut s, &f, &[go(Down), go(Down), go(Down), go(Left)]);
+    press(&mut s, &f, &[go(Down), go(Down), go(Left)]);
     assert_eq!(s.focus(), ids::INSTALL_CANCEL);
     press(&mut s, &f, &[Confirm]);
     assert_eq!(s.screen(), Screen::Game(3));
 }
 
 #[test]
-fn install_switches_toggle_in_place() {
+fn the_prerelease_switch_toggles_in_place() {
     let f = Fixture::new();
     let mut s = open_install(&f);
-    press(&mut s, &f, &[go(Down), Confirm, go(Down), Confirm]);
-    assert!(!s.install_draft().shortcut, "shortcut was on by default");
+    assert!(!s.install_draft().prerelease);
+    press(&mut s, &f, &[go(Down), Confirm]);
     assert!(s.install_draft().prerelease);
+    press(&mut s, &f, &[Confirm]);
+    assert!(!s.install_draft().prerelease);
 }
 
 #[test]
@@ -53,9 +55,10 @@ fn cancel_discards_the_draft() {
     let f = Fixture::new();
     let mut s = open_install(&f);
     press(&mut s, &f, &[go(Down), Confirm, Back]);
+    assert!(s.install_draft().prerelease, "the switch was on when the page was left");
     s.apply(Confirm, &f.view());
     assert_eq!(s.screen(), Screen::Install(3));
-    assert!(s.install_draft().shortcut, "a fresh draft each time");
+    assert!(!s.install_draft().prerelease, "a fresh draft each time");
 }
 
 #[test]
@@ -102,7 +105,7 @@ fn reveal_targets_are_fields_in_the_body_never_the_footer() {
     let mut s = open_install(&f);
     let (top, bottom) = s.reveal_target(&f.view()).expect("a body field");
     assert_eq!((top, bottom), (0., 140.), "the tall location field");
-    press(&mut s, &f, &[go(Down), go(Down), go(Down)]);
+    press(&mut s, &f, &[go(Down), go(Down)]);
     assert_eq!(s.focus(), ids::INSTALL_SUBMIT);
     assert_eq!(s.reveal_target(&f.view()), None);
 }

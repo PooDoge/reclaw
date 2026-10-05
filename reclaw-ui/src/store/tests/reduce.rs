@@ -107,7 +107,7 @@ fn a_failed_job_and_a_late_event_for_a_job_that_is_gone() {
         title: "Moon Garden".into(),
         bytes_total: None,
     }));
-    s.reduce(AppAction::Activity(ActivityEvent::Failed { id: 1, reason: "no space left".into() }));
+    s.reduce(AppAction::Activity(ActivityEvent::Failed { id: 1, reason: "no space left".into(), details: Vec::new() }));
     assert_eq!(s.notices.top().map(|n| (n.kind, n.body.as_str())), Some((NoticeKind::DownloadFailed, "no space left")));
     assert!(
         s.reduce(AppAction::Activity(ActivityEvent::Progress {
@@ -190,4 +190,19 @@ fn a_notice_from_the_host_is_queued_and_shown() {
     assert_eq!((top.kind, top.title.as_str()), (NoticeKind::Problem, "Catalog"));
     assert!(top.kind.is_failure(), "a problem stays until dismissed");
     assert!(!Notice::note("t", "b", vec![]).kind.is_failure(), "a note passes");
+}
+
+#[test]
+fn rebuilding_the_game_list_keeps_what_is_running() {
+    let mut s = state();
+    let id = s.games[0].id;
+    s.reduce(AppAction::SetRun { id, run: RunState::Running { pid: 7, since: std::time::SystemTime::now() } });
+    let mut rebuilt = s.games.clone();
+    for game in &mut rebuilt {
+        game.run = RunState::Idle;
+        game.version = "v9".into();
+    }
+    s.reduce(AppAction::SetGames(rebuilt));
+    assert!(matches!(s.games[0].run, RunState::Running { pid: 7, .. }), "the host's rebuild does not know what runs");
+    assert_eq!(s.games[0].version, "v9", "the rest of the new list is taken");
 }

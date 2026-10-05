@@ -122,17 +122,41 @@ pub fn project_from(app: &CatalogApp, id: u32) -> ProjectInfo {
     }
 }
 
-/// An app the user has added, as the Library shows it. Whether it is installed is not known here (the installer owns that), so it
-/// is "not installed" with the latest known version.
-pub fn game_from(entry: &AppEntry, release: Option<&str>, id: u32) -> GameEntry {
+/// What the installer knows about an app, by its key (`key_of`). An app with no entry here is not installed.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum InstallState {
+    /// A finished install of this version is on disk. `latest` is a newer release found by asking the host service, which the
+    /// catalog's own list may not have yet.
+    Installed { version: String, latest: Option<String> },
+    /// An install or an update is running.
+    Installing,
+    /// The last attempt failed and nothing is installed.
+    Failed,
+}
+
+pub type InstallStates = std::collections::HashMap<String, InstallState>;
+
+/// An app the user has added, as the Library shows it. `release` is the latest version the catalog knows of; `state` is what is
+/// on disk. An installed app shows the version it has, and "update ready" when the catalog knows a newer one; an app that is not
+/// installed shows the version it would install.
+pub fn game_from(entry: &AppEntry, release: Option<&str>, id: u32, state: Option<&InstallState>) -> GameEntry {
     let extension = entry.extension.clone().unwrap_or_default();
+    let (status, version) = match state {
+        Some(InstallState::Installed { version, latest }) => {
+            let newer = latest.as_deref().or(release).is_some_and(|latest| reclaw_games::version::is_newer(latest, version));
+            (if newer { AppStatus::UpdateReady } else { AppStatus::Installed }, version.clone())
+        }
+        Some(InstallState::Installing) => (AppStatus::Installing, release.unwrap_or_default().to_string()),
+        Some(InstallState::Failed) => (AppStatus::Failed, release.unwrap_or_default().to_string()),
+        None => (AppStatus::Available, release.unwrap_or_default().to_string()),
+    };
     GameEntry {
         id,
         title: Cow::Owned(entry.custom_display_name.clone().unwrap_or_else(|| entry.name.clone())),
         project: Cow::Owned(entry.project.clone().unwrap_or_default()),
-        version: Cow::Owned(release.unwrap_or_default().to_string()),
+        version: Cow::Owned(version),
         source: source_of(entry),
-        status: AppStatus::Available,
+        status,
         tags: entry.tags.iter().cloned().map(Cow::Owned).collect(),
         platform: entry.system(),
         art: Art {
@@ -146,7 +170,7 @@ pub fn game_from(entry: &AppEntry, release: Option<&str>, id: u32) -> GameEntry 
 }
 
 /// Everything the screens need from the catalog and the library.
-pub fn load(catalog: &[CatalogApp], library: &[AppEntry]) -> Loaded {
+pub fn load(catalog: &[CatalogApp], library: &[AppEntry], states: &InstallStates) -> Loaded {
     let ids = IdMap::for_keys(catalog.iter().map(|a| key_of(&a.entry)).chain(library.iter().map(key_of)));
     let id = |entry: &AppEntry| ids.get(&key_of(entry)).unwrap_or_default();
     let projects: Vec<ProjectInfo> = catalog.iter().map(|app| project_from(app, id(&app.entry))).collect();
@@ -155,7 +179,7 @@ pub fn load(catalog: &[CatalogApp], library: &[AppEntry]) -> Loaded {
         .map(|entry| {
             let release =
                 catalog.iter().find(|a| key_of(&a.entry) == key_of(entry)).and_then(|a| a.release.as_ref()).map(|r| r.release_tag.as_str());
-            game_from(entry, release, id(entry))
+            game_from(entry, release, id(entry), states.get(&key_of(entry)))
         })
         .collect();
     Loaded { projects, games }
