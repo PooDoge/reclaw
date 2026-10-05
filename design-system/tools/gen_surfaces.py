@@ -42,8 +42,6 @@ ACTIONS = '[h(R.Button,{key:1,variant:"secondary",size:"lg"},"Cancel"),h(R.Butto
 
 def install_rows(kb):
     return ('[h(R.SettingRow,{key:1,label:"Install location",control:"text",value:"~/Reclaw/Apps",focus:true,typing:%s}),'
-            'h(R.SettingRow,{key:2,label:"Your game file",desc:"Never downloaded for you; Reclaw builds from your copy.",control:"info",value:"Choose file"}),'
-            'h(R.SettingRow,{key:3,label:"Create desktop shortcut",control:"toggle",on:true}),'
             'h(R.SettingRow,{key:4,label:"Keep pre-release builds",control:"toggle"})]' % ("true" if kb else "false"))
 
 def frame(label, w, hh, scale, page):
@@ -89,7 +87,7 @@ deck_preview("ModalMenu", 520, "Options menu over a darkened screen: root, casca
  + frame("Root", 1280, 800, .42, menu("Starfall 64", f"[{root_rows}]", scale=.4)) + ","
  + frame("Submenu opens to the right; the parent keeps its open row marked", 1280, 800, .4, menu("Add to", f"[{casc_left},{casc_right}]", scale=.4)) + ","
  + frame("Narrow window: only the deepest level", 390, 844, .42, menu("Manage", f"[{manage_rows}]", 390, 844, .42, colw=342, under='null')) + ","
- + 'h("div",null,h("div",{className:"sf-cap"},"Confirmation (Cancel has focus first)"),h("div",{style:{padding:24,background:"rgba(5,8,12,.85)"}},h(R.ConfirmCard,{title:"Uninstall Starfall 64?",message:"Removes it from this device. Your own game file is never touched.",action:"Uninstall"}))))')
+ + 'h("div",null,h("div",{className:"sf-cap"},"Confirmation (Cancel has focus first)"),h("div",{style:{padding:24,background:"rgba(5,8,12,.85)"}},h(R.ConfirmCard,{title:"Uninstall Starfall 64?",message:"Deletes its folder and everything in it, saves included. It stays in your library.",action:"Uninstall"}))))')
 
 readme("ModalMenu", '''
 The Options menu, in the shape of Big Picture's context menu. Rust: `reclaw_ui::surface::{ModalMenu, MenuState}`; the entries for an app are `app_menu::options_menu`.
@@ -135,7 +133,7 @@ Controls: `toggle`, `value` (a choice: opens a menu), `info` (read only), `text`
 ''')
 deck_preview("SettingRow", 480, "Toggle, choice, info and text rows; one focused",
  'h("div",{style:{display:"flex",flexDirection:"column",gap:8,width:760}},'
- 'h(R.SettingRow,{label:"Create desktop shortcut",control:"toggle",on:true,focus:true}),'
+ 'h(R.SettingRow,{label:"Keep pre-release builds",control:"toggle",on:true,focus:true}),'
  'h(R.SettingRow,{label:"Interface",desc:"Auto picks Deck mode under a console session.",control:"value",value:"Auto"}),'
  'h(R.SettingRow,{label:"Version",control:"info",value:"v1.4.2"}),'
  'h(R.SettingRow,{label:"Launch options",control:"text",value:"",placeholder:"Arguments passed to the app"}),'

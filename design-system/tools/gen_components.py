@@ -40,12 +40,12 @@ Tag and status filter, carried over from Quiver's tag filters. Freya: `Chip::new
 Wrap onto a second row on narrow widths; never scroll horizontally on phone. The count is mono and optional. Selected uses the accent fill with `on-accent` text; unselected shows a `line-strong` border so it is visible without relying on the fill.
 """)
 
-preview("StatusBadge","Status",110,"Installed, update ready, installing, failed, not installed, needs your game file",
-'''h("div",{className:"row"},["installed","update","installing","failed","available","needsfile"].map(function(k){return h(R.StatusBadge,{key:k,kind:k})}))''')
+preview("StatusBadge","Status",110,"Installed, update ready, installing, failed, not installed",
+'''h("div",{className:"row"},["installed","update","installing","failed","available"].map(function(k){return h(R.StatusBadge,{key:k,kind:k})}))''')
 readme("StatusBadge","""
 One badge per game state. Every badge carries a word and, except Not installed, an icon, so state never depends on hue: the green and red here differ in lightness and by label.
 
-States: `installed` (ok), `update` (warn), `installing` (info), `failed` (danger), `available` (neutral), `needsfile` (warn). **Needs your game file** is specific to recompilation: the project ships no copyrighted assets, so the user must supply their own ROM or disc image before Install can finish. Never offer to download it.
+States: `installed` (ok), `update` (warn), `installing` (info), `failed` (danger), `available` (neutral). **Not installed** is the neutral one: it has no icon, so state never depends on hue alone. A badge is always a word.
 
 Freya: a custom `rect()` with a Lucide icon and a `label()`; fill and text come from the `*-bg` and matching status token.
 """)
@@ -53,7 +53,7 @@ Freya: a custom `rect()` with a Lucide icon and a `label()`; fill and text come 
 preview("Switch","Inputs",80,"On, off, disabled",
 '''h("div",{className:"row"},h(R.Switch,{on:true}),h(R.Switch,{on:false}),h(R.Switch,{on:true,disabled:true}))''')
 readme("Switch","""
-Binary setting (shortcuts, pre-releases, auto-update). Freya: `Switch::new().toggled(..).on_toggle(..)`. Always pair with a text label to its left; the whole row is the hit target at touch density. Off state keeps a `line-strong` border (3:1).
+Binary setting (pre-releases, auto-update). Freya: `Switch::new().toggled(..).on_toggle(..)`. Always pair with a text label to its left; the whole row is the hit target at touch density. Off state keeps a `line-strong` border (3:1).
 """)
 
 preview("SearchField","Inputs",120,"Placeholder, focused with value, touch size",
@@ -63,7 +63,7 @@ Library and catalog filter (name, tag, repo, folder, as in Quiver). Freya: `Inpu
 """)
 
 preview("GameCapsule","Library",340,"Resting, hover with Play, selected; art is a placeholder",
-'''h("div",{className:"row",style:{alignItems:"flex-start",gap:16}},h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed"}),h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed",hover:true}),h(R.GameCapsule,{title:"Kart Ruins",project:"N64Recomp",status:"needsfile",selected:true}),h(R.GameCapsule,{title:"Dino Rush",project:"PS2 recomp",status:"available"}))''',extra_css="")
+'''h("div",{className:"row",style:{alignItems:"flex-start",gap:16}},h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed"}),h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed",hover:true}),h(R.GameCapsule,{title:"Kart Ruins",project:"N64Recomp",status:"available",selected:true}),h(R.GameCapsule,{title:"Dino Rush",project:"PS2 recomp",status:"available"}))''',extra_css="")
 readme("GameCapsule","""
 The Steam-style library tile: 3:4 portrait art, title, recompilation project, status badge. Freya: a `Card` with fixed width `capsule-w` (168), image via `image()`; `Content::Flex` is not needed because the card is a plain column.
 
@@ -73,25 +73,25 @@ Grid: columns `repeat(auto-fill, capsule-w)` on wide, 4 fluid columns on compact
 """)
 
 preview("LibraryRow","Library",260,"Sidebar list rows: resting, hover, selected, each status dot",
-'''h("div",{className:"row",style:{alignItems:"flex-start",gap:24}},h("div",{className:"col",style:{width:240,gap:2}},h(R.LibraryRow,{title:"Starfall 64",status:"installed",selected:true,version:"v1.4.2"}),h(R.LibraryRow,{title:"Skyward Quest",status:"update",hover:true}),h(R.LibraryRow,{title:"Kart Ruins",status:"needsfile"}),h(R.LibraryRow,{title:"Dino Rush",status:"available"}),h(R.LibraryRow,{title:"Moon Garden",status:"failed"})),h("div",{className:"col",style:{width:300,gap:2}},h("p",{className:"cap"},"Touch density"),h(R.LibraryRow,{title:"Starfall 64",status:"installed",selected:true,size:"touch"}),h(R.LibraryRow,{title:"Skyward Quest",status:"update",size:"touch"})))''')
+'''h("div",{className:"row",style:{alignItems:"flex-start",gap:24}},h("div",{className:"col",style:{width:240,gap:2}},h(R.LibraryRow,{title:"Starfall 64",status:"installed",selected:true,version:"v1.4.2"}),h(R.LibraryRow,{title:"Skyward Quest",status:"update",hover:true}),h(R.LibraryRow,{title:"Kart Ruins",status:"available"}),h(R.LibraryRow,{title:"Dino Rush",status:"available"}),h(R.LibraryRow,{title:"Moon Garden",status:"failed"})),h("div",{className:"col",style:{width:300,gap:2}},h("p",{className:"cap"},"Touch density"),h(R.LibraryRow,{title:"Starfall 64",status:"installed",selected:true,size:"touch"}),h(R.LibraryRow,{title:"Skyward Quest",status:"update",size:"touch"})))''')
 readme("LibraryRow","""
 Left-rail library entry (Steam's game list). Freya: `SideBarItem::new().on_press(..)` with active state from `use_is_active()`; the row is `rect().horizontal().content(Content::Flex)` with the name as `Size::flex(1.)`, then version and status dot at fixed size (the Content::Flex rule applies).
 
 Selected: `bg-raised` fill plus a 3px accent bar on the left, so selection is not carried by fill alone. The dot is a secondary cue; the state's word appears in the hero's badge. Pointer height 32, touch 48.
 """)
 
-preview("HeroHeader","Library",470,"Game page banner with action bar: wide and narrow",
-'''h("div",{className:"col",style:{gap:24}},h(R.HeroHeader,{title:"Starfall 64",project:"N64Recomp",version:"v1.4.2",status:"installed"}),h("div",{style:{maxWidth:390}},h(R.HeroHeader,{title:"Skyward Quest",project:"Zelda-style port",version:"v0.9.1",status:"update",narrow:true,source:"gitlab.com"})))''')
+preview("HeroHeader","Library",830,"Game page banner with action bar: wide and narrow",
+'''h("div",{className:"col",style:{gap:24}},h(R.HeroHeader,{title:"Starfall 64",project:"N64Recomp",version:"v1.4.2",status:"installed"}),h("div",{style:{maxWidth:390}},h(R.HeroHeader,{title:"Skyward Quest",project:"Zelda-style port",version:"v0.9.1",status:"update",narrow:true,source:"gitlab.com"})),h(R.HeroHeader,{title:"Moon Garden",project:"PS1 port",version:"v2.0.1",status:"available",banner:"picture",bannerTag:"README PICTURE"}))''')
 readme("HeroHeader","""
-Game page top: 16:5 banner, project eyebrow in accent, title, and an action bar holding the single install verb, version, source and secondary actions. Freya: `rect()` with `image()` background, a flex action row (`Content::Flex`, spacer as `Size::flex(1.)`).
+Game page top: the banner (`BannerArt`: the catalog's picture, a wide picture from the README, or a generated banner in the game's own colour, never a placeholder label), project eyebrow in accent, title, and an action bar holding the single install verb, version, source and secondary actions. Freya: `rect()` with `image()` background, a flex action row (`Content::Flex`, spacer as `Size::flex(1.)`).
 
-Wide: title `title-hero`, bar padding `space-6`. Narrow (compact/phone): `title-page`, bar padding `space-4`, secondary actions collapse to icon-only ghost buttons and the bar wraps. The title sits on a solid `bg-base` strip over the art so it holds 4.5:1 on any banner image.
+Wide: title `title-hero`, bar padding `space-6`. Narrow (compact/phone): `title-page`, bar padding `space-4`, secondary actions collapse to icon-only ghost buttons and the bar wraps. The title sits on a solid `bg-base` strip (82px wide, 74px narrow) over the art so it holds 4.5:1 on any banner image; the generated banner keeps its icon clear of that strip, and the strip is painted above every layer of the banner (`Layer::Relative(12)` in Freya, whose deeper elements otherwise paint over shallower ones).
 """)
 
 preview("DownloadItem","Progress",280,"Queue entries: fetching, verifying, failed",
 '''h("div",{className:"col",style:{maxWidth:620}},h(R.DownloadItem,{title:"Starfall 64  v1.4.3",stage:"Fetching release",value:34,detail:"21 MB of 61 MB",speed:"7.4 MB/s"}),h(R.DownloadItem,{title:"Skyward Quest  v0.9.2",stage:"Verifying hash",value:100,detail:"Checking sha256",speed:"",tone:"ok"}),h(R.DownloadItem,{title:"Moon Garden  v2.0.1",stage:"Failed",value:48,detail:"Release asset not found",speed:"",tone:"danger"}),h(R.ProgressBar,{value:62}))''')
 readme("DownloadItem","""
-Download queue row (Steam's Downloads page). The stage label is mono and tells the recompilation pipeline's step: Fetching release, Verifying hash, Checking your game file, Building, Extracting. Freya: `ProgressBar` inside a flex column; the progress fill is accent (info), switching to ok at 100% verified and danger on failure; failure always shows the reason in the detail line, never just a red bar.
+Download queue row (Steam's Downloads page). The stage label is mono and says the step the install is at: Queued, Downloading, Verifying, Extracting, Finishing (the release's file is downloaded, checked against its SHA-256, unpacked, and moved over the app's folder). Freya: `ProgressBar` inside a flex column; the progress fill is accent (info), switching to ok at 100% verified and danger on failure; failure always shows the reason in the detail line, never just a red bar.
 
 Cancel is an icon ghost button with an accessible label.
 """)
@@ -108,12 +108,12 @@ Primary navigation: Library, Catalog (community app lists, from Quiver), Downloa
 Freya: `rect()` rows/columns of `SideBarItem`/`FloatingTab`; the icon-only rail needs a `TooltipContainer` per item. Downloads shows a count badge while the queue is active.
 """)
 
-preview("InstallDialog","Dialogs",520,"Install location and the user's own game file",
-'''h("div",{className:"col"},h(R.InstallDialog,{title:"Starfall 64",slug:"starfall-64",file:""}))''',pad=0)
+preview("InstallDialog","Dialogs",520,"Install location and pre-releases",
+'''h("div",{className:"col"},h(R.InstallDialog,{title:"Starfall 64",slug:"starfall-64"}))''',pad=0)
 readme("InstallDialog","""
 Modal shown from the hero's Install. Freya: `Popup::new()` with `PopupTitle`, `PopupContent`, `PopupButtons`; backdrop is `scrim`.
 
-Install stays disabled until the user's own game file is chosen, and the field label says it is never downloaded for you. On phone the dialog becomes a bottom sheet (full width, `radius-lg` on top corners only, 300ms slide), with 48px fields and buttons.
+There is nothing to choose but where: the location starts from Settings > Library > Default install location (the host reads an empty box as that default), and **Keep pre-release builds** is off. Install is enabled at once. A desktop shortcut is not offered until there is a launch-by-name command line to point it at. On phone the dialog becomes a bottom sheet (full width, `radius-lg` on top corners only, 300ms slide), with 48px fields and buttons.
 """)
 
 # Screens page

@@ -29,10 +29,10 @@ The brief arrived as a summary of Valve's unified interface. We kept the ideas t
 - **Home:** section tabs with bumper glyphs, Now Playing banner while an app is active, two shelves, hint bar.
 - **Game:** project eyebrow, `deck-title`, badge + version + source, the launch verb (Resume + Stop while running), Open folder, Manage.
 - **Downloads:** queue with Cancel as the focus target. **Catalog and Mods:** empty states.
-- **Install:** a full-screen page (Back, location, your game file, two switches, Cancel and Install). **Settings and Properties:** full-screen pages built from a schema, two panes or a drill-down. See the Surfaces section.
+- **Install:** a full-screen page (Back, location, a Pre-release switch, Cancel and Install). **Settings and Properties:** full-screen pages built from a schema, two panes or a drill-down. See the Surfaces section.
 - **Overlays:** Main menu (Library, Catalog, Downloads, Mods, Settings, Switch to desktop mode); Quick Access (Now playing with Resume + Stop, controller name and battery, downloads); the **Options menu** (Menu button or `o`), centered over a darkened screen and cascading; a **confirmation** for Uninstall.
 - **Hint bar:** the Menu and Quick access hints sit at the left edge, Options, Select and Back at the right, as in Big Picture.
 
 ## Not designed or built yet
 
-An in-app on-screen keyboard; a gamepad file browser (the native file picker cannot be driven by a pad, and the install flow needs one); the Catalog and Mods pages; a virtual keyboard/mouse device for apps that ignore SDL; window management for bringing the launcher and app forward; Windows Guide-button capture. Deck mode narrower than about 520px is usable but not designed.
+An in-app on-screen keyboard; the Catalog and Mods pages; a virtual keyboard/mouse device for apps that ignore SDL; window management for bringing the launcher and app forward; Windows Guide-button capture. Deck mode narrower than about 520px is usable but not designed.

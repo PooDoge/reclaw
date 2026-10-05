@@ -38,3 +38,11 @@
 .ac-art.ready{background:linear-gradient(135deg,var(--info-bg),var(--accent) 60%,var(--bg-raised))}
 .ac-art.failed span.tag::after{content:" (offline)"}
 .ac-cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}
+/* BannerArt: the generated banner, or a stand-in for a picture */
+.rc-banner{position:relative;width:100%;height:100%;overflow:hidden;color:var(--ink-subtle)}
+.rc-banner.pic{background:linear-gradient(160deg,var(--info-bg),var(--bg-raised) 55%,var(--bg-panel));display:flex;align-items:flex-start}
+.rc-banner.pic .tag{font:400 12px/16px var(--font-mono);padding:4px 8px;background:var(--bg-panel);margin:var(--space-2)}
+.rc-banner .bn-room{position:absolute;left:0;right:0;top:0;bottom:var(--bn-strip,0px);display:flex;align-items:center;justify-content:center}
+.rc-banner .bn-icon,.rc-banner .bn-glow{height:62%;aspect-ratio:1;min-height:48px;max-height:132px;border-radius:var(--radius-lg);background:color-mix(in srgb,hsl(var(--bn-hue,210) 62% 46%) 72%,var(--bg-raised))}
+.rc-banner .bn-icon{position:relative;display:flex;align-items:center;justify-content:center;font:700 44px/1 var(--font-sans);color:var(--on-accent)}
+.rc-banner .bn-glow{position:absolute;left:50%;top:50%;width:70%;height:140%;max-height:none;transform:translate(-50%,-50%);filter:blur(28px);opacity:.32;border-radius:0}

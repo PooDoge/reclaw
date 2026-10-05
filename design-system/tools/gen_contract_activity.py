@@ -21,7 +21,7 @@ def comp(name, freya, rust, **kw):
 
 # ---- data model
 dm = d["dataModel"]
-dm["Effect"] = ("Launch(id) | Resume(id) | Stop(id) | StartInstall{app,location,game_file,shortcut,prerelease} | Update(id) | ChooseFile(id) | OpenFolder(id) | Verify(id) | "
+dm["Effect"] = ("Launch(id) | Resume(id) | Stop(id) | StartInstall{app,location,prerelease} | Update(id) | OpenFolder(id) | Verify(id) | "
                 "CheckUpdate(id) | Uninstall(id) | ToggleFavorite(id) | AddToLibrary(id) | RemoveFromLibrary(id) | RefreshCatalog | SaveToken{provider,token: Secret} | SubmitToken(provider) | RemoveToken(provider) | CheckToken(provider) | OpenLogFolder | SaveDiagnostics | UpdateSources | CancelActivity(id) | DismissActivity(id) | DismissNotice(id) | "
                 "DismissAllNotices | Search | InstallMod{provider,id} | RemoveMod{provider,id} | OpenUrl(url) | SwitchToDesktop | Navigate(Route) | Back | LaunchSetting{app,key,value} | "
                 "SetMode(Auto|Desktop|Deck) | Setting(change) | BeginTextEntry(field) | EndTextEntry(field) | TextCommitted{app,field,value} | BringLauncherToFront | SendLauncherToBack | "
@@ -30,7 +30,7 @@ dm["Effect"] = ("Launch(id) | Resume(id) | Stop(id) | StartInstall{app,location,
 dm["HostState"] = "REPLACED by AppState (see `state`). The host writes through Store / StoreFeed; both interfaces read through the use_* hooks."
 dm["AppState"] = ("{games, projects, mods, activity: ActivityBoard, notices: Notices, settings: SettingsValues, launch: LaunchPrefs, favorites, window: WindowPrefs, controller, keyboard_inset, "
                   "display: DisplayEnvironment, mailbox, settings_warning}. Plain data, no handles. Changed only by AppAction through reduce(); saved parts via to_prefs/from_prefs.")
-dm["Activity"] = "{id, game_id, kind: Install|Update|Mod{provider,id}, title, stage: Queued|Downloading|Verifying|CheckingGameFile|Building|Extracting, bytes_done, bytes_total: Option<u64>, rate: Option<u64>, changelog: Option<Changelog>, outcome: Running|Finished|Failed{reason}|Cancelled}. Progress and time left are derived (activity::format)."
+dm["Activity"] = "{id, game_id, kind: Install|Update|Mod{provider,id}, title, stage: Queued|Downloading|Verifying|Extracting|Finishing, bytes_done, bytes_total: Option<u64>, rate: Option<u64>, changelog: Option<Changelog>, details: Vec<String> (what else is worth saying when it failed), outcome: Running|Finished|Failed{reason}|Cancelled}. Progress and time left are derived (activity::format)."
 dm["Indicator"] = "{kind: UpdateAvailable|Queued|Downloading|Installing|Done|Failed|Mods, progress: Option<f32>, label: String, mods: usize}. indicator_for(board, game); pure."
 dm["Notice"] = "{id, kind: UpdateAvailable|UpdateFinished|InstallFinished|DownloadFailed|ModInstalled, game_id: Option<u32>, title, body, details: Vec<String>, url: Option<String>}. A repeat replaces; the newest is shown."
 dm["Route"] = "freya-router enum, the only list of pages: / Library, /catalog, /game/:id, /game/:id/install, /game/:id/settings, /game/:id/settings/:section, /mods, /mods/:provider/:mod_id, /downloads, /settings, /settings/:section. Metadata in nav::meta."
@@ -173,9 +173,9 @@ for e in [
 # ---- refreshed parts
 d["notBuilt"] = [
     "OnScreenKeyboard (the OS provides one; the store's keyboard_inset is how the UI learns its height; a simulated one is built into Shell for testing)",
-    "FileBrowser (gamepad file picker); Effect::ChooseFile asks the host and the host answers through the store's mailbox",
+    "A chooser when several builds of a release fit this machine (the host takes the best-ranked and logs the choice), a program chooser when an install holds several, a Windows-runner picker (the library's linuxRunner fields are honoured), Locate install, Force update and changing version",
     "Deck's Catalog and Mods pages and the README on Deck (the desktop has all of them)",
-    "A production host binary: only the gallery and deck examples start the app; the install backend (downloads, builds) is not here, the store accepts its ActivityEvents",
+    "Background update passes and auto-update (an explicit Check for updates exists); a desktop or Steam shortcut and launching by name from the command line; Flatpak bundles; Mods (Thunderstore, GameBanana) and the catalog compare/merge step",
     "Mermaid diagrams in READMEs (shown as source; the parsers in oxide-code are Freya-free and could be ported)",
     "README strikethrough, task-list boxes and footnotes (shown as typed); selecting and copying README text",
     "A cache size and a Clear cache button in Settings",

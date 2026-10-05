@@ -1,8 +1,8 @@
-<!-- @dsCard group="Library" height=470 subtitle="Game page banner with action bar: wide and narrow" -->
+<!-- @dsCard group="Library" height=830 subtitle="Game page banner with action bar: wide and narrow" -->
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
 <style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
 <body><div id="r"></div><script>
 var R=window.Reclaw,h=React.createElement;
-function App(){return h("div",{className:"col",style:{gap:24}},h(R.HeroHeader,{title:"Starfall 64",project:"N64Recomp",version:"v1.4.2",status:"installed"}),h("div",{style:{maxWidth:390}},h(R.HeroHeader,{title:"Skyward Quest",project:"Zelda-style port",version:"v0.9.1",status:"update",narrow:true,source:"gitlab.com"})))}
+function App(){return h("div",{className:"col",style:{gap:24}},h(R.HeroHeader,{title:"Starfall 64",project:"N64Recomp",version:"v1.4.2",status:"installed"}),h("div",{style:{maxWidth:390}},h(R.HeroHeader,{title:"Skyward Quest",project:"Zelda-style port",version:"v0.9.1",status:"update",narrow:true,source:"gitlab.com"})),h(R.HeroHeader,{title:"Moon Garden",project:"PS1 port",version:"v2.0.1",status:"available",banner:"picture",bannerTag:"README PICTURE"}))}
 ReactDOM.createRoot(document.getElementById("r")).render(h(App));
 </script></body></html>

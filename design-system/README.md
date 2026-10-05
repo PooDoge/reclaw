@@ -3,8 +3,8 @@ Reclaw is the installer and launcher for recompiled games: it finds a recompilat
 ## Content fundamentals
 
 - Say what the thing is, then what you can do. Buttons are verbs in sentence case: "Install", "Play", "Update", "Open folder". Never "Get started" or "Let's go".
-- Address the user as "you/your" only where ownership matters: "Needs your game file". The launcher never says "we".
-- Recompilation projects ship no copyrighted assets. Always say the user supplies their own file, and never offer to fetch it. Copy: "Choose the file you own".
+- Address the user as "you/your" only where ownership matters: "Update ready". The launcher never says "we".
+- Recompilation projects ship no copyrighted assets. Reclaw installs the project's own release and never downloads or offers to fetch a game's files; when a game needs the player's own copy, the game asks for it.
 - Errors name the cause and the next step: "Release asset not found. Check the repository or choose another version." Never "Something went wrong".
 - Versions, tags, hashes, paths and asset names are set in `mono`. Game and project names are set in `body` or `title-*`. No emoji anywhere.
 

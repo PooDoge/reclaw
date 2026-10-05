@@ -38,4 +38,4 @@ Deck mode starts automatically under a console session, but can always be entere
 
 ## Not designed or built
 
-An in-app on-screen keyboard (the OS provides one), a gamepad file browser, a desktop Settings page, and a text box with a caret the interface can place.
+An in-app on-screen keyboard (the OS provides one), a desktop Settings page, and a text box with a caret the interface can place.

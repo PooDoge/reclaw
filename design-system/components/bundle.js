@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Reclaw","components":[{"name":"Button"},{"name":"Chip"},{"name":"StatusBadge"},{"name":"Switch"},{"name":"SearchField"},{"name":"GameCapsule"},{"name":"LibraryRow"},{"name":"HeroHeader"},{"name":"DownloadItem"},{"name":"Nav"},{"name":"InstallDialog"},{"name":"DeckTile"},{"name":"ButtonGlyph"},{"name":"HintBar"},{"name":"LaunchButton"},{"name":"NowPlayingBanner"},{"name":"SectionTabs"},{"name":"DeckPanel"},{"name":"SettingRow"},{"name":"FullScreenPage"},{"name":"ModalMenu"},{"name":"ConfirmCard"},{"name":"SettingsNav"},{"name":"SystemBadge"},{"name":"BadgeChip"},{"name":"IndicatorBadge"},{"name":"CardIndicator"},{"name":"HoldRing"},{"name":"NoticeToast"},{"name":"Titlebar"},{"name":"RemoteArt"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Reclaw","components":[{"name":"Button"},{"name":"Chip"},{"name":"StatusBadge"},{"name":"Switch"},{"name":"SearchField"},{"name":"GameCapsule"},{"name":"LibraryRow"},{"name":"HeroHeader"},{"name":"DownloadItem"},{"name":"Nav"},{"name":"InstallDialog"},{"name":"DeckTile"},{"name":"ButtonGlyph"},{"name":"HintBar"},{"name":"LaunchButton"},{"name":"NowPlayingBanner"},{"name":"SectionTabs"},{"name":"DeckPanel"},{"name":"SettingRow"},{"name":"FullScreenPage"},{"name":"ModalMenu"},{"name":"ConfirmCard"},{"name":"SettingsNav"},{"name":"SystemBadge"},{"name":"BadgeChip"},{"name":"IndicatorBadge"},{"name":"CardIndicator"},{"name":"HoldRing"},{"name":"NoticeToast"},{"name":"Titlebar"},{"name":"RemoteArt"},{"name":"BannerArt"}]} */
 (function () {
   var R = window.React, h = R.createElement;
   var cx = function () { return Array.prototype.filter.call(arguments, Boolean).join(" "); };
@@ -27,7 +27,7 @@
 
   var BADGES = {
     installed: ["ok", "check", "Installed"], update: ["warn", "download", "Update ready"], installing: ["info", "queue", "Installing"],
-    failed: ["danger", "alert", "Failed"], available: ["none", null, "Not installed"], needsfile: ["warn", "file", "Needs your game file"]
+    failed: ["danger", "alert", "Failed"], available: ["none", null, "Not installed"]
   };
   function StatusBadge(p) {
     var b = BADGES[p.kind || "available"];
@@ -46,13 +46,13 @@
       h("div", { className: "b" }, h("div", { className: "t" }, p.title), h("div", { className: "rc-meta" }, p.project), h(StatusBadge, { kind: p.status })));
   }
   function LibraryRow(p) {
-    var tone = { installed: "ok", update: "warn", installing: "info", failed: "danger", needsfile: "warn", available: "none" }[p.status || "available"];
+    var tone = { installed: "ok", update: "warn", installing: "info", failed: "danger", available: "none" }[p.status || "available"];
     return h("div", { className: cx("rc rc-row", p.selected && "sel", p.hover && "is-hover", p.size) }, h("span", { className: "ic" }), h("span", { className: "nm" }, p.title), p.version && h("span", { className: "rc-mono", style: { color: "var(--ink-subtle)" } }, p.version), h("span", { className: "dot " + tone, title: p.status }));
   }
   function HeroHeader(p) {
     var inst = p.status === "installed" || p.status === "update";
     return h("div", { className: cx("rc rc-hero", p.narrow && "narrow") },
-      h("div", { className: "rc-art art" }, h("span", null, "HERO 16:5"), h("div", { className: "ttl" }, h("div", { className: "rc-eyebrow", style: { color: "var(--accent)" } }, p.project), h("h1", null, p.title))),
+      h("div", { className: "art" }, h(window.Reclaw.BannerArt, { seed: p.title, kind: p.banner, tag: p.bannerTag, strip: p.narrow ? 74 : 82 }), h("div", { className: "ttl" }, h("div", { className: "rc-eyebrow", style: { color: "var(--accent)" } }, p.project), h("h1", null, p.title))),
       h("div", { className: "bar" },
         h(Button, { variant: "install", size: "lg", icon: p.status === "update" ? "download" : inst ? "play" : "download" }, p.status === "update" ? "Update" : inst ? "Play" : "Install"),
         h("div", { className: "kv" }, h("span", { className: "rc-eyebrow", style: { color: "var(--ink-subtle)" } }, "Version"), h("span", { className: "rc-mono" }, p.version)),
@@ -83,14 +83,12 @@
       h("div", { className: "hd" }, "Install " + (p.title || "Game")),
       h("div", { className: "bd" },
         h("div", { className: "rc-field" }, h("span", { className: "lb" }, "Install location"), h("div", { className: "rc-search" }, h(Icon, { name: "folder", size: 16 }), h("span", { className: "v rc-mono" }, "~/Reclaw/Apps/" + (p.slug || "game")))),
-        h("div", { className: "rc-field" }, h("span", { className: "lb" }, "Your game file (never downloaded for you)"), h("div", { className: "rc-search" }, h(Icon, { name: "file", size: 16 }), h("span", { className: p.file ? "v rc-mono" : "ph" }, p.file || "Choose the file you own"))),
-        h("div", { className: "rc-opt" }, h("span", null, "Create desktop shortcut"), h(Switch, { on: true })),
         h("div", { className: "rc-opt" }, h("span", null, "Keep pre-release builds"), h(Switch, { on: false }))),
-      h("div", { className: "ft" }, h(Button, { variant: "ghost" }, "Cancel"), h(Button, { variant: "install", disabled: !p.file, icon: "download" }, "Install"))));
+      h("div", { className: "ft" }, h(Button, { variant: "ghost" }, "Cancel"), h(Button, { variant: "install", icon: "download" }, "Install"))));
   }
 
   /* Showcase only (not in the bundle header): the three layout classes composed from the parts above. */
-  var GAMES = [["Starfall 64", "N64Recomp", "installed", "v1.4.2"], ["Skyward Quest", "Zelda-style port", "update", "v0.9.1"], ["Kart Ruins", "N64Recomp", "needsfile", "v0.3.0"], ["Dino Rush", "PS2 recomp", "available", ""], ["Moon Garden", "GBA recomp", "failed", "v2.0.0"], ["Tide Racer", "N64Recomp", "installed", "v1.0.0"]];
+  var GAMES = [["Starfall 64", "N64Recomp", "installed", "v1.4.2"], ["Skyward Quest", "Zelda-style port", "update", "v0.9.1"], ["Kart Ruins", "N64Recomp", "available", "v0.3.0"], ["Dino Rush", "PS2 recomp", "available", ""], ["Moon Garden", "GBA recomp", "failed", "v2.0.0"], ["Tide Racer", "N64Recomp", "installed", "v1.0.0"]];
   function LibraryScreen(p) {
     var mode = p.mode, sel = GAMES[0];
     var hero = h(HeroHeader, { title: sel[0], project: sel[1], version: sel[3], status: sel[2], narrow: mode !== "wide" });
@@ -133,7 +131,7 @@
     }));
   }
   function DeckTile(p) {
-    var g = p.game, badge = p.running ? h(StatusBadge, { kind: "installed", label: "Running" }) : h(StatusBadge, { kind: g.status, label: g.status === "needsfile" ? "Needs game file" : undefined });
+    var g = p.game, badge = p.running ? h(StatusBadge, { kind: "installed", label: "Running" }) : h(StatusBadge, { kind: g.status, label: undefined });
     return h("div", { className: "dk dk-tile" }, h("div", { className: cx("art", "dk-art", p.focused && "dk-focus") }, h("span", null, "CAPSULE 3:4")),
       h("div", { className: "capt" }, h("div", { className: "t" }, g.title), (p.focused || p.running) && badge));
   }
@@ -176,7 +174,7 @@
       h("div", { className: "dk-eyebrow" }, "Controller"), h("div", { style: { padding: "0 24px", font: "400 20px/28px var(--font-sans)" } }, "Xbox Wireless Controller", h("div", { style: { font: "400 16px/22px var(--font-sans)", color: "var(--ink-muted)" } }, "Battery 82%")),
       h("div", { className: "dk-eyebrow" }, "Downloads"), h("div", { className: "dk-row" }, h(Icon, { name: "queue", size: 24 }), "Open the download queue"));
   }
-  var DGAMES = [["Starfall 64", "installed"], ["Skyward Quest", "update"], ["Tide Racer", "installed"], ["Kart Ruins", "needsfile"], ["Dino Rush", "available"]];
+  var DGAMES = [["Starfall 64", "installed"], ["Skyward Quest", "update"], ["Tide Racer", "installed"], ["Kart Ruins", "available"], ["Dino Rush", "available"]];
   function DeckScreen(p) {
     var v = p.view || "home";
     var tiles = function (list, focusIdx, running) { return h("div", { style: { display: "flex", gap: 24, padding: "24px 24px 0" } }, list.map(function (g, i) { return h(DeckTile, { key: i, game: { title: g[0], status: g[1] }, focused: i === focusIdx, running: running && i === 0 }); })); };
@@ -345,6 +343,25 @@
     return h("div", { className: cx("ac ac-art", s), style: { width: p.w || 256, height: p.h || 144 } }, h("span", { className: "tag" }, p.tag || "SCREENSHOT"));
   }
 
-  Object.assign(window.Reclaw, { SystemBadge: SystemBadge, BadgeChip: BadgeChip, IndicatorBadge: IndicatorBadge, CardIndicator: CardIndicator, HoldRing: HoldRing, NoticeToast: NoticeToast, Titlebar: Titlebar, RemoteArt: RemoteArt });
+  // FNV-1a over the UTF-8 bytes, as the app does (reclaw_ui::banner::hue_of): the same game gets the same colour in the app and here.
+  function hueOf(seed) {
+    var bytes = new TextEncoder().encode(String(seed).trim().toLowerCase()), hash = BigInt("0xcbf29ce484222325"), prime = BigInt("0x100000001b3"), mask = (BigInt(1) << BigInt(64)) - BigInt(1);
+    for (var i = 0; i < bytes.length; i++) hash = ((hash ^ BigInt(bytes[i])) * prime) & mask;
+    return Number(hash % BigInt(360));
+  }
+
+  function BannerArt(p) {
+    var hue = hueOf(p.seed || "game"), kind = p.kind || "generated";
+    var wash = "linear-gradient(135deg,color-mix(in srgb,hsl(" + hue + " 62% 46%) 62%,var(--bg-base)),color-mix(in srgb,hsl(" + (hue + 38) % 360 + " 50% 40%) 16%,var(--bg-base)))";
+    var style = Object.assign({ "--bn-strip": (p.strip == null ? 0 : p.strip) + "px" }, p.height ? { height: p.height } : null, p.style);
+    if (kind === "picture") {
+      return h("div", { className: cx("rc-banner pic", p.className), style: style }, h("span", { className: "tag" }, p.tag || "CATALOG BANNER"));
+    }
+    var mark = (p.icon || String(p.seed || "?").trim().charAt(0) || "?").toUpperCase();
+    return h("div", { className: cx("rc-banner gen", p.className), style: Object.assign({ background: wash }, style) },
+      h("div", { className: "bn-room" }, h("div", { className: "bn-glow", "aria-hidden": "true" }), h("div", { className: "bn-icon", style: { "--bn-hue": hue } }, mark)));
+  }
+
+  Object.assign(window.Reclaw, { SystemBadge: SystemBadge, BadgeChip: BadgeChip, IndicatorBadge: IndicatorBadge, CardIndicator: CardIndicator, HoldRing: HoldRing, NoticeToast: NoticeToast, Titlebar: Titlebar, RemoteArt: RemoteArt, BannerArt: BannerArt });
 })();
 /* activity:end */
