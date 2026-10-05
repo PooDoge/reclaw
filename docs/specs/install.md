@@ -19,7 +19,9 @@ starts from `~/Reclaw/Apps` (`settings::default_install_location`). The Deck's I
 submit time means the default as well (the host applies it). `~` is the home folder; anything else must be a full path, or the install
 is refused with a notice that says so. Each app goes in its own folder inside the location, named by the catalog's `folderName` (one
 plain name: a name with a `/` or `..` is refused). The folder is recorded in the library entry's `installPath` (Quiver's field), so
-changing the default later does not lose apps installed under the old one.
+changing the default later does not lose apps installed under the old one. Changing the default also looks again for apps with no
+recorded folder (`Host::rescan_installs`), so pointing it at a folder of existing installs, Quiver's for one, shows them as installed
+without a restart; an install that is running keeps showing as running.
 
 ## Choosing the release and the file (`reclaw-install::{release, policy, matcher, source}`)
 

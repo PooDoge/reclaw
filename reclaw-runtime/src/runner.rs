@@ -277,6 +277,8 @@ fn proton_command(
         env: vec![
             ("STEAM_COMPAT_CLIENT_INSTALL_PATH".into(), install.steam_root.into_os_string()),
             ("STEAM_COMPAT_DATA_PATH".into(), compat.into_os_string()),
+            // Not in Quiver's list: Proton's own script documents it as where the program lives (its container mounts it).
+            ("STEAM_COMPAT_INSTALL_PATH".into(), game.as_os_str().to_owned()),
             ("STEAM_COMPAT_APP_ID".into(), id.clone().into()),
             ("SteamAppId".into(), id.clone().into()),
             ("SteamGameId".into(), id.into()),

@@ -287,10 +287,39 @@ impl Host {
         self.state().default_location.clone()
     }
 
-    /// The Library setting changed: new installs start there. Apps already installed stay where they were put.
+    /// The Library setting changed: new installs start there, and apps with no recorded folder are looked for there (so pointing it at
+    /// a folder of existing installs, Quiver's for one, adopts them). Apps installed by Reclaw stay where they were put.
     fn set_default_location(&self, text: &str) {
         let text = text.trim();
         self.state().default_location = if text.is_empty() { FALLBACK_LOCATION.to_string() } else { text.to_string() };
+        self.rescan_installs();
+    }
+
+    /// Read the folders again and show the library as they are. A job that is running keeps showing as running.
+    fn rescan_installs(&self) {
+        let games = {
+            let mut guard = self.state();
+            let fresh = scan_installs(&guard.library, &guard.default_location, self.inner.installs.home.as_deref());
+            let mut next = guard.installs.clone();
+            for entry in guard.library.iter().filter(|entry| !entry.is_manual()) {
+                let key = key_of(entry);
+                match (guard.installs.get(&key), fresh.get(&key)) {
+                    (Some(InstallState::Installing), _) | (Some(InstallState::Failed), None) => {}
+                    (_, Some(found)) => {
+                        next.insert(key, found.clone());
+                    }
+                    (_, None) => {
+                        next.remove(&key);
+                    }
+                }
+            }
+            if next == guard.installs {
+                return;
+            }
+            guard.installs = next;
+            catalog_data::load(&guard.catalog, &guard.library, &guard.installs).games
+        };
+        self.send(AppAction::SetGames(games));
     }
 
     /// Record what the installer now knows about an app (`None`: not installed) and show the library that way.

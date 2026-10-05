@@ -49,7 +49,7 @@ pub(super) fn overlays(f: &Frame) -> Vec<Element> {
             ConfirmOverlay::new(
                 ConfirmCopy {
                     title: format!("Uninstall {name}?"),
-                    message: "Removes it from this device. Your own game file is never touched.",
+                    message: "Deletes its folder and everything in it, saves included. It stays in your library.",
                     action_label: "Uninstall",
                 },
                 state.focus(),

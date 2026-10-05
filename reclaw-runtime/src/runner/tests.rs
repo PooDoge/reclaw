@@ -96,6 +96,7 @@ fn auto_prefers_proton_to_wine_and_builds_steams_variables() {
     assert_eq!(env["STEAM_COMPAT_DATA_PATH"], m.game.join(".steam-compat-data").to_string_lossy());
     assert_eq!(env["STEAM_COMPAT_CLIENT_INSTALL_PATH"], m.probe.home.join(".local/share/Steam").to_string_lossy());
     assert_eq!(env["SteamAppId"], env["STEAM_COMPAT_APP_ID"]);
+    assert_eq!(env["STEAM_COMPAT_INSTALL_PATH"], m.game.to_string_lossy());
     assert!(m.game.join(".steam-compat-data").is_dir(), "the prefix folder is made");
     // The same program always gets the same id (and so the same prefix).
     assert_eq!(compat_app_id(&m.exe), env["STEAM_COMPAT_APP_ID"]);

@@ -184,3 +184,20 @@ fn verifying_reports_the_version_and_what_it_would_start() {
     assert!(note.details.iter().any(|d| d.contains("v1")) && note.details.iter().any(|d| d.contains("game.x86_64")), "{note:?}");
     let _ = Platform::LinuxX64;
 }
+
+#[test]
+fn pointing_the_default_at_a_folder_of_existing_installs_adopts_them() {
+    let existing = tempfile::tempdir().expect("dir");
+    std::fs::create_dir_all(existing.path().join("One")).expect("dirs");
+    std::fs::write(existing.path().join("One/version.txt"), "v0.7").expect("version");
+    let library = r#"{"apps": [{"name": "One", "repository": "o/one", "folderName": "One", "tags": ["n64"]}]}"#;
+    let rig = start(vec![], Some(library), |_, _| {});
+    assert_eq!(rig.initial.loaded.games[0].status, AppStatus::Available, "nothing at the first default");
+
+    rig.host.handle(&Effect::TextCommitted { app: None, field: TextField::DefaultLocation, value: existing.path().display().to_string() });
+    let game = rig.sink.last_games().and_then(|g| g.into_iter().next()).expect("the library was sent again");
+    assert_eq!((game.status, game.version.as_ref()), (AppStatus::Installed, "v0.7"));
+
+    rig.host.handle(&Effect::TextCommitted { app: None, field: TextField::DefaultLocation, value: String::new() });
+    assert_eq!(rig.sink.last_games().and_then(|g| g.into_iter().next()).map(|g| g.status), Some(AppStatus::Available), "and let go again");
+}

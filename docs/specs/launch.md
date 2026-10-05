@@ -19,7 +19,9 @@ Quiver's (`GameLaunchService`, `WindowsRunnerService`, `HostProcessEnvironment`;
    (`steamapps/common/Proton*`, `compatibilitytools.d/*Proton*`, including the Flatpak Steam), newest numbered release first and
    *Experimental* last (Quiver orders by name as text, which puts `Proton 9` after `Proton 10`). Prefixes live in the app's folder
    (`.steam-compat-data`, `.wine-prefix`) and are never searched for programs. A custom command may use `{exe}`, `{gamePath}` and
-   `{exeDir}`; the program is appended when it names none. With no runner the notice says what to install.
+   `{exeDir}`; the program is appended when it names none. With no runner the notice says what to install. Proton is also given
+   `STEAM_COMPAT_INSTALL_PATH` (the app's folder), which is not in Quiver's variable list but is what Proton's own script documents as
+   where the program lives; that is read from Proton's documentation, not tested against a real Proton.
 4. A native program is made executable (a zip may have lost its mode).
 5. The person's launch settings are applied: the game's declared capabilities and the person's choices become arguments, variables and
    edits to the game's own config files (`reclaw_games::settings::plan`), then the "Launch options" row is split into words
