@@ -22,11 +22,11 @@ dm = d["dataModel"]
 dm["DeckState"] = ("{section, screen: Home|Game(id)|Install(id)|Settings(Global|App(id)), stack, overlay: None|MainMenu|QuickAccess|Menu(Options(id)|Choice(target,key))|Confirm(Uninstall(id)), "
                    "focus, memory per scope, in_front, last_input, owner, window:(w,h), menu: Option<MenuState<MenuAction>>, settings_section, drilled, values: SettingsValues, install: InstallDraft, text entry: Option<TextField>}")
 dm["Effect"] = ("Launch(id) | Resume(id) | Stop(id) | StartInstall{app,location,game_file,shortcut,prerelease} | Update(id) | ChooseFile(id) | OpenFolder(id) | Verify(id) | CheckUpdate(id) | Uninstall(id) | "
-                "ToggleFavorite(id) | CancelDownload(id) | Search | SwitchToDesktop | SetMode(Auto|Desktop|Deck) | Setting(change) | BeginTextEntry(field) | "
+                "ToggleFavorite(id) | AddToLibrary(id) | RemoveFromLibrary(id) | RefreshCatalog | CancelDownload(id) | Search | SwitchToDesktop | SetMode(Auto|Desktop|Deck) | Setting(change) | BeginTextEntry(field) | "
                 "EndTextEntry(field) | TextCommitted{app,field,value} | BringLauncherToFront | SendLauncherToBack | InputOwner(Launcher|App). Defined in reclaw_ui::effect, shared by both interfaces. "
                 "SubmitInstall is internal: DeckApp turns it into StartInstall because it holds the form's text.")
 dm["HostState"] = "{games: State<Vec<GameEntry>>, downloads: State<Vec<Download>>, controller: State<Option<ControllerInfo>>, keyboard_inset: State<f32>, chosen_file: State<Option<String>>}. The host creates and writes it; both interfaces read it."
-dm["MenuAction"] = "ToggleFavorite | OpenFolder | Verify | CheckUpdate | Uninstall | Properties | Cancel | Choice(i). reclaw_ui::app_menu; options_menu(game, with_properties) builds the menu."
+dm["MenuAction"] = "ToggleFavorite | AddToLibrary | RemoveFromLibrary | OpenFolder | Verify | CheckUpdate | Uninstall | Properties | Cancel | Choice(i). reclaw_ui::app_menu; options_menu(game, with_properties) builds the menu."
 dm["Settings"] = "Schema{title, sections:[Section{id,title,groups:[Group{heading?,note?,rows:[Row{key,label,description?,kind: Toggle|Choice|Text|Action|Info}]}]}]}; values keyed (target: Global|App(id), key). reclaw_ui::deck::settings."
 
 # ---- surfaces
@@ -71,7 +71,7 @@ d["surfaces"] = {
         "anchored": {"width": "280", "rowHeight": "40", "border": "1px line, radius-md, shadow-pop", "position": "press point, slid left/up to stay inside the window", "dismiss": "press outside"},
         "behavior": {"navigate": "Up/Down stop at the ends and skip disabled rows", "right/confirm": "on `>` opens the submenu with its first enabled row focused", "left/back": "closes one level; at the root dismisses",
                      "pointer": "pick(level, index) is the same as moving there and confirming", "outcomes": "None | Moved | Chose(action) | Closed"},
-        "options": "Add to favorites | Manage > (Open install folder, Verify files, Check for updates, Uninstall; disabled until installed) | Properties... | Cancel. Properties is left out where no Properties page exists (desktop).",
+        "options": "Add to favorites | Add to library (only for a project not in the library) | Manage > (Open install folder, Verify files, Check for updates: disabled until installed; Remove from library: library entries only; Uninstall: disabled until installed) | Properties... | Cancel. Properties is left out where no Properties page exists (desktop).",
     },
     "settingsPage": {
         "rust": "deck::SettingsBody inside FullScreenPage; schema in deck::settings",
