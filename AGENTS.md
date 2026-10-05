@@ -45,9 +45,7 @@ keeps the compiled dependencies and drops only ours.
     the window frame is verified on X11 only. `docs/BUILDING.md` has the table.
 11. **Shared state has one home.** Anything two windows, both interfaces, or a background thread must agree on lives in `AppState` and
     changes through an `AppAction` (`store/`); one window's own state stays in `use_state`. Do not mirror store data into local state.
-12. **Only `reclaw-media` fetches.** Never turn on the toolkit's `remote-asset` or `html` features and never fetch from a component;
-    ask `use_remote_file`. Remote text is untrusted: markdown goes through `reclaw_media::readme` first.
-13. **Docs move with behavior.** A change in behavior updates `docs/specs/<area>.md` in the same commit (and its `last-verified` date).
+12. **Docs move with behavior.** A change in behavior updates `docs/specs/<area>.md` in the same commit (and its `last-verified` date).
     A decision that has a rejected alternative gets an ADR in `docs/adr/`. `tests/repo_hygiene.rs` checks the shape of both.
 
 ## Adding things

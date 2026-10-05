@@ -32,6 +32,11 @@ impl AppDirs {
         self.config.join("settings.toml")
     }
 
+    /// Answers from the catalog and release services, kept so the next start is instant and an offline start still shows something.
+    pub fn http_cache(&self) -> PathBuf {
+        self.cache.join("http")
+    }
+
     /// Fetched artwork and READMEs live here, one file per address (see the `reclaw-media` crate).
     pub fn media_cache(&self) -> PathBuf {
         self.cache.join("media")

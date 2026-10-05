@@ -38,10 +38,11 @@
 |---|---|
 | `adr/0001-routing-with-freya-router.md` | One router for both interfaces |
 | `adr/0002-shared-state-in-one-store.md` | One radio station, a small TOML file |
-| `adr/0003-media-through-one-crate.md` | Only `reclaw-media` fetches |
+| `adr/0003-media-through-one-crate.md` | Pictures and READMEs from strangers get an address policy, size caps and a disk cache; the toolkit's own fetching is off (the single-fetcher part is replaced by 0010) |
 | `adr/0004-readme-on-the-stock-markdown-viewer.md` | No fork of the markdown viewer, no HTML engine |
 | `adr/0005-custom-window-frame.md` | Reclaw draws its own title bar |
 | `adr/0006-holds-in-the-pad-reader.md` | Press-and-hold is decided in the pad reader |
 | `adr/0007-deck-follows-the-theme.md` | Deck mode takes its colours from the theme, not fixed dark values |
 | `adr/0008-reclaw-places-its-own-resize-bands.md` | Reclaw places its own resize bands |
 | `adr/0009-reclaw-speaks-quivers-catalog-format.md` | Quiver's catalog format, with one optional `reclaw` block |
+| `adr/0010-fetching-is-not-confined-to-one-crate.md` | Any non-UI crate may fetch, through one shared client |

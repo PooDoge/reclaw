@@ -36,7 +36,7 @@ comparison already struggles with them; more API calls against GitHub's rate lim
 
 **4. Trust and change alerts.** An app is identified by `owner/repository`, so a transferred or renamed repository, or a new maintainer, would
 silently change who supplies the executable. Show a badge for catalog-verified entries, and warn when the repository's owner, its archive
-status or the shape of its release assets changes. If GitHub's release assets carry a SHA-256 digest (**unverified** here), check it.
+status or the shape of its release assets changes. GitHub has shown a SHA-256 `digest` on release assets since June 2025 (older assets have none), and `reclaw-net` already checks one when it is given; use it.
 *Pros:* a launcher that downloads and runs programs from a hundred strangers should say who they are; a differentiator. *Cons:* alerts that
 cry wolf get ignored; needs a stored baseline per app; verification is only as good as what the hosts publish. *Effort:* M.
 

@@ -108,7 +108,7 @@ d["media"] = {
     "spec": "docs/specs/media.md", "adr": ["docs/adr/0003-media-through-one-crate.md", "docs/adr/0004-readme-on-the-stock-markdown-viewer.md"],
     "rust": "reclaw_media (policy, sniff, store, cache, hub, readme); reclaw_ui::media::use_remote_file; reclaw_ui::readme (ReadmeSection, ReadmeView, FitPicture, BadgeChip)",
     "rules": [
-        "only reclaw-media fetches: https only, standard port, no credentials, nothing on the local network (rechecked after redirects), size and time caps",
+        "pictures and READMEs written by strangers are fetched under an address policy: https only, standard port, no credentials, nothing on the local network (rechecked after redirects), size and time caps",
         "the file kind is decided from the bytes, not the server's Content-Type",
         "the cache is on disk, atomic, trimmed to a size, with freshness, a stale fallback and failure memory; the Settings switch turns downloads off",
         "the toolkit's remote-asset and html features are off; markdown is cut into blocks before the stock MarkdownViewer sees it; images in prose become links",
@@ -159,7 +159,7 @@ for e in [
      "rejected": ["a second stack in Deck's reducer", "nested layouts per section", "our own route enum with no router", "reading history back for Recents"], "adr": "0001"},
     {"id": "one-store", "decision": "Shared state is one AppState in a freya-radio station, changed only by AppAction; the saved part is a small TOML file.", "why": "Windows and modes must agree on the library, activity and settings.",
      "rejected": ["context or use_state per window", "freya-query for the app's own state", "one signal with no channels", "SQLite or JSON for settings", "saving the whole AppState"], "adr": "0002"},
-    {"id": "media-one-crate", "decision": "Only reclaw-media fetches from the internet; the toolkit's remote-asset and html features are off.", "why": "README images are chosen by strangers; the toolkit has no size limit, address policy or disk cache.",
+    {"id": "media-policy", "decision": "Pictures and READMEs written by strangers are fetched by reclaw-media under an address policy; the toolkit's remote-asset and html features are off.", "why": "README images are chosen by strangers; the toolkit has no size limit, address policy or disk cache.",
      "rejected": ["the toolkit's remote images", "fetching in the UI crate", "trusting Content-Type", "DefaultHasher cache names", "no disk cache"], "adr": "0003"},
     {"id": "markdown-stock", "decision": "READMEs are cut into blocks before the stock markdown viewer; no fork and no HTML engine.", "why": "A fork is rebased on every Freya release; what READMEs need is outside the viewer.",
      "rejected": ["forking freya-markdown", "freya-html (Blitz)", "a line-based fence splitter", "badges from their SVG"], "adr": "0004"},
@@ -214,7 +214,7 @@ c["rules"] = [
     "hooks are never conditional: read tokens once at the top of a component",
     "one host vocabulary: Effect (the window's share is WindowCommand)",
     "form factor is decided only in surface::presentation",
-    "shared state has one home (AppState); only reclaw-media fetches",
+    "shared state has one home (AppState)",
     "a change in behavior updates its spec in docs/specs in the same commit; a decision with a rejected alternative gets an ADR",
 ]
 c["crates"] = {

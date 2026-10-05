@@ -24,6 +24,7 @@ reclaw-runtime = { path = "../reclaw-runtime" }
 reclaw-games = { path = "../reclaw-games" }
 reclaw-config = { path = "../reclaw-config" }
 reclaw-media = { path = "../reclaw-media" }
+reclaw-net = { path = "../reclaw-net" }
 
 [dev-dependencies]
 tempfile = "3"

@@ -4,6 +4,7 @@ use std::{sync::Arc, time::Duration};
 
 use reclaw_config::{AppDirs, PrefsFile, PrefsWriter};
 use reclaw_media::{DiskStore, HttpFetcher, MediaCache, MediaHub, Policy};
+use reclaw_net::{Net, NetConfig};
 
 use crate::store::{AppState, Store};
 
@@ -15,22 +16,29 @@ const MEDIA_WORKERS: usize = 4;
 /// A request that has not finished in this long has failed.
 const MEDIA_TIMEOUT: Duration = Duration::from_secs(20);
 
-/// Start fetching and caching artwork and READMEs, in the cache folder. `None` when there is no
-/// folder to cache in, or the system would not start the worker threads: the app then shows
-/// placeholders, which is how it looks offline anyway.
-///
-/// `get` reads environment variables: `SSL_CERT_FILE`, when it names a readable PEM bundle, adds those
-/// certificate authorities to the trusted ones (a network that re-signs HTTPS traffic needs it).
-pub fn open_media(dirs: Option<&AppDirs>, get: impl Fn(&str) -> Option<String>) -> Option<MediaHub> {
-    let dirs = dirs?;
-    let mut fetcher = HttpFetcher::new(MEDIA_TIMEOUT);
-    if let Some(path) = get("SSL_CERT_FILE").filter(|p| !p.is_empty()) {
-        match std::fs::read(&path) {
-            Ok(pem) => fetcher = fetcher.with_extra_roots(pem),
-            Err(e) => eprintln!("reclaw: SSL_CERT_FILE {path} could not be read, so it is not used: {e}"),
+/// The program's one HTTP client, configured from the environment (`SSL_CERT_FILE`, `RECLAW_PROXY`, `HTTPS_PROXY`,
+/// `GITHUB_TOKEN` ... see `reclaw_net::NetConfig::from_env`), with answers cached under the cache folder. The second part
+/// is what was asked for and could not be done, to show once. `None` when the client could not start; the app then runs
+/// offline, from whatever is already on disk.
+pub fn open_net(dirs: Option<&AppDirs>, get: impl Fn(&str) -> Option<String>) -> (Option<Net>, Vec<String>) {
+    let (mut config, mut problems) = NetConfig::from_env(get);
+    config.cache_dir = dirs.map(|d| d.http_cache());
+    match Net::new(config) {
+        Ok(net) => (Some(net), problems),
+        Err(e) => {
+            problems.push(format!("The network layer could not start, so nothing will be downloaded: {e}"));
+            (None, problems)
         }
     }
-    let cache = MediaCache::new(DiskStore::new(dirs.media_cache()), Arc::new(fetcher), Policy::default());
+}
+
+/// Start fetching and caching artwork and READMEs, in the cache folder. `None` when there is no folder to cache in, there
+/// is no network layer, or the system would not start the worker threads: the app then shows placeholders, which is how it
+/// looks offline anyway.
+pub fn open_media(dirs: Option<&AppDirs>, net: Option<&Net>) -> Option<MediaHub> {
+    let (dirs, net) = (dirs?, net?);
+    let cache =
+        MediaCache::new(DiskStore::new(dirs.media_cache()), Arc::new(HttpFetcher::new(net.clone(), MEDIA_TIMEOUT)), Policy::default());
     match MediaHub::start(cache, MEDIA_WORKERS) {
         Ok(hub) => Some(hub),
         Err(e) => {

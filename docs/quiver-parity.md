@@ -19,8 +19,8 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 4. **Merge and Replace in the catalog review drop the user's `linux*` fields** (read from the code, not run). Worth deciding on deliberately.
 5. **Mods have no disable, no backup, no conflict check and no rollback**, and the provider API shapes could not be checked from the
    sandbox (the proxy refused thunderstore.io and gamebanana.com). Those must be verified against the live services before they are built.
-6. **Only `reclaw-media` fetches today** (AGENTS rule 12). Release and mod APIs need a client with the same address policy,
-   caching and size caps. Open: put it in `reclaw-media` (widen its job from "to show" to "everything fetched") or beside it. Needs an ADR.
+6. **The network layer is `reclaw-net`** (ADR 0010, 0011): one client for the catalog, release APIs, downloads and mod providers, with the
+   address policy kept for pictures and READMEs written by strangers.
 
 ## Status by area
 

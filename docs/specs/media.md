@@ -1,6 +1,6 @@
 # Artwork, screenshots and READMEs
 
-- last-verified: 2026-10-04
+- last-verified: 2026-10-05
 - owner-paths: reclaw-media/src/**, reclaw-media/tests/**, reclaw-ui/src/media/**, reclaw-ui/src/readme/**, reclaw-ui/src/components/remote_art.rs, reclaw-ui/tests/ui/media.rs
 
 What Reclaw fetches from the internet to show, and the rules it fetches by. Everything fetched is written by strangers.
@@ -27,7 +27,7 @@ somewhere private. DNS rebinding is not defended against.
   fetched again; when that fails the old file is served for up to 30 days. Trimmed to 256 MiB least recently used first, now and
   then. A failure is remembered for ten minutes so a dead link is not retried on every redraw.
 * `MediaHub`: four worker threads and a queue; asking again for an address in flight joins the first request.
-* `SSL_CERT_FILE` adds certificate authorities for networks that re-sign HTTPS.
+* The request itself is made by the shared client (`network.md`): `SSL_CERT_FILE`, `HTTPS_PROXY` and `RECLAW_PROXY` apply to pictures and READMEs as to everything else. `reclaw-media` keeps the address policy, size and time caps, kind detection and the picture cache.
 * The user can switch it all off: Settings > Library > *Download artwork and READMEs*. Pictures then stay placeholders.
 
 ## In the UI

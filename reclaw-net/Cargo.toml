@@ -1,0 +1,30 @@
+[package]
+name = "reclaw-net"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+thiserror = "2"
+url = "2"
+sha2 = "0.10"
+httpdate = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "fs", "io-util"] }
+# The same TLS build the UI toolkit already pulls in (rustls, no OpenSSL), asynchronous so a download can be
+# cancelled and a stalled one noticed. Both root sets: the system's (so a company or distribution CA works) and the
+# bundled public ones (so a system with no store still works).
+reqwest = { version = "0.12", default-features = false, features = [
+    "http2",
+    "rustls-tls-native-roots",
+    "rustls-tls-webpki-roots",
+    "gzip",
+    "brotli",
+    "system-proxy",
+] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "rt", "test-util"] }
+flate2 = "1"

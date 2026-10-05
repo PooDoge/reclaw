@@ -25,6 +25,12 @@ README on a game page says it could not load. **`RECLAW_LIVE_SAMPLE=1`** points 
 the window's size and place are saved like the real app's; `RECLAW_HOME=/tmp/reclaw-try` keeps them (and the downloaded
 artwork cache) out of your real profile.
 
+## When a download fails
+
+`cargo run -p reclaw-net --example probe` contacts every host the program uses, from your machine, and says for each whether the name
+resolved, whether TLS worked, what the server answered, and whether a refusal came from a proxy or firewall, a bot check or a rate
+limit (`docs/specs/network.md`). Run it first; it shows what the program sees, which curl may not.
+
 ## Environment variables
 
 | Variable | Effect |
@@ -33,7 +39,9 @@ artwork cache) out of your real profile.
 | `RECLAW_MODE=deck\|desktop` | Start in an interface (otherwise it is detected: SteamOS, gamescope and Steam variables mean Deck). |
 | `RECLAW_WINDOW_FRAME=native` | Use the window manager's border and title bar instead of Reclaw's own. The fallback if a compositor mishandles transparent, undecorated windows. |
 | `RECLAW_LAYOUT`, `RECLAW_DENSITY`, `RECLAW_THEME`, `RECLAW_MOTION`, `RECLAW_KEYBOARD`, `RECLAW_SIM_KEYBOARD` | Push any build into any form factor, theme or motion setting without a device. See `reclaw-ui/src/shell/overrides.rs`. |
-| `SSL_CERT_FILE` | A PEM bundle of extra certificate authorities to trust when downloading artwork and READMEs (a network that re-signs HTTPS needs it). |
+| `SSL_CERT_FILE` | A PEM bundle of extra certificate authorities to trust for every download (a network that re-signs HTTPS needs it). |
+| `HTTPS_PROXY`, `NO_PROXY`, `RECLAW_PROXY=none\|<url>` | The proxy to use; `RECLAW_PROXY` overrides the system's. |
+| `GITHUB_TOKEN`, `GITLAB_TOKEN` (or the `RECLAW_` forms) | Raise the services' rate limits (GitHub allows 60 anonymous requests an hour). Sent only to that service's own host. |
 | `FREYA_RENDERER=software\|opengl\|vulkan` | Force a graphics backend (the toolkit's own variable). `software` is the first thing to try if the window is black. |
 | `WINIT_UNIX_BACKEND=x11` | Run through XWayland instead of native Wayland (the windowing library's variable). |
 

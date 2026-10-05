@@ -1702,8 +1702,8 @@
    "adr": "0002"
   },
   {
-   "id": "media-one-crate",
-   "decision": "Only reclaw-media fetches from the internet; the toolkit's remote-asset and html features are off.",
+   "id": "media-policy",
+   "decision": "Pictures and READMEs written by strangers are fetched by reclaw-media under an address policy; the toolkit's remote-asset and html features are off.",
    "why": "README images are chosen by strangers; the toolkit has no size limit, address policy or disk cache.",
    "rejected": [
     "the toolkit's remote images",
@@ -2376,7 +2376,7 @@
    "hooks are never conditional: read tokens once at the top of a component",
    "one host vocabulary: Effect (the window's share is WindowCommand)",
    "form factor is decided only in surface::presentation",
-   "shared state has one home (AppState); only reclaw-media fetches",
+   "shared state has one home (AppState)",
    "a change in behavior updates its spec in docs/specs in the same commit; a decision with a rejected alternative gets an ADR"
   ],
   "crates": {
@@ -2521,7 +2521,7 @@
   ],
   "rust": "reclaw_media (policy, sniff, store, cache, hub, readme); reclaw_ui::media::use_remote_file; reclaw_ui::readme (ReadmeSection, ReadmeView, FitPicture, BadgeChip)",
   "rules": [
-   "only reclaw-media fetches: https only, standard port, no credentials, nothing on the local network (rechecked after redirects), size and time caps",
+   "pictures and READMEs written by strangers are fetched under an address policy: https only, standard port, no credentials, nothing on the local network (rechecked after redirects), size and time caps",
    "the file kind is decided from the bytes, not the server's Content-Type",
    "the cache is on disk, atomic, trimmed to a size, with freshness, a stale fallback and failure memory; the Settings switch turns downloads off",
    "the toolkit's remote-asset and html features are off; markdown is cut into blocks before the stock MarkdownViewer sees it; images in prose become links",

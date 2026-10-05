@@ -124,10 +124,14 @@ The window has no native decoration and is transparent; `BorderlessPlugin` suppl
 buttons. `RECLAW_WINDOW_FRAME=native` turns it off. Monitors come from winit once, become a `DisplayEnvironment` (the same type the launch
 settings use), and a saved size and position are restored only if they still land on a connected monitor (spec: window).
 
-## Media
+## Network
 
-Nothing but `reclaw-media` fetches. Components ask `use_remote_file(url)` and get a path in the cache or a placeholder. READMEs are cut
-into blocks before the stock markdown viewer sees them (ADR 0004). The toolkit's own fetching is switched off (ADR 0003).
+Components never fetch (the same rule as every other call to the outside world: it is an `Effect` or a hook backed by a worker). Behind
+them, code that talks to the internet shares one HTTP client from `reclaw-net` (ADR 0010, 0011): one user agent, proxy and certificate
+settings, retries, conditional requests and resumable downloads. Pictures and READMEs written by strangers go through `reclaw-media`,
+which adds an address policy (https, standard port, nothing on the local network, rechecked after redirects), size and time caps, kind
+detection from the bytes and an on-disk cache. Components ask `use_remote_file(url)` and get a path in the cache or a placeholder.
+READMEs are cut into blocks before the stock markdown viewer sees them (ADR 0004). The toolkit's own fetching is switched off (ADR 0003).
 
 ## Switching interfaces
 

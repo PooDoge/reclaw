@@ -6,13 +6,12 @@
 use std::time::Duration;
 
 use reclaw_media::{DiskStore, HttpFetcher, MediaCache, Policy, Want};
+use reclaw_net::{Net, NetConfig};
 
 fn fetcher() -> HttpFetcher {
-    let fetcher = HttpFetcher::new(Duration::from_secs(30));
-    match std::env::var("SSL_CERT_FILE").ok().and_then(|path| std::fs::read(path).ok()) {
-        Some(pem) => fetcher.with_extra_roots(pem),
-        None => fetcher,
-    }
+    let (config, problems) = NetConfig::from_env(|k| std::env::var(k).ok());
+    assert!(problems.is_empty(), "{problems:?}");
+    HttpFetcher::new(Net::new(config).expect("the network layer starts"), Duration::from_secs(30))
 }
 
 #[test]

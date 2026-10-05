@@ -87,6 +87,10 @@ fn main() {
     // RECLAW_WINDOW_FRAME=native keeps the window manager's border and title bar.
     let frame = Frame::from_env(|k| std::env::var(k).ok());
     let server = detect_server(|k| std::env::var(k).ok());
-    let media = open_media(opened.dirs.as_ref(), |k| std::env::var(k).ok());
+    let (net, net_problems) = reclaw_ui::bootstrap::open_net(opened.dirs.as_ref(), |k| std::env::var(k).ok());
+    for problem in &net_problems {
+        eprintln!("reclaw: {problem}");
+    }
+    let media = open_media(opened.dirs.as_ref(), net.as_ref());
     launch(launch_config(Gallery { feed, store, start: start_route(), frame, media }, store, frame, server));
 }
