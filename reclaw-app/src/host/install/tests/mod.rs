@@ -1,5 +1,6 @@
 //! Installing through the host, against a fake catalog and a fake GitHub on this machine serving real archives.
 mod flow;
+mod live;
 mod problems;
 
 use std::{
