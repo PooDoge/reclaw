@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use freya::prelude::*;
 
+use super::{FailedHint, PressHandler};
 use crate::{metrics::*, prelude::*, typography::TypeStyle};
 
 /// Foreground and fill for a status. Shared by badges and the library row dot.
@@ -26,26 +27,41 @@ fn status_icon(status: AppStatus) -> Option<IconName> {
 }
 
 /// One badge per game state. Always a word, plus an icon except for "Not installed", so state
-/// never depends on hue alone.
+/// never depends on hue alone. A Failed badge given a [`failure`](Self::failure) text shows it on
+/// hover and, given [`on_failure`](Self::on_failure), opens the job's log when pressed.
 #[derive(Clone, PartialEq)]
 pub struct StatusBadge {
     status: AppStatus,
     running: bool,
     label: Option<Cow<'static, str>>,
+    failure: Option<String>,
+    on_failure: Option<PressHandler>,
 }
 
 impl StatusBadge {
     pub fn new(status: AppStatus) -> Self {
-        Self { status, running: false, label: None }
+        Self { status, running: false, label: None, failure: None, on_failure: None }
     }
 
     /// The app is running right now. Takes priority over its install state on tiles and heroes.
     pub fn running() -> Self {
-        Self { status: AppStatus::Installed, running: true, label: None }
+        Self { status: AppStatus::Installed, running: true, label: None, failure: None, on_failure: None }
     }
 
     pub fn label(mut self, label: impl Into<Cow<'static, str>>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    /// Why it failed, in one short line, for the tooltip. Only a Failed badge uses it.
+    pub fn failure(mut self, text: impl Into<String>) -> Self {
+        self.failure = Some(text.into());
+        self
+    }
+
+    /// Pressing a Failed badge: open the job's report and log.
+    pub fn on_failure(mut self, handler: impl Into<PressHandler>) -> Self {
+        self.on_failure = Some(handler.into());
         self
     }
 }
@@ -58,7 +74,7 @@ impl Component for StatusBadge {
             if self.running { (Some(IconName::Play), "Running") } else { (status_icon(self.status), self.status.label()) };
         let text = self.label.clone().unwrap_or(Cow::Borrowed(default_text));
 
-        rect()
+        let badge = rect()
             .horizontal()
             .cross_align(Alignment::Center)
             .spacing(6.)
@@ -67,6 +83,12 @@ impl Component for StatusBadge {
             .corner_radius(RADIUS_SM)
             .background(bg)
             .maybe_child(icon_name.map(|name| icon(name, 12., fg)))
-            .child(TypeStyle::Eyebrow.text(text, fg))
+            .child(TypeStyle::Eyebrow.text(text, fg));
+        match (&self.failure, self.status == AppStatus::Failed && !self.running) {
+            (Some(why), true) => {
+                FailedHint::new(badge, why.clone()).map(self.on_failure.clone(), |hint, h| hint.on_press(h)).into_element()
+            }
+            _ => badge.into_element(),
+        }
     }
 }

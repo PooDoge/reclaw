@@ -3,7 +3,8 @@ use freya::prelude::*;
 
 use super::{ctx::Ctx, filter::Filter};
 use crate::{
-    desktop::{OpenPicker, press_point, press_verb},
+    activity::hint_for_game,
+    desktop::{OpenPicker, press_failure, press_point, press_verb},
     effect::Effect,
     metrics::*,
     nav::Route,
@@ -75,7 +76,8 @@ pub(super) fn hero(c: &Ctx, game: GameEntry, narrow: bool) -> HeroHeader {
     let (dialogs, on_effect, nav) = (c.dialogs, c.on_effect.clone(), c.nav);
     let id = game.id;
     let (verb_game, menu_game, folder_effect) = (game.clone(), game.clone(), on_effect.clone());
-    let verb_effect = on_effect;
+    let (verb_effect, failure_effect) = (on_effect.clone(), on_effect);
+    let failure = (game.status == AppStatus::Failed).then(|| hint_for_game(&c.activity, id));
     HeroHeader::new(game)
         .narrow(narrow)
         .density(c.env.density)
@@ -83,6 +85,10 @@ pub(super) fn hero(c: &Ctx, game: GameEntry, narrow: bool) -> HeroHeader {
         .on_open(move |_| nav.open(Route::Game { id }))
         .on_open_folder(move |_| folder_effect.call(Effect::OpenFolder(id)))
         .on_manage(move |e: Event<PressEventData>| dialogs.manage(&menu_game, press_point(&e, (320., 160.))))
+        .map(failure, |hero, hint| {
+            let text = hint.text.clone();
+            hero.failure(text, move |_| press_failure(&hint, dialogs, &failure_effect))
+        })
 }
 
 /// The jobs still running or failed, in the main column. Finished ones are in the Updates section and the Downloads tab.
@@ -95,9 +101,10 @@ pub(super) fn downloads_list(c: &Ctx) -> Option<Rect> {
     }
     Some(rect().vertical().spacing(SPACE_2).width(Size::fill()).child(TypeStyle::Eyebrow.text("Downloads", t.ink_subtle)).children(
         open.into_iter().map(|d| {
-            let (id, running, on_effect) = (d.id, d.is_running(), c.on_effect.clone());
+            let (id, running, on_effect, dialogs) = (d.id, d.is_running(), c.on_effect.clone(), c.dialogs);
             DownloadItem::new(d)
                 .on_cancel(move |_| on_effect.call(if running { Effect::CancelActivity(id) } else { Effect::DismissActivity(id) }))
+                .on_failure(move |_| dialogs.failure_log(id))
                 .key(id)
                 .into_element()
         }),
@@ -117,6 +124,7 @@ pub(super) fn grid(c: &Ctx, columns: usize) -> Rect {
                     GameCapsule::new(game.clone())
                         .fluid(true)
                         .selected(Some(id) == selected())
+                        .map((game.status == AppStatus::Failed).then(|| hint_for_game(&c.activity, id).text), |g, text| g.failure(text))
                         .on_press(move |_| {
                             selected.set(Some(id));
                             nav.open(Route::Game { id });

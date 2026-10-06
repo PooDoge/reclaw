@@ -5,7 +5,7 @@ use crate::{
     desktop::use_desktop_ui, effect::Effect, metrics::*, prelude::*, shell::use_shell, store::use_activity, typography::TypeStyle,
 };
 
-/// The download queue: progress, errors, and a way to cancel.
+/// The download queue: progress, errors (hover "Failed" for why, press it for the log), and a way to cancel.
 #[derive(PartialEq)]
 pub struct DownloadsPage {}
 
@@ -30,9 +30,10 @@ impl Component for DownloadsPage {
                 .width(Size::fill())
                 .children(downloads.into_iter().map(|d| {
                     // A running job is cancelled by the host; an ended one is just removed from the list.
-                    let (id, running, on_effect) = (d.id, d.is_running(), shell.on_effect.clone());
+                    let (id, running, on_effect, dialogs) = (d.id, d.is_running(), shell.on_effect.clone(), ui.dialogs);
                     DownloadItem::new(d)
                         .on_cancel(move |_| on_effect.call(if running { Effect::CancelActivity(id) } else { Effect::DismissActivity(id) }))
+                        .on_failure(move |_| dialogs.failure_log(id))
                         .key(id)
                         .into_element()
                 }))

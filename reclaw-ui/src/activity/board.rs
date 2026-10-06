@@ -32,6 +32,11 @@ pub enum ActivityEvent {
         /// What else to say (the cause, what to do about it), for the notice.
         details: Vec<String>,
     },
+    /// What the job wrote to the log. Sent just before `Failed`; replaces any earlier copy, and may follow the end.
+    Log {
+        id: ActivityId,
+        lines: Vec<String>,
+    },
     /// The job was cancelled; it leaves the board.
     Cancelled {
         id: ActivityId,
@@ -91,6 +96,7 @@ impl ActivityBoard {
                     rate: None,
                     changelog: None,
                     details: Vec::new(),
+                    log: Vec::new(),
                     outcome: Outcome::Running,
                 });
                 Some((game_id, Change::Started))
@@ -123,6 +129,11 @@ impl ActivityBoard {
                 let game = a.game_id;
                 self.trim();
                 Some((game, Change::Failed))
+            }
+            ActivityEvent::Log { id, lines } => {
+                let a = self.items.iter_mut().find(|a| a.id == id)?;
+                a.log = lines;
+                Some((a.game_id, Change::Progressed))
             }
             ActivityEvent::Cancelled { id } => {
                 let at = self.items.iter().position(|a| a.id == id && a.is_running())?;
