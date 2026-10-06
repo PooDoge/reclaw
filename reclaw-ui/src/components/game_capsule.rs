@@ -5,7 +5,7 @@ use crate::{metrics::*, prelude::*, typography::TypeStyle};
 
 /// Steam-style library tile: 3:4 art, title, project, status badge. Hover draws an accent border
 /// and, for installed games, a Play button over the art. Touch has no hover, so Play lives in the
-/// hero there.
+/// hero there. A Failed badge shows why on hover; its log is on the game's page.
 #[derive(Clone, PartialEq)]
 pub struct GameCapsule {
     game: GameEntry,
@@ -14,6 +14,7 @@ pub struct GameCapsule {
     hovered: bool,
     on_press: Option<PressHandler>,
     on_play: Option<PressHandler>,
+    failure: Option<String>,
     key: DiffKey,
 }
 
@@ -25,7 +26,7 @@ impl KeyExt for GameCapsule {
 
 impl GameCapsule {
     pub fn new(game: GameEntry) -> Self {
-        Self { game, selected: false, fluid: false, hovered: false, on_press: None, on_play: None, key: DiffKey::None }
+        Self { game, selected: false, fluid: false, hovered: false, on_press: None, on_play: None, failure: None, key: DiffKey::None }
     }
 
     pub fn selected(mut self, selected: bool) -> Self {
@@ -52,6 +53,12 @@ impl GameCapsule {
 
     pub fn on_play(mut self, handler: impl Into<PressHandler>) -> Self {
         self.on_play = Some(handler.into());
+        self
+    }
+
+    /// Why the install failed, for the Failed badge's tooltip.
+    pub fn failure(mut self, text: impl Into<String>) -> Self {
+        self.failure = Some(text.into());
         self
     }
 }
@@ -92,7 +99,7 @@ impl Component for GameCapsule {
             .padding(Gaps::new(SPACE_2, SPACE_3, SPACE_3, SPACE_3))
             .child(TypeStyle::Label.text(self.game.title.clone(), t.ink).max_lines(1).text_overflow(TextOverflow::Ellipsis))
             .child(TypeStyle::Meta.text(self.game.project.clone(), t.ink_subtle).max_lines(1).text_overflow(TextOverflow::Ellipsis))
-            .child(StatusBadge::new(self.game.status));
+            .child(StatusBadge::new(self.game.status).map(self.failure.clone(), |b, text| b.failure(text)));
 
         let card = rect()
             .vertical()

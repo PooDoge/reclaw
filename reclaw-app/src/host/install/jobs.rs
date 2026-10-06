@@ -151,10 +151,27 @@ impl Host {
         reclaw_install::layout::installed_version(&folder)
     }
 
+    /// The job, recorded: what it and the layers under it log goes to the file and to the failure's log view.
     fn run_job(&self, installer: reclaw_install::Installer, spec: Spec) {
-        let end = self.work(&installer, &spec);
+        let recording = reclaw_log::record();
+        let end = recording.span().in_scope(|| {
+            let r = &spec.request;
+            tracing::info!(
+                app = spec.app,
+                title = %spec.title,
+                repo = %r.repo,
+                host = ?r.host,
+                platform = %r.platform.identifier(),
+                filter = ?r.filter,
+                pinned = ?r.preferred_version,
+                prerelease = r.allow_prerelease,
+                folder = %shown(&r.folder),
+                "install started"
+            );
+            self.work(&installer, &spec)
+        });
         self.inner.installs.jobs().remove(&spec.app);
-        self.end_job(&spec, end);
+        recording.span().in_scope(|| self.end_job(&spec, end, &recording));
     }
 
     fn work(&self, installer: &reclaw_install::Installer, spec: &Spec) -> End {
@@ -178,6 +195,7 @@ impl Host {
             }
             Err(error) => return End::Failed(error),
         };
+        tracing::info!(release = %resolved.release.tag, asset = %resolved.asset.name, "release chosen");
         if resolved.already_installed {
             return End::Current(resolved.release.tag.clone());
         }
@@ -197,7 +215,7 @@ impl Host {
         }
     }
 
-    fn end_job(&self, spec: &Spec, end: End) {
+    fn end_job(&self, spec: &Spec, end: End, recording: &reclaw_log::Recording) {
         let id = spec.activity;
         match end {
             End::Done(done) => {
@@ -239,6 +257,8 @@ impl Host {
                     "The log has more: {}",
                     self.inner.logs_dir.as_ref().map_or_else(|| "reclaw.log".to_string(), |d| shown(&d.join("reclaw.log")))
                 ));
+                // The log first, so the row never shows "Failed" with nothing behind it.
+                self.send(AppAction::Activity(ActivityEvent::Log { id, lines: recording.lines() }));
                 self.send(AppAction::Activity(ActivityEvent::Failed { id, reason: short(&error), details }));
             }
         }

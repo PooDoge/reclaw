@@ -1,14 +1,14 @@
 # Background work, notifications and press-and-hold
 
-- last-verified: 2026-10-04
-- owner-paths: reclaw-ui/src/activity/**, reclaw-ui/src/notices/**, reclaw-input/src/hold.rs, reclaw-input/src/mapper.rs, reclaw-ui/src/deck/app/key_holds.rs, reclaw-ui/src/deck/widgets/notice.rs, reclaw-ui/src/deck/widgets/card_progress.rs, reclaw-ui/tests/ui/deck_notices.rs
+- last-verified: 2026-10-06
+- owner-paths: reclaw-ui/src/activity/**, reclaw-ui/src/notices/**, reclaw-input/src/hold.rs, reclaw-input/src/mapper.rs, reclaw-ui/src/deck/app/key_holds.rs, reclaw-ui/src/deck/widgets/notice.rs, reclaw-ui/src/deck/widgets/card_progress.rs, reclaw-ui/tests/ui/deck_notices.rs, reclaw-ui/src/components/failed_hint.rs, reclaw-ui/src/desktop/dialogs/failure_log.rs, reclaw-ui/tests/ui/desktop_failures.rs
 
 How downloads, installs, updates and mod downloads are tracked and shown, and how Deck mode tells the user and lets them act with a
 button held down.
 
 ## Activity
 
-The host reports `ActivityEvent`s (started, progress, finished, failed, cancelled, dismissed); `ActivityBoard::apply` is the only
+The host reports `ActivityEvent`s (started, progress, finished, failed, log, cancelled, dismissed); `ActivityBoard::apply` is the only
 way the list changes. A finished or failed job **stays on the board until the app restarts**, so an automatic update leaves its
 changelog to read. `indicator_for(board, game)` is what a card or row shows for one game: update available, queued, downloading,
 installing, done, failed, or mods downloading, with a label ("34%", "Building") and a progress fraction when the size is known.
@@ -21,6 +21,21 @@ installing, done, failed, or mods downloading, with a label ("34%", "Building") 
   art: filled when the size is known, a sliding segment when it is not, full and green when finished, absent when only an update
   waits. Both sit inside the art, so they scale with the focused card.
 * **Meaning is never colour alone:** every state has its own icon and word.
+
+## Why a job failed (desktop)
+
+A failed job carries a one-line reason, details (the cause, what to do, where the log is) and **the lines it wrote to the log**
+(`Activity::log`, sent by the host as `ActivityEvent::Log` just before `Failed`; ADR 0019). Every "Failed" indicator explains itself
+(`activity::failure`, `components::FailedHint`):
+
+* **Hover:** a tooltip with the reason, cut to 80 characters at a word (`short_reason`). On the Downloads rows (both the Downloads page and
+  the Library's list), the Failed badge of the Library hero and the game page, and the badge on a Library capsule.
+* **Press** (not on a capsule, whose press opens the game): a dialog, "<title> failed", with the whole reason, the details, and the
+  job's log in a scrolling box, warnings and errors in colour (`line_tone`), and "Open log folder". A popup on desktop, a full-screen
+  page on touch; Back and Escape close it first.
+* **A failure from an earlier run** (the game says Failed, the board has no job for it after a restart): the tooltip says the last
+  install did not finish and its log is in the log folder; pressing opens the log folder.
+* Deck mode has no hover; its failure notice already carries the details (Notifications below). The log view is not on Deck yet.
 
 ## Notifications
 

@@ -4,7 +4,7 @@
 - owner-paths: reclaw-install/**, reclaw-app/src/host/install/**, reclaw-ui/src/settings/location.rs, reclaw-ui/src/catalog_data.rs, reclaw-ui/src/desktop/dialogs/install.rs, reclaw-ui/src/components/install_dialog.rs, reclaw-ui/src/deck/pages/install.rs, reclaw-ui/src/deck/state/install.rs, reclaw-ui/src/deck/app/text_boxes.rs
 
 What pressing Install does, from the form to a folder on disk, and what Update, Uninstall, Verify, Check for updates and Open folder do.
-Rules are Quiver's (read from its source, not run) unless the text says otherwise. Decision records: ADR 0017, ADR 0018, ADR 0019 (`filesToAdd`).
+Rules are Quiver's (read from its source, not run) unless the text says otherwise. Decision records: ADR 0017, ADR 0018, ADR 0019 (failure log), ADR 0020 (`filesToAdd`).
 
 ## The form
 
@@ -67,7 +67,7 @@ without a restart; an install that is running keeps showing as running.
    is kept for the next try.
 9. The catalog's `filesToAdd` (empty marker files such as `portable.txt`) are created in the folder if missing, as Quiver does after
    every install; they are never overwritten. When the folder already held an install, the person is told that the game's earlier
-   settings stay where it kept them (for the recomps, `~/.config/<Game>`). Mods depend on this (spec: mods, ADR 0019).
+   settings stay where it kept them (for the recomps, `~/.config/<Game>`). Mods depend on this (spec: mods, ADR 0020).
 
 If the folder already holds a finished install of exactly the release that would be installed, nothing is downloaded and the user is
 told it is up to date. A failed first install leaves the app marked *Failed* until the next try; a failed or cancelled update leaves
@@ -85,7 +85,9 @@ fills). Tools from the system are used only for RAR and rare zips, and their out
 
 The host reports `ActivityEvent`s from the worker thread: `Started`, `Progress` (Downloading with bytes and rate, Extracting, Finishing)
 and `Finished` (an update carries a changelog: from, to, the release's notes and page) or `Failed` (a one-line reason for the row, and
-details for the notice: the cause, what to do, and where the log is). The library's `GameEntry`s are rebuilt from the library file, the
+details for the notice: the cause, what to do, and where the log is), preceded by `Log`: the lines the job wrote, from "install
+started" (repository, host, platform, filter, pinned version, folder) and "release chosen" (tag, file) to the failure, for the log view
+behind the "Failed" label (notices-and-holds, ADR 0019). The library's `GameEntry`s are rebuilt from the library file, the
 catalog and an install-state table (`catalog_data::InstallStates`): *Installing* while a job runs, *Failed* after a failed first install,
 *Installed* with the folder's version, and *Update ready* when the catalog's latest tag (or a newer one found by Check for updates) is
 newer by Quiver's version rules (`reclaw_games::version`: `v1.4.2` is `1.4.2`; `1.4.2-beta` is only itself). What is installed is read

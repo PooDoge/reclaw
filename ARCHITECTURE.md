@@ -18,7 +18,7 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), the clean environment a game starts with, Wine / Proton / custom runners for Windows programs on Linux, controller `InputProfile` (spec: launch) | no |
 | `reclaw-games` | What a project is (catalog metadata, art, media, releases), the systems games came from (`platform`), launch-setting capabilities and how a launch plan is built (`settings`) | no |
 | `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format) | no |
-| `reclaw-log` | The log file, its redaction of credentials, the panic hook, the `Secret` type; no dependency on the rest (spec: logging) | no |
+| `reclaw-log` | The log file, its redaction of credentials, the panic hook, the `Secret` type, one job's own lines (`record`); no dependency on the rest (spec: logging) | no |
 | `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, access tokens that can change and be checked, `probe` (specs: network, credentials) | no |
 | `reclaw-install` | Which release and which file fit this machine (Quiver's rules, ported), fetching releases from GitHub and GitLab, unpacking zip / tar.gz / tar.xz / 7z safely, the install itself (stage, lay over the folder, write the version last), uninstall with its refusals (spec: install) | no |
 | `reclaw-mods` | Mods from Thunderstore and GameBanana: listing, the install (dependencies first, staged, never over another mod's files), removal, and Quiver's `.quiver-mods.json` record (spec: mods) | no |
@@ -146,7 +146,8 @@ READMEs are cut into blocks before the stock markdown viewer sees them (ADR 0004
 `reclaw.log` in the state folder, rotated by size, with credentials removed on the way in (the `Secret` type, registered exact values, and
 patterns). Every notice the user is shown is also logged, from `Store::dispatch`. Settings, Diagnostics opens the folder, changes the
 detail, and writes a report (versions, system, what each service answers, the end of the log). `docs/troubleshooting.md` lists the
-lines and what to do. Spec: logging.
+lines and what to do. A job's own lines are also recorded beside it (`reclaw_log::record`): pressing a "Failed" label shows them (ADR 0019).
+Spec: logging.
 
 ## Access tokens
 

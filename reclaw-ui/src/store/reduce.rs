@@ -162,6 +162,7 @@ impl AppState {
             | ActivityEvent::Progress { id, .. }
             | ActivityEvent::Finished { id, .. }
             | ActivityEvent::Failed { id, .. }
+            | ActivityEvent::Log { id, .. }
             | ActivityEvent::Cancelled { id }
             | ActivityEvent::Dismiss { id } => *id,
         };

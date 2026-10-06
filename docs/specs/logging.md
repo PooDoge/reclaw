@@ -1,6 +1,6 @@
 # Logging
 
-- last-verified: 2026-10-05
+- last-verified: 2026-10-06
 - owner-paths: reclaw-log/src/**, reclaw-log/tests/**, reclaw-app/src/main.rs, reclaw-ui/src/notices/log.rs, reclaw-app/src/host/report.rs
 
 The program writes everything that went wrong, and enough around it to explain why, to a file (ADR 0013). A person helping with a
@@ -28,6 +28,11 @@ for a while host=thunderstore.io minutes=5` : time (UTC), level, thread, module,
 * **Every notice the user is shown**, with its details, from `Store::dispatch` (`reclaw_ui::notices::log`): `problem shown to the user
   title=... body=... details=...`. What was on screen and what is in the log are the same set.
 * **A panic**: the thread, the place, the message and the stack, then the usual message.
+* **One job's own lines, also kept beside the job** (`reclaw_log::record`, ADR 0019): the install worker runs inside a recording span, and
+  every event on that thread while it is entered, from any crate (the network layer's retries, the unpacker), is copied into the
+  recording as well as the file: same level, same redaction, the time of day instead of the date, the last 400 lines (the first line
+  then says how many earlier ones went). A failed install sends them with its failure, and the "Failed" label shows them. Each job's
+  file lines carry `recording{recording=N}` so they can be found together.
 * The toolkit's and the HTTP stack's own warnings (no Vulkan driver, a compositor reporting a 0 mm display) arrive through the same
   subscriber and are often the answer.
 
@@ -56,7 +61,7 @@ lines. It passes through the same redaction.
 
 ## Tests
 
-`reclaw-log` has unit tests (rotation, redaction, level mapping, tail) and one integration test installing the real logger (file
+`reclaw-log` has unit tests (rotation, redaction, level mapping, tail, recording: span scope, two threads, the line cap, redaction) and one integration test installing the real logger (file
 contents, level change in both directions, a panic on another thread, a second `init`). `reclaw-net/tests/logging.rs` checks the
 request trail; the host and UI tests check that notices and statuses carry no token. Other tests call `reclaw_log::init_for_tests()` to
 see what the code logged when a test fails.

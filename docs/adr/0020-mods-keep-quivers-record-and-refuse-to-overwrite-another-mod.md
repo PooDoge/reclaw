@@ -1,4 +1,4 @@
-# 0019 Mods keep Quiver's record, refuse to overwrite another mod, and the recomps get their `portable.txt`
+# 0020 Mods keep Quiver's record, refuse to overwrite another mod, and the recomps get their `portable.txt`
 
 - status: accepted
 - date: 2026-10-06

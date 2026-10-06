@@ -1,5 +1,6 @@
 //! Tests for the activity board, its indicators and the text formats.
 mod board;
+mod failure;
 mod format;
 mod indicator;
 

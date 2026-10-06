@@ -53,6 +53,7 @@ pub struct Dialog {
     window: (f32, f32),
     keyboard_inset: f32,
     reveal: Option<(f32, f32)>,
+    wide: bool,
     title: String,
     body: Element,
     actions: Vec<DialogAction>,
@@ -69,7 +70,18 @@ impl Dialog {
         actions: Vec<DialogAction>,
         on_close: EventHandler<()>,
     ) -> Self {
-        Self { kind, ctx, window, keyboard_inset: 0., reveal: None, title: title.into(), body: body.into_element(), actions, on_close }
+        Self {
+            kind,
+            ctx,
+            window,
+            keyboard_inset: 0.,
+            reveal: None,
+            wide: false,
+            title: title.into(),
+            body: body.into_element(),
+            actions,
+            on_close,
+        }
     }
 
     pub fn keyboard_inset(mut self, inset: f32) -> Self {
@@ -80,6 +92,12 @@ impl Dialog {
     /// The focused field's top and bottom in body coordinates, to keep it above the keyboard.
     pub fn reveal(mut self, target: Option<(f32, f32)>) -> Self {
         self.reveal = target;
+        self
+    }
+
+    /// A popup wide enough for lines of a log or a table. Other presentations already take the screen's width.
+    pub fn wide(mut self, wide: bool) -> Self {
+        self.wide = wide;
         self
     }
 
@@ -165,7 +183,11 @@ impl Component for Dialog {
                 Popup::new()
                     .background(t.bg_panel)
                     .color(t.ink)
-                    .width(Size::px(if self.kind == SurfaceKind::Confirm { 420. } else { 480. }))
+                    .width(Size::px(match (self.wide, self.kind) {
+                        (true, _) => 760.,
+                        (false, SurfaceKind::Confirm) => 420.,
+                        (false, _) => 480.,
+                    }))
                     .on_close_request(move |_| on_close.call(()))
                     .child(PopupTitle::new(self.title.clone()))
                     .child(PopupContent::new().child(self.body.clone()))

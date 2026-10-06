@@ -3,6 +3,7 @@ use freya::prelude::*;
 
 use super::dialogs::GameDialogs;
 use crate::{
+    activity::FailureHint,
     effect::Effect,
     launch::{VerbCommand, launch_verb},
     model::GameEntry,
@@ -26,5 +27,14 @@ pub fn press_point(data: &PressEventData, fallback: (f32, f32)) -> (f32, f32) {
         PressEventData::Mouse(m) => (m.global_location.x as f32, m.global_location.y as f32),
         PressEventData::Touch(t) => (t.global_location.x as f32, t.global_location.y as f32),
         PressEventData::Keyboard(_) => fallback,
+    }
+}
+
+/// Press a "Failed" label or badge: the job's report and log, or the log folder when the job is from an earlier run (the board
+/// does not survive a restart; the log file does).
+pub fn press_failure(hint: &FailureHint, dialogs: GameDialogs, on_effect: &EventHandler<Effect>) {
+    match hint.activity {
+        Some(id) => dialogs.failure_log(id),
+        None => on_effect.call(Effect::OpenLogFolder),
     }
 }

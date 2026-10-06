@@ -20,7 +20,7 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 3. **Only the first page of releases is read**, and a pinned version outside it silently becomes "latest". Drafts are not filtered.
 4. **Merge and Replace in the catalog review drop the user's `linux*` fields** (read from the code, not run). Worth deciding on deliberately.
 5. **Mods have no disable, no backup, no conflict check and no rollback** in Quiver. Reclaw keeps Quiver's record file but refuses to
-   overwrite another mod's files, stages and undoes a failed install, and removes what an update drops (ADR 0019). The provider API
+   overwrite another mod's files, stages and undoes a failed install, and removes what an update drops (ADR 0020). The provider API
    shapes could not be checked from the sandbox (the proxy refused thunderstore.io and gamebanana.com); the live suite in `reclaw-mods`
    is there to check them. Reclaw also did not create `filesToAdd` (`portable.txt`), without which a recomp ignores its `mods` folder;
    it now does after every install.

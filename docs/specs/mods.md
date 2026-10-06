@@ -4,7 +4,7 @@
 - owner-paths: reclaw-mods/**, reclaw-app/src/host/mods/**, reclaw-ui/src/desktop/pages/mods.rs, reclaw-ui/src/desktop/pages/mod_detail.rs, reclaw-ui/src/desktop/pages/common/mod_row.rs, reclaw-ui/src/store/changes.rs
 
 Which games take mods, where their mods are listed, and what Install, Update and Remove do to a game's folder. The format of the
-record and the site addresses are Quiver's (read from its source, not run) unless the text says otherwise. Decision record: ADR 0019.
+record and the site addresses are Quiver's (read from its source, not run) unless the text says otherwise. Decision record: ADR 0020.
 
 ## Which games, and where their mods come from
 

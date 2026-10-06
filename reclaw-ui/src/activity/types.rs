@@ -84,6 +84,8 @@ pub struct Activity {
     pub changelog: Option<Changelog>,
     /// When it failed: what else is worth saying beyond the one-line reason.
     pub details: Vec<String>,
+    /// What the job wrote to the log, oldest first, for the failure's log view. Empty until the host sends it.
+    pub log: Vec<String>,
     pub outcome: Outcome,
 }
 
