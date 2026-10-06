@@ -17,6 +17,8 @@ cargo run -p reclaw --features gamepad      # with a real gamepad reader
 cargo run -p reclaw-net --example probe     # what each host the program needs does from this machine
 RECLAW_LOG=reclaw_net=debug,warn cargo run -p reclaw   # a log filter; the file is ~/.local/state/reclaw/logs/reclaw.log (docs/troubleshooting.md)
 cargo test -p reclaw-net --test live -- --ignored --nocapture   # the real GitHub (a few requests); RECLAW_LIVE_REPO=owner/name picks the repository
+cargo test -p reclaw-install --test live -- --ignored --nocapture --test-threads 1   # install real catalog games from GitHub and GitLab (downloads ~200 MB)
+xvfb-run -a cargo test -p reclaw --lib live -- --ignored --nocapture --test-threads 1   # the same through the host: install, verify, play, update, uninstall
 scripts/update.sh                           # fast-forward this checkout and rebuild; never discards anything (spec: updates)
 scripts/x11-smoke.sh                        # a real window under Xvfb: drag, resize, maximize, close (not part of cargo test)
 ```

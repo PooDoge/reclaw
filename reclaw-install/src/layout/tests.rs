@@ -191,6 +191,23 @@ fn windows_programs_count_only_when_nothing_is_native() {
 }
 
 #[test]
+fn elf_files_deep_in_a_windows_build_do_not_make_it_native() {
+    // Digimon World Recompiled's Windows zip ships its sources, test fixtures of an ELF library among them.
+    let dir = tempfile::tempdir().expect("dir");
+    put(dir.path(), "Digimon_World_Recompiled.exe", "MZ");
+    put(dir.path(), "psxrecomp/recompiler/lib/ELFIO/tests/elf_examples/asm64", elf());
+    put(dir.path(), "psxrecomp/packaging/make-icons.sh", "#!/bin/sh\n");
+    let found = programs::find(dir.path(), true, LINUX);
+    assert_eq!(names(dir.path(), &found), ["Digimon_World_Recompiled.exe", "psxrecomp/packaging/make-icons.sh"]);
+    assert!(found.needs_runner);
+    // A native program as near the top as the .exe still wins.
+    put(dir.path(), "Digimon_World_Recompiled", elf());
+    let found = programs::find(dir.path(), true, LINUX);
+    assert_eq!(found.programs.first(), Some(&dir.path().join("Digimon_World_Recompiled")));
+    assert!(!found.needs_runner);
+}
+
+#[test]
 fn on_windows_exe_bat_and_cmd_are_programs() {
     let dir = tempfile::tempdir().expect("dir");
     for f in ["a.exe", "b.BAT", "c.cmd", "d.dll"] {

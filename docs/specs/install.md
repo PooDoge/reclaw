@@ -1,10 +1,10 @@
 # Installing
 
-- last-verified: 2026-10-05
+- last-verified: 2026-10-06
 - owner-paths: reclaw-install/**, reclaw-app/src/host/install/**, reclaw-ui/src/settings/location.rs, reclaw-ui/src/catalog_data.rs, reclaw-ui/src/desktop/dialogs/install.rs, reclaw-ui/src/components/install_dialog.rs, reclaw-ui/src/deck/pages/install.rs, reclaw-ui/src/deck/state/install.rs, reclaw-ui/src/deck/app/text_boxes.rs
 
 What pressing Install does, from the form to a folder on disk, and what Update, Uninstall, Verify, Check for updates and Open folder do.
-Rules are Quiver's (read from its source, not run) unless the text says otherwise. Decision record: ADR 0017.
+Rules are Quiver's (read from its source, not run) unless the text says otherwise. Decision records: ADR 0017, ADR 0018.
 
 ## The form
 
@@ -45,7 +45,9 @@ without a restart; an install that is running keeps showing as running.
 1. The file is downloaded to `<cache>/downloads/<hash of the address>/<name>` by the shared network layer: streamed to disk, hashed,
    resumable, cancellable; checked against the release's SHA-256 (`digest`) and size when the host states them. A mismatch deletes it.
 2. Its kind comes from its name; a name with no extension (a GitLab package link) is told by its first bytes (zip, 7z, rar, gzip, xz),
-   and a file that is not an archive is a program in one file.
+   and a file that is not an archive is a program in one file. A name has an extension only if what follows its last dot is one to five
+   letters or digits: `Game-v0.9.2-Linux-X64-Release` has none (ADR 0018). `.elf`, `.x86_64`, `.arm64` and `.aarch64` name a program in
+   one file.
 3. A first install that has no finished copy writes `install-incomplete.txt` in the folder; an update never does.
 4. The archive is unpacked into `<folder>/.reclaw-stage/tree` (same disk as the folder, so the move is a rename). Zip, tar.gz, tar.xz and
    7z are read by the program itself. RAR, and a zip using a method the reader lacks, go to `unrar`, `7z`/`7zz`/`unzip` or `bsdtar` if one
@@ -57,7 +59,8 @@ without a restart; an install that is running keeps showing as running.
    removes the older `.AppImage` files at the top.
 7. Programs are made executable (a zip made on Windows has no modes; an ELF file is still a program). Programs are found by what they
    are, not what they are called: `.AppImage`/`.x86_64`/`.arm64`/`.aarch64`, files with an ELF (executable or PIE with an entry point) or
-   `#!/` header, and `.sh`; a Windows `.exe` counts only when nothing native is there, and then the install says it needs a runner.
+   `#!/` header, and `.sh`; a Windows `.exe` counts only when nothing native is as near the top of the folder as the nearest `.exe`
+   (a Windows zip that ships its sources can hold ELF test files deep inside, ADR 0018), and then the install says it needs a runner.
    Wine and Proton prefixes are never searched.
 8. No program: the install fails (`NoProgram`) and the folder stays marked incomplete. Otherwise `version.txt` (the release tag) is
    written **last** and the marker removed. The staging folder and the download are deleted; after a failure or a cancel the download
@@ -100,19 +103,34 @@ Verify and when playing, not for the whole library at start.
 
 ## Not built / not verified
 
-* **Verified** only against a fake GitHub on this machine serving archives built in the tests, in unit and host tests. **Not run against
-  the real services or a real recompiled game from this build environment**: the sandbox's proxy refuses `github.com` release downloads.
-  The first live installs on Bazzite are the real test.
+* **Verified against the real services** on 2026-10-06 from the development sandbox (Linux x86-64), with the live tests below:
+  * GitLab, end to end through the real API and downloads: Mario Kart 64, Star Fox 64, Duke Nukem: Zero Hour and Extreme-G
+    (sonicdcer: package links with no extension, a zip holding a tar.gz), Link's Awakening DX HD (a 7z; install v2.0.7, update to v2.0.8),
+    Digimon World (Windows-only zip: installed, reported as needing Wine or Proton). Through the host: install to the default location,
+    Verify, Play under a virtual display then Stop, Check for updates (current, then an update offered), Update with a changelog and a
+    save beside the program kept, Uninstall.
+  * GitHub downloads (`github.com/.../releases/download/...`, redirected to `release-assets.githubusercontent.com`): Zelda64Recomp
+    (a zip; v1.2.1 then v1.2.2), OpenRCT2 (an AppImage; v0.5.4 then v0.5.5, the older AppImage removed), doukutsu-rs (one `.elf` program).
+  * **Not verified: GitHub's release API** (`api.github.com/repos/.../releases`). The sandbox's proxy refuses it for repositories outside
+    the session, so the GitHub cases were described by hand (`RECLAW_LIVE_GITHUB_DIRECT=1`) and the host-level GitHub test fails there
+    with the proxy's 403. Run both live suites on a normal network to close this.
+  * Play: Extreme-G started and ran until stopped; Mario Kart 64 started and exited with its own "Failed to preload executable!", which
+    the same binary also prints when started by hand in the sandbox (an environment limit, not Reclaw's). No game was played with a ROM,
+    sound or a GPU. The Wine/Proton path was not run (no runner in the sandbox).
 * No chooser dialog; no per-app memory of a chosen file; no GraphQL batching of release lists; no background update passes
   (M3); no desktop shortcut or Steam shortcut; no Flatpak bundles; no Android; macOS and Windows code paths are written and unverified.
 * AppImages need FUSE on the machine; the program does not check.
 * RAR needs a tool on the machine.
 * No free-space check before unpacking: a full disk is reported as the disk being full, and the staging folder is removed.
-* Launching and stopping are not built yet (see `quiver-parity.md`).
+* Launching and stopping are described in `launch.md`.
 
 ## Tests
 
-`reclaw-install` (117): file-name rules, platform matching, asset choice, release parsing and selection, version rules, every archive
+Live, by hand (download real games; see the verification note above):
+`cargo test -p reclaw-install --test live -- --ignored --nocapture --test-threads 1` and
+`xvfb-run -a cargo test -p reclaw --lib live -- --ignored --nocapture --test-threads 1`.
+
+`reclaw-install` (119): file-name rules, platform matching, asset choice, release parsing and selection, version rules, every archive
 format with real archives, the hostile-archive cases, wrapper hoisting, merging, program discovery, the whole install against a fake
 GitHub (zip, tar.gz with links, AppImage, bare program, Windows-only, update over old files, corrupt archive then retry, failed update
 keeps the old, hash mismatch, cancel, hostile zip), and uninstall safety. `reclaw-app` host tests drive the same through `Effect`s

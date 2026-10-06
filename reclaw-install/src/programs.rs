@@ -128,10 +128,15 @@ pub fn find(root: &Path, recursive: bool, platform: Platform) -> Programs {
                     })
                     .cloned(),
             );
-            if found.is_empty() {
-                let exes: Vec<PathBuf> = files.iter().filter(|f| lower_name(f).ends_with(".exe")).cloned().collect();
-                needs_runner = !exes.is_empty();
-                found.extend(exes);
+            let exes: Vec<PathBuf> = files.iter().filter(|f| lower_name(f).ends_with(".exe")).cloned().collect();
+            // A Windows build that ships its sources can hold ELF files deep inside (a library's test fixtures, seen in a real
+            // release): a native file only makes the app native when it is as near the top as the nearest `.exe`.
+            let nearest = |paths: &[PathBuf]| paths.iter().map(|p| depth(root, p)).min();
+            if let Some(exe_depth) = nearest(&exes)
+                && nearest(&found).is_none_or(|native_depth| exe_depth < native_depth)
+            {
+                found = exes;
+                needs_runner = true;
             }
             found.extend(files.iter().filter(|f| lower_name(f).ends_with(".sh")).cloned());
         }
