@@ -70,8 +70,10 @@ impl Notice {
         Self::new(NoticeKind::InstallFinished, Some(game_id), format!("{title} is ready"), "Installed")
     }
 
-    pub fn download_failed(game_id: u32, title: &str, reason: &str) -> Self {
-        Self::new(NoticeKind::DownloadFailed, Some(game_id), format!("{title} failed"), reason).details(vec![reason.to_string()])
+    /// A job that failed. `details` are what the person needs next (the cause, what to do); the reason alone when there are none.
+    pub fn download_failed(game_id: u32, title: &str, reason: &str, details: &[String]) -> Self {
+        let details = if details.is_empty() { vec![reason.to_string()] } else { details.to_vec() };
+        Self::new(NoticeKind::DownloadFailed, Some(game_id), format!("{title} failed"), reason).details(details)
     }
 
     pub fn note(title: &str, body: &str, details: Vec<String>) -> Self {

@@ -10,14 +10,17 @@
 //! * `rewrite`: making links and image paths in markdown text absolute
 //! * `html`: the small subset of HTML a README uses, lowered to blocks (scripts and styles are dropped)
 //! * `badge`: the status badges at the top of a README, read from their address
+//! * `banner`: which of its pictures could stand in for a game's banner, best first
 //! * `blocks`: the splitter that produces the [`Document`]
 mod badge;
+mod banner;
 mod blocks;
 mod html;
 mod rewrite;
 mod source;
 
 pub use badge::{Badge, BadgeColor};
+pub use banner::{MIN_ASPECT, MIN_WIDTH, banner_candidates, fits_banner};
 pub use blocks::parse;
 pub use source::{LinkTarget, ReadmeContext};
 

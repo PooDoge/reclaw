@@ -41,7 +41,7 @@ impl Component for SlidingStrip {
 }
 
 /// What a card shows over its art while its game has background work: a chip at the top left with the
-/// icon and "34%" or "Building", and a bar along the bottom edge. The bar fills when the size is known,
+/// icon and "34%" or "Finishing", and a bar along the bottom edge. The bar fills when the size is known,
 /// slides when it is not, is full and green when finished, and absent when only an update is waiting.
 ///
 /// Both sit inside the art's clip, so they scale with the focused card and keep its rounded corners.

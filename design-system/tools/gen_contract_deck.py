@@ -27,7 +27,7 @@ d["decisions"]=[
  {"id":"stop-twice-forces","decision":"Stop sends a graceful quit; pressing it again while Stopping force-kills. Apps run in their own process group so the whole tree stops.","why":"Handhelds have no task manager; a hung game must be recoverable from the pad."},
  {"id":"resume-and-stop","decision":"Desktop swaps Play for Stop. Deck shows Resume + Stop side by side while an app runs.","why":"In a controller UI, Resume (A) is what you want 95% of the time, and Stop must not be one mis-press away."},
  {"id":"sdl-profile","decision":"Per-app controller setup is handed over as SDL_GAMECONTROLLERCONFIG plus SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS. Apps that do not read SDL need a virtual-device layer, which is not built.","why":"Most recompiled-game ports use SDL; this is the one mechanism that needs no kernel permissions."},
- {"id":"launcher-file-picker","decision":"Deck mode needs an in-app, gamepad-navigable file browser for 'your game file'. A native dialog cannot be driven by a pad.","why":"The install flow requires the user to choose their own file."},
+ {"id":"install-form","decision":"The Install page asks for two things only: a location, which starts as the Library default from Settings, and a Pre-release switch. There is no file to choose, so Deck mode needs no file browser.","why":"The files come from the project's own release. An earlier design asked for a game file before Install would enable; it was invented, it blocked installs, and a native picker cannot be driven by a pad anyway."},
  {"id":"text-input","decision":"Deck mode text entry uses an on-screen keyboard opened by Confirm on a field. Specified, not built.","why":"Every search and path field otherwise strands a gamepad user."}
 ]
 
@@ -104,7 +104,7 @@ d["lifecycle"]={
  "inputOwnership":{"onLaunch":"launcher goes to the background; owner = App","onGuide":"launcher comes to front, MainMenu opens, owner = Launcher","onResume":"launcher goes to the back, owner = App","onAppEnded":"launcher to front, owner = Launcher; a Failed outcome shows a toast on the game's tile and page","windowing":"bringing windows forward is platform glue (not built); the model emits Effects and tracks inFront"},
  "ui":{
   "LaunchButton":[
-   {"when":"Available or NeedsFile","desktop":"Install (install variant)","deck":"Install"},
+   {"when":"Available","desktop":"Install (install variant)","deck":"Install"},
    {"when":"Installing","desktop":"Installing (disabled)","deck":"Installing (disabled)"},
    {"when":"UpdateReady and Idle","desktop":"Update","deck":"Update"},
    {"when":"Installed and Idle","desktop":"Play","deck":"Play"},
@@ -163,7 +163,6 @@ deck=[
   rules=["full-bleed behind the page; follows the focused game","art upscaled and blurred (EffectExt::blur 24), covered by deck-scrim so text is always on the scrim","without art: deck-bg with a vertical tint wash","never carries text itself"],rust={"type":"Backdrop","module":"reclaw_ui::deck"}),
  comp("DeckApp","custom",["deck-bg"],
   rules=["root: measures width with on_sized (set_if_modified), owns DeckState, drains the ActionFeed and the keyboard fallback, runs the reducer and hands Effects to the host callback","safe zone padding deck-safe-x / deck-safe-y on every page","HintBar pinned in the bottom safe zone"],rust={"type":"DeckApp","module":"reclaw_ui::deck"}),
- comp("FileBrowser","custom",[],status="specified, not built",rules=["gamepad-navigable replacement for the native file picker in InstallDialog","list rows deck-row-h; A opens folder or selects file; B goes up"]),
  comp("OnScreenKeyboard","custom",[],status="specified, not built",rules=["opened by Confirm on a text field in Controller density","grid of 56px keys, spatial navigation, A types, X backspace, Y shift, Start done"]),
 ]
 names={c["name"] for c in deck}
@@ -173,7 +172,7 @@ d["components"]=[c for c in d["components"] if c["name"] not in names]+deck
 adapt={
  "Button":"Controller: height 56 (hero 64), deck-label 18/24, icon 22, focus: ring + scale 1.04",
  "SearchField":"Controller: renders as a button-like field; Confirm opens the OnScreenKeyboard (not built)",
- "InstallDialog":"Controller: focus trapped, buttons 56px, Back closes, Confirm runs the focused button; 'Browse' opens FileBrowser (not built) instead of the native picker",
+ "InstallDialog":"Controller: focus trapped, buttons 56px, Back closes, Confirm runs the focused button; the location field opens the on-screen keyboard",
  "HeroHeader":"Controller: not used; DeckGame composes Backdrop + deck-title + LaunchButton pair",
  "LibraryRow":"Controller: not used; Deck uses DeckTile and MainMenu rows",
  "Chip":"Controller: not used; SectionTabs replaces it",
@@ -210,7 +209,7 @@ d["animations"]=[a for a in d["animations"] if a["name"] not in ("focus","panel"
  {"name":"scrim","kind":"opacity","ms":200,"ease":"out","drives":"SlidePanel backdrop"}]
 
 d["notBuilt"]=[
- "OnScreenKeyboard","FileBrowser (gamepad file picker)","Options context menu",
+ "OnScreenKeyboard","Options context menu",
  "Catalog and Mods sections (empty state only)","Settings screen",
  "Virtual keyboard/mouse device (uinput) for apps that do not read SDL",
  "Bringing the launcher/app window forward (platform glue; the model emits Effects)",

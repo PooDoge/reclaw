@@ -33,7 +33,7 @@ pub fn progress_strip(t: &Reclaw, kind: IndicatorKind, progress: Option<f32>, he
         .child(rect().width(Size::percent(fraction * 100.)).height(Size::fill()).background(color))
 }
 
-/// The icon and short label of a game's background work: "34%", "Building", "Updated", "Update ready".
+/// The icon and short label of a game's background work: "34%", "Finishing", "Updated", "Update ready".
 #[derive(Clone, PartialEq)]
 pub struct IndicatorBadge {
     indicator: Indicator,

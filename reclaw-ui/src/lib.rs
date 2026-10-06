@@ -3,6 +3,7 @@
 pub mod about;
 pub mod activity;
 pub mod app_menu;
+pub mod banner;
 pub mod bootstrap;
 pub mod catalog;
 pub mod catalog_data;
@@ -17,6 +18,7 @@ pub mod fixtures;
 
 pub mod icon;
 pub mod launch;
+pub mod launch_request;
 pub mod media;
 pub mod metrics;
 pub mod model;

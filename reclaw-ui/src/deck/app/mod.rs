@@ -70,12 +70,8 @@ impl Component for DeckApp {
         let (settings, projects, display, launch, notices) = (use_settings(), use_projects(), use_display(), use_launch(), use_notices());
         let credentials = crate::store::use_credentials();
         let sort = Sort::from_settings(&settings);
-        let (games_changed, activity_changed, notices_changed, mailbox) = (
-            use_channel(AppChannel::Games),
-            use_channel(AppChannel::Activity),
-            use_channel(AppChannel::Notices),
-            use_channel(AppChannel::Mailbox),
-        );
+        let (games_changed, activity_changed, notices_changed) =
+            (use_channel(AppChannel::Games), use_channel(AppChannel::Activity), use_channel(AppChannel::Notices));
         let texts = TextBoxes::use_new();
         let root_focus = use_a11y();
 
@@ -128,8 +124,7 @@ impl Component for DeckApp {
             }
         });
 
-        // Host data changed: repair focus, report an ownership change, notice an app ending, and
-        // take a file the host picked for the Install page.
+        // Host data changed: repair focus, report an ownership change, notice an app ending.
         use_side_effect({
             let dispatcher = dispatcher.clone();
             move || {
@@ -139,13 +134,6 @@ impl Component for DeckApp {
                 notices_changed.read();
                 let ended = *was_active.peek() && !active;
                 was_active.set_if_modified(active);
-                // Reading subscribes to the host's answer; clearing it re-runs this once, harmlessly.
-                let picked = mailbox.read().mailbox.chosen_file.clone();
-                if let Some(path) = picked {
-                    store.dispatch(crate::store::AppAction::ChosenFile(None));
-                    let mut deck = deck;
-                    deck.write().set_install_file(path);
-                }
                 dispatcher.run(|state, view| if ended { state.on_app_ended(view) } else { state.sync(view) });
             }
         });

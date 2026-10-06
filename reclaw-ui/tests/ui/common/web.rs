@@ -38,6 +38,61 @@ pub fn png() -> Vec<u8> {
     base64(PNG_BASE64)
 }
 
+fn crc32(bytes: &[u8]) -> u32 {
+    let mut crc = 0xffff_ffff_u32;
+    for &byte in bytes {
+        crc ^= u32::from(byte);
+        for _ in 0..8 {
+            crc = if crc & 1 == 1 { crc >> 1 ^ 0xedb8_8320 } else { crc >> 1 };
+        }
+    }
+    !crc
+}
+
+fn adler32(bytes: &[u8]) -> u32 {
+    let (mut a, mut b) = (1_u32, 0_u32);
+    for &byte in bytes {
+        a = (a + u32::from(byte)) % 65_521;
+        b = (b + a) % 65_521;
+    }
+    b << 16 | a
+}
+
+fn chunk(kind: &[u8; 4], data: &[u8]) -> Vec<u8> {
+    let mut out = (data.len() as u32).to_be_bytes().to_vec();
+    let body: Vec<u8> = kind.iter().chain(data).copied().collect();
+    out.extend(&body);
+    out.extend(crc32(&body).to_be_bytes());
+    out
+}
+
+/// A PNG of one flat colour at a size of the test's choosing (stored, not compressed: the pictures are small).
+/// The banner tests need pictures that are wide or square, and a colour to look for in the render.
+pub fn solid_png(width: u32, height: u32, (r, g, b): (u8, u8, u8)) -> Vec<u8> {
+    let mut raw = Vec::with_capacity((width as usize * 3 + 1) * height as usize);
+    let row: Vec<u8> = std::iter::once(0).chain((0..width).flat_map(|_| [r, g, b])).collect();
+    for _ in 0..height {
+        raw.extend(&row);
+    }
+    let mut zlib = vec![0x78, 0x01];
+    let blocks = raw.chunks(65_535).count();
+    for (i, block) in raw.chunks(65_535).enumerate() {
+        zlib.push(u8::from(i + 1 == blocks));
+        zlib.extend((block.len() as u16).to_le_bytes());
+        zlib.extend((!(block.len() as u16)).to_le_bytes());
+        zlib.extend(block);
+    }
+    zlib.extend(adler32(&raw).to_be_bytes());
+    let mut header = width.to_be_bytes().to_vec();
+    header.extend(height.to_be_bytes());
+    header.extend([8, 2, 0, 0, 0]);
+    let mut out = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+    out.extend(chunk(b"IHDR", &header));
+    out.extend(chunk(b"IDAT", &zlib));
+    out.extend(chunk(b"IEND", &[]));
+    out
+}
+
 #[derive(Default)]
 pub struct FakeWeb {
     pages: Mutex<HashMap<String, Vec<u8>>>,

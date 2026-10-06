@@ -10,7 +10,7 @@ def deck_preview(name, height, subtitle, body, group="Deck"):
 
 G="{title:'Starfall 64',status:'installed'}"
 deck_preview("DeckTile",470,"Rest, focused and running; the title always shows, the badge only on focus",
- f'''h("div",{{style:{{display:"flex",gap:32,padding:"12px 12px 0"}}}},h(R.DeckTile,{{game:{G}}}),h(R.DeckTile,{{game:{G},focused:true}}),h(R.DeckTile,{{game:{G},running:true}}),h(R.DeckTile,{{game:{{title:"Kart Ruins",status:"needsfile"}},focused:true}}))''')
+ f'''h("div",{{style:{{display:"flex",gap:32,padding:"12px 12px 0"}}}},h(R.DeckTile,{{game:{G}}}),h(R.DeckTile,{{game:{G},focused:true}}),h(R.DeckTile,{{game:{G},running:true}}),h(R.DeckTile,{{game:{{title:"Kart Ruins",status:"available"}},focused:true}}))''')
 readme("DeckTile","""
 Big-art game tile for Deck mode. Rust: `reclaw_ui::deck::DeckTile`.
 
@@ -34,7 +34,7 @@ Hints are contextual (Home: Select, Previous, Next, Quick access, Menu; Game pag
 """)
 deck_preview("LaunchButton",560,"Play turns into Stop (desktop) or Resume + Stop (deck); every state in one table",
  '''h("div",{style:{display:"grid",gridTemplateColumns:"260px 1fr",gap:"18px 24px",alignItems:"center",color:"var(--ink-muted)",font:"400 16px var(--font-sans)"}},[
-["Installed, idle","play"],["Update ready","update"],["Not installed / needs file","install"],["Installing","installing"],["Starting","starting"],["Running (deck)","resume",true],["Running (desktop)","stop"],["Stopping: press again to force","force"],["Last run failed","retry",false,"Exited with code 3. The log has details."]
+["Installed, idle","play"],["Update ready","update"],["Not installed","install"],["Installing","installing"],["Starting","starting"],["Running (deck)","resume",true],["Running (desktop)","stop"],["Stopping: press again to force","force"],["Last run failed","retry",false,"Exited with code 3. The log has details."]
 ].map(function(r,i){return [h("span",{key:"l"+i},r[0]),h(R.LaunchButton,{key:"b"+i,verb:r[1],pair:r[2],message:r[3]})]}))''')
 readme("LaunchButton","""
 The primary verb for a game; the lifecycle in one control. Rust: `reclaw_ui::deck::{launch_verb, LaunchButton}`; the table is `deck/launch.rs` and `lifecycle.ui.LaunchButton` in the contract.

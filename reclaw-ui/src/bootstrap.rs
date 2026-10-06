@@ -48,6 +48,14 @@ pub fn open_media(dirs: Option<&AppDirs>, net: Option<&Net>) -> Option<MediaHub>
     }
 }
 
+/// The Library setting "Default install location" as saved, before the store is opened (the host needs it to find what is already
+/// installed). `None` when there are no settings yet.
+pub fn stored_default_location(dirs: Option<&AppDirs>) -> Option<String> {
+    let file = PrefsFile::at(dirs?.prefs_file());
+    let state = AppState::from_prefs(file.load().prefs);
+    Some(crate::settings::default_install_location(&state.settings))
+}
+
 /// What [`open_store`] made.
 pub struct Opened {
     pub store: Store,

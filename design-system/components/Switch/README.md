@@ -1,1 +1,1 @@
-Binary setting (shortcuts, pre-releases, auto-update). Freya: `Switch::new().toggled(..).on_toggle(..)`. Always pair with a text label to its left; the whole row is the hit target at touch density. Off state keeps a `line-strong` border (3:1).
+Binary setting (pre-releases, auto-update). Freya: `Switch::new().toggled(..).on_toggle(..)`. Always pair with a text label to its left; the whole row is the hit target at touch density. Off state keeps a `line-strong` border (3:1).

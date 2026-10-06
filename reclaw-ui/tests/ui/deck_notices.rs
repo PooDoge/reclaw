@@ -81,7 +81,7 @@ fn dismissing_from_the_details_removes_the_notice_and_the_toast() {
 fn holding_y_dismisses_every_notification() {
     let mut s = Mount::deck().start();
     finish_update(&mut s);
-    s.dispatch(AppAction::Activity(ActivityEvent::Failed { id: 3, reason: "Disk full".into() }));
+    s.dispatch(AppAction::Activity(ActivityEvent::Failed { id: 3, reason: "Disk full".into(), details: Vec::new() }));
     assert!(s.has_label("Ghost Data Pack failed"), "the newest notice is the one shown: {:?}", s.labels());
     s.take_effects();
 

@@ -57,6 +57,11 @@ impl AppDirs {
         self.cache.join("http")
     }
 
+    /// Files being downloaded to install: a cut-off download continues from its partial file here.
+    pub fn downloads_dir(&self) -> PathBuf {
+        self.cache.join("downloads")
+    }
+
     /// Fetched artwork and READMEs live here, one file per address (see the `reclaw-media` crate).
     pub fn media_cache(&self) -> PathBuf {
         self.cache.join("media")
@@ -75,6 +80,7 @@ mod tests {
         assert_eq!(dirs.library_file(), PathBuf::from("/tmp/portable/data/apps.json"));
         assert_eq!(dirs.secrets_file(), PathBuf::from("/tmp/portable/config/secrets.toml"));
         assert_eq!(dirs.http_cache(), PathBuf::from("/tmp/portable/cache/http"));
+        assert_eq!(dirs.downloads_dir(), PathBuf::from("/tmp/portable/cache/downloads"));
         assert_eq!(dirs.logs, PathBuf::from("/tmp/portable/logs"));
     }
 

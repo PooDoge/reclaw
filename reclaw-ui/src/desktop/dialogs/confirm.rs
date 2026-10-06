@@ -35,7 +35,7 @@ impl Component for UninstallConfirm {
                 on_effect.call(effect);
             }
         });
-        let body = TypeStyle::Body.text("Removes it from this device. Your own game file is never touched.", t.ink_muted);
+        let body = TypeStyle::Body.text("Deletes its folder and everything in it, saves included. It stays in your library.", t.ink_muted);
         let actions = vec![
             DialogAction::new("Cancel", ButtonVariant::Ghost, cancel.clone()),
             DialogAction::new("Uninstall", ButtonVariant::Danger, accept),

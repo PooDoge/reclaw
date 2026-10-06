@@ -107,7 +107,7 @@ fn the_reclaw_block_adds_pictures_and_text_and_wins_over_the_icon() {
         (project.summary.as_str(), project.capsule_url.as_deref(), project.hero_url.as_deref()),
         ("A summary", Some("https://example.test/capsule.png"), Some("https://example.test/hero.jpg"))
     );
-    let game = game_from(&e, None, 1);
+    let game = game_from(&e, None, 1, None);
     assert_eq!(game.art.capsule.as_deref(), Some("https://example.test/capsule.png"));
 }
 
@@ -122,21 +122,21 @@ fn a_library_game_shows_the_users_name_and_the_catalogs_latest_version_and_is_no
     let mut e = entry("Zelda", "o/z", "Zelda", &["n64"]);
     e.custom_display_name = Some("My Zelda".into());
     e.project = Some("Port".into());
-    let game = game_from(&e, Some("v3"), 9);
+    let game = game_from(&e, Some("v3"), 9, None);
     assert_eq!((game.title.as_ref(), game.project.as_ref(), game.version.as_ref()), ("My Zelda", "Port", "v3"));
     assert_eq!(
         (game.status, game.source, game.platform, game.run.clone()),
         (AppStatus::Available, Source::GitHub, Platform::N64, RunState::Idle)
     );
-    assert_eq!(game_from(&entry("Mine", "", "Mine", &[]), None, 1).source, Source::Manual);
-    assert_eq!(game_from(&AppEntry { source: RepoSource::Gitlab, ..entry("G", "g/p", "G", &[]) }, None, 1).source, Source::GitLab);
+    assert_eq!(game_from(&entry("Mine", "", "Mine", &[]), None, 1, None).source, Source::Manual);
+    assert_eq!(game_from(&AppEntry { source: RepoSource::Gitlab, ..entry("G", "g/p", "G", &[]) }, None, 1, None).source, Source::GitLab);
 }
 
 #[test]
 fn loading_joins_the_library_to_the_catalog_by_identity_and_gives_both_the_same_number() {
     let catalog = vec![app(entry("One", "o/one", "One", &["n64"]), Some("v1")), app(entry("Two", "o/two", "Two", &["ps2"]), Some("v2"))];
     let library = vec![entry("Two", "O/TWO", "two", &["ps2", "mine"]), entry("Mine", "", "Mine", &[])];
-    let loaded = load(&catalog, &library);
+    let loaded = load(&catalog, &library, &InstallStates::new());
     assert_eq!(loaded.projects.len(), 2);
     assert_eq!(loaded.games.len(), 2);
     let two = loaded.projects.iter().find(|p| p.title == "Two").expect("in the catalog");
@@ -150,5 +150,54 @@ fn loading_joins_the_library_to_the_catalog_by_identity_and_gives_both_the_same_
 
 #[test]
 fn an_empty_catalog_and_library_load_as_nothing_not_as_samples() {
-    assert_eq!(load(&[], &[]), Loaded::default());
+    assert_eq!(load(&[], &[], &InstallStates::new()), Loaded::default());
+}
+
+#[test]
+fn an_installed_game_shows_the_version_it_has_and_asks_for_an_update_only_when_the_catalog_has_a_newer_one() {
+    let e = entry("Zelda", "o/z", "Zelda", &["n64"]);
+    let installed = |v: &str| InstallState::Installed { version: v.to_string(), latest: None };
+
+    let current = game_from(&e, Some("v1.4.2"), 1, Some(&installed("1.4.2")));
+    assert_eq!((current.status, current.version.as_ref()), (AppStatus::Installed, "1.4.2"), "v1.4.2 and 1.4.2 are the same release");
+
+    let behind = game_from(&e, Some("v1.5.0"), 1, Some(&installed("v1.4.2")));
+    assert_eq!((behind.status, behind.version.as_ref()), (AppStatus::UpdateReady, "v1.4.2"), "it shows what is installed, not what is new");
+
+    let ahead = game_from(&e, Some("v1.4.0"), 1, Some(&installed("v1.4.2")));
+    assert_eq!(ahead.status, AppStatus::Installed, "the catalog being older is not an update");
+
+    let unknown = game_from(&e, None, 1, Some(&installed("v1.4.2")));
+    assert_eq!(unknown.status, AppStatus::Installed, "no news is not an update");
+
+    let labelled = game_from(&e, Some("v1.4.2"), 1, Some(&installed("v1.4.2-beta")));
+    assert_eq!(labelled.status, AppStatus::Installed, "a label does not make the same numbers newer");
+}
+
+#[test]
+fn a_running_install_and_a_failed_one_show_as_such_with_the_version_that_was_wanted() {
+    let e = entry("Zelda", "o/z", "Zelda", &["n64"]);
+    let running = game_from(&e, Some("v2"), 1, Some(&InstallState::Installing));
+    assert_eq!((running.status, running.version.as_ref()), (AppStatus::Installing, "v2"));
+    let failed = game_from(&e, Some("v2"), 1, Some(&InstallState::Failed));
+    assert_eq!(failed.status, AppStatus::Failed);
+}
+
+#[test]
+fn loading_applies_each_games_state_by_its_key() {
+    let library = vec![entry("One", "o/one", "One", &["n64"]), entry("Two", "o/two", "Two", &["ps2"])];
+    let mut states = InstallStates::new();
+    states.insert(key_of(&library[1]), InstallState::Installed { version: "v1".into(), latest: None });
+    let loaded = load(&[], &library, &states);
+    let status = |t: &str| loaded.games.iter().find(|g| g.title == t).map(|g| g.status);
+    assert_eq!((status("One"), status("Two")), (Some(AppStatus::Available), Some(AppStatus::Installed)));
+}
+
+#[test]
+fn a_newer_release_found_by_asking_the_host_service_counts_even_when_the_catalog_has_not_caught_up() {
+    let e = entry("Zelda", "o/z", "Zelda", &["n64"]);
+    let state = InstallState::Installed { version: "v1.0".into(), latest: Some("v1.1".into()) };
+    assert_eq!(game_from(&e, Some("v1.0"), 1, Some(&state)).status, AppStatus::UpdateReady);
+    let stale = InstallState::Installed { version: "v1.1".into(), latest: Some("v1.1".into()) };
+    assert_eq!(game_from(&e, Some("v1.0"), 1, Some(&stale)).status, AppStatus::Installed, "nothing newer than what is installed");
 }

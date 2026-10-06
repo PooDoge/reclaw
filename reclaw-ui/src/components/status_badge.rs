@@ -8,7 +8,7 @@ use crate::{metrics::*, prelude::*, typography::TypeStyle};
 pub fn status_tone(t: &Reclaw, status: AppStatus) -> (Color, Color) {
     match status {
         AppStatus::Installed => (t.ok, t.ok_bg),
-        AppStatus::UpdateReady | AppStatus::NeedsFile => (t.warn, t.warn_bg),
+        AppStatus::UpdateReady => (t.warn, t.warn_bg),
         AppStatus::Installing => (t.info, t.info_bg),
         AppStatus::Failed => (t.danger, t.danger_bg),
         AppStatus::Available => (t.ink_muted, t.bg_raised),
@@ -21,7 +21,6 @@ fn status_icon(status: AppStatus) -> Option<IconName> {
         AppStatus::UpdateReady => Some(IconName::Download),
         AppStatus::Installing => Some(IconName::Queue),
         AppStatus::Failed => Some(IconName::Alert),
-        AppStatus::NeedsFile => Some(IconName::File),
         AppStatus::Available => None,
     }
 }

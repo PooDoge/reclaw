@@ -27,9 +27,9 @@ fn a_download_shows_percent_and_a_build_shows_the_step() {
     let i = indicator_for(&b, &game(2)).expect("indicator");
     assert_eq!((i.kind, i.label.as_str(), i.progress), (IndicatorKind::Downloading, "34%", Some(0.34)));
     assert!(i.is_active());
-    let b = board(vec![started(1, 2, Kind::Update, Some(1000)), progress(1, Stage::Building, 1000, Some(1000), None)]);
+    let b = board(vec![started(1, 2, Kind::Update, Some(1000)), progress(1, Stage::Finishing, 1000, Some(1000), None)]);
     let i = indicator_for(&b, &game(2)).expect("indicator");
-    assert_eq!((i.kind, i.label.as_str()), (IndicatorKind::Installing, "Building"));
+    assert_eq!((i.kind, i.label.as_str()), (IndicatorKind::Installing, "Finishing"));
 }
 
 #[test]
@@ -57,12 +57,15 @@ fn mods_downloading_are_counted_and_alone_they_still_get_an_indicator() {
 
 #[test]
 fn a_failure_is_shown_until_something_newer_runs() {
-    let b = board(vec![started(1, 5, Kind::Update, None), ActivityEvent::Failed { id: 1, reason: "asset missing".into() }]);
+    let b = board(vec![
+        started(1, 5, Kind::Update, None),
+        ActivityEvent::Failed { id: 1, reason: "asset missing".into(), details: Vec::new() },
+    ]);
     let i = indicator_for(&b, &game(5)).expect("indicator");
     assert_eq!(i.kind, IndicatorKind::Failed);
     let b2 = board(vec![
         started(1, 5, Kind::Update, None),
-        ActivityEvent::Failed { id: 1, reason: "x".into() },
+        ActivityEvent::Failed { id: 1, reason: "x".into(), details: Vec::new() },
         started(2, 5, Kind::Update, None),
     ]);
     assert_eq!(indicator_for(&b2, &game(5)).map(|i| i.kind), Some(IndicatorKind::Queued));
@@ -83,7 +86,7 @@ fn the_sidebar_lists_active_then_failed_then_waiting_then_done() {
         progress(2, Stage::Downloading, 500, Some(1000), Some(100)),
         // Moon Garden: failed.
         started(3, 5, Kind::Update, None),
-        ActivityEvent::Failed { id: 3, reason: "Release asset not found".into() },
+        ActivityEvent::Failed { id: 3, reason: "Release asset not found".into(), details: Vec::new() },
     ]);
     let entries = sidebar_entries(&b, &games);
     let order: Vec<(u32, SidebarKind)> = entries.iter().map(|e| (e.game_id, e.kind)).collect();

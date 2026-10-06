@@ -15,18 +15,19 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | Crate | Job | Freya |
 |---|---|---|
 | `reclaw-input` | Pad buttons to `Action`s, SDL mapping, spatial focus, press-and-hold (`HoldTracker`), environment detection, the gilrs reader (`gilrs-backend`) | no |
-| `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), controller `InputProfile` | no |
+| `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), the clean environment a game starts with, Wine / Proton / custom runners for Windows programs on Linux, controller `InputProfile` (spec: launch) | no |
 | `reclaw-games` | What a project is (catalog metadata, art, media, releases), the systems games came from (`platform`), launch-setting capabilities and how a launch plan is built (`settings`) | no |
 | `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format) | no |
 | `reclaw-log` | The log file, its redaction of credentials, the panic hook, the `Secret` type; no dependency on the rest (spec: logging) | no |
 | `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, access tokens that can change and be checked, `probe` (specs: network, credentials) | no |
+| `reclaw-install` | Which release and which file fit this machine (Quiver's rules, ported), fetching releases from GitHub and GitLab, unpacking zip / tar.gz / tar.xz / 7z safely, the install itself (stage, lay over the folder, write the version last), uninstall with its refusals (spec: install) | no |
 | `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock | no |
 | `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save; the access tokens in their own private file | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
-| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and the tokens, writes the diagnostics report, updates from source, and answers the screens' requests; `main` starts the log and the window | yes |
+| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and the tokens, runs installs, updates, uninstalls and launches, writes the diagnostics report, updates from source, and answers the screens' requests; `main` starts the log and the window | yes |
 | `reclaw-ui` | Everything you see: tokens, components, the surface system, both interfaces, the store, the router, the window frame, the `Shell` | yes |
 
-Nine crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
+Eleven crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
 
 ## Inside `reclaw-ui/src`
 
@@ -188,10 +189,10 @@ and the media hub); the shell's own effects are handled inside it.
 
 * Deck's Catalog and Mods pages, and the README on Deck.
 * Drawing mermaid diagrams (they show as source), a cache size and "clear cache" in Settings.
-* Everything that installs: release lookup, asset choice, download and extraction into a game folder, launching what was installed,
-  update checks, mods (Thunderstore, GameBanana). Pressing Install, Play or Update says so. The pieces they will stand on exist: the
-  network layer with resumable hashed downloads, the library file, the catalog and platform metadata. `docs/quiver-parity.md` has the plan.
-* The comparison that decides what in a catalog is new or changed against the library (Add / Merge / Replace), and classifying a
-  release's files by operating system.
-* An in-app on-screen keyboard (the OS provides one; here it is simulated) and a gamepad file browser (`Effect::ChooseFile` asks the host).
+* Mods (Thunderstore, GameBanana): the provider APIs have not been checked against the live services.
+* Background update passes and auto-update (an explicit Check for updates exists), a chooser when several builds fit, choosing
+  which program to start when there are several, a Windows-runner picker (the library's `linuxRunner` fields are honoured), a
+  desktop or Steam shortcut, Flatpak bundles. `docs/quiver-parity.md` has the plan.
+* The comparison that decides what in a catalog is new or changed against the library (Add / Merge / Replace).
+* An in-app on-screen keyboard (the OS provides one; here it is simulated).
 * Verification on real gamepad hardware, Wayland/GNOME, SteamOS and Windows. `docs/BUILDING.md` lists what was run and where.

@@ -2,6 +2,7 @@
 //! single component with its own file; screens compose them. Deck mode has its own set in `deck`.
 mod action_button;
 mod art;
+mod banner_art;
 mod download_item;
 mod filter_chip;
 mod game_capsule;
@@ -18,6 +19,7 @@ mod toggle_switch;
 
 pub use action_button::{ActionButton, ButtonSize, ButtonVariant};
 pub use art::ArtPlaceholder;
+pub use banner_art::BannerArt;
 pub use download_item::DownloadItem;
 pub use filter_chip::FilterChip;
 pub use game_capsule::GameCapsule;

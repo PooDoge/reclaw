@@ -1,20 +1,8 @@
-use std::rc::Rc;
-
 use freya::prelude::*;
-use reclaw_games::project::{RepoHost, RepoRef};
-use reclaw_media::{
-    Want,
-    readme::{Document, ReadmeContext},
-};
+use reclaw_games::project::RepoRef;
 
-use super::view::ReadmeView;
-use crate::{
-    desktop::pages::common::heading,
-    media::{RemoteFile, use_remote_file},
-    metrics::*,
-    prelude::*,
-    typography::TypeStyle,
-};
+use super::{fetch::use_readme, view::ReadmeView};
+use crate::{desktop::pages::common::heading, media::RemoteFile, metrics::*, prelude::*, typography::TypeStyle};
 
 /// About how much reading shows before "Show the whole README", in characters.
 const PREVIEW_CHARS: usize = 1800;
@@ -39,37 +27,18 @@ impl ReadmeSection {
     pub fn new(repo: RepoRef, on_open: EventHandler<String>) -> Self {
         Self { repo, on_open, key: DiffKey::None }
     }
-
-    fn context(&self) -> Option<ReadmeContext> {
-        match self.repo.host {
-            RepoHost::Github => ReadmeContext::github(&self.repo.owner, &self.repo.name, "HEAD"),
-            RepoHost::Gitlab => ReadmeContext::gitlab(&self.repo.owner, &self.repo.name, "HEAD"),
-        }
-    }
 }
 
 impl Component for ReadmeSection {
     fn render(&self) -> impl IntoElement {
         let t = use_reclaw();
-        let context = self.context();
-        let file = use_remote_file(context.as_ref().map(|c| c.readme_url().as_str()), Want::Text);
-        let mut doc = use_state(|| None::<Rc<Document>>);
+        let readme = use_readme(Some(&self.repo));
         let mut expanded = use_state(|| false);
+        let (file, document) = (readme.file, readme.document);
 
-        // Parse once when the file arrives. Reading and cutting a README takes a few milliseconds.
-        let path = match &file {
-            RemoteFile::Ready(cached) => Some(cached.path.clone()),
-            _ => None,
-        };
-        use_side_effect_with_deps(&(path, context.clone()), move |(path, context)| {
-            let parsed = path.as_ref().zip(context.as_ref()).and_then(|(path, context)| {
-                let text = std::fs::read_to_string(path).ok()?;
-                Some(Rc::new(reclaw_media::readme::parse(&text, context)))
-            });
-            doc.set(parsed);
-        });
-
-        let Some(context) = context else { return rect().into_element() };
+        if readme.context.is_none() {
+            return rect().into_element();
+        }
         let page = self.repo.url();
         let on_open = self.on_open.clone();
         let open_page = {
@@ -77,7 +46,7 @@ impl Component for ReadmeSection {
             move |_| on_open.call(page.clone())
         };
 
-        let body: Element = match (&file, doc.read().clone()) {
+        let body: Element = match (&file, document) {
             (RemoteFile::Off, _) => return rect().into_element(),
             (_, Some(parsed)) if parsed.is_empty() => TypeStyle::Meta.text("This project's README is empty.", t.ink_subtle).into_element(),
             (_, Some(parsed)) => {
@@ -109,7 +78,6 @@ impl Component for ReadmeSection {
                 .into_element(),
             (_, None) => TypeStyle::Meta.text("Loading the README...", t.ink_subtle).into_element(),
         };
-        let _ = context;
         rect().vertical().spacing(SPACE_2).width(Size::fill()).child(heading(&t, "README")).child(body).into_element()
     }
 

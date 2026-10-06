@@ -84,7 +84,7 @@ pub fn launch_verb(status: AppStatus, run: &RunState, controller: bool) -> Launc
             AppStatus::UpdateReady => LaunchVerb::Update,
             AppStatus::Installing => LaunchVerb::Installing,
             AppStatus::Failed => LaunchVerb::Retry,
-            AppStatus::Available | AppStatus::NeedsFile => LaunchVerb::Install,
+            AppStatus::Available => LaunchVerb::Install,
         },
     }
 }
@@ -120,7 +120,7 @@ mod tests {
     fn idle_installed_plays() {
         assert_eq!(launch_verb(AppStatus::Installed, &RunState::Idle, false), LaunchVerb::Play);
         assert_eq!(launch_verb(AppStatus::UpdateReady, &RunState::Idle, true), LaunchVerb::Update);
-        assert_eq!(launch_verb(AppStatus::NeedsFile, &RunState::Idle, true), LaunchVerb::Install);
+        assert_eq!(launch_verb(AppStatus::Available, &RunState::Idle, true), LaunchVerb::Install);
     }
 
     #[test]

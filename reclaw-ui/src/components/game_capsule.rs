@@ -92,11 +92,7 @@ impl Component for GameCapsule {
             .padding(Gaps::new(SPACE_2, SPACE_3, SPACE_3, SPACE_3))
             .child(TypeStyle::Label.text(self.game.title.clone(), t.ink).max_lines(1).text_overflow(TextOverflow::Ellipsis))
             .child(TypeStyle::Meta.text(self.game.project.clone(), t.ink_subtle).max_lines(1).text_overflow(TextOverflow::Ellipsis))
-            .child(match self.game.status {
-                // The full label wraps inside a 168px capsule.
-                AppStatus::NeedsFile => StatusBadge::new(self.game.status).label("Needs game file"),
-                status => StatusBadge::new(status),
-            });
+            .child(StatusBadge::new(self.game.status));
 
         let card = rect()
             .vertical()

@@ -14,6 +14,12 @@ impl AppState {
     pub fn reduce(&mut self, action: AppAction) -> Touched {
         match action {
             AppAction::SetGames(mut games) => {
+                // The host rebuilds the list from the library and what is on disk; what is running is not in either.
+                for game in &mut games {
+                    if let Some(old) = self.games.iter().find(|old| old.id == game.id) {
+                        game.run = old.run.clone();
+                    }
+                }
                 self.notice_new_updates(&games);
                 changes::sync_favorite_tags(&mut games, &self.favorites);
                 self.games = games;
@@ -47,7 +53,6 @@ impl AppState {
             AppAction::SetKeyboardInset(px) => set_if_changed(&mut self.keyboard_inset, px, AppChannel::Keyboard),
             AppAction::SetDisplay(display) => set_if_changed(&mut self.display, display, AppChannel::Display),
             AppAction::Open(route) => set_if_changed(&mut self.mailbox.open, route, AppChannel::Mailbox),
-            AppAction::ChosenFile(path) => set_if_changed(&mut self.mailbox.chosen_file, path, AppChannel::Mailbox),
 
             AppAction::ToggleFavorite(id) => {
                 if !self.games.iter().any(|g| g.id == id) && !self.favorites.contains(&id) {
@@ -174,7 +179,7 @@ impl AppState {
 /// What to tell the user when a job ends.
 fn notice_for(activity: &Activity, game_title: &str) -> Notice {
     match (&activity.outcome, &activity.kind) {
-        (Outcome::Failed { reason }, _) => Notice::download_failed(activity.game_id, &activity.title, reason),
+        (Outcome::Failed { reason }, _) => Notice::download_failed(activity.game_id, &activity.title, reason, &activity.details),
         (_, Kind::Update) => Notice::update_finished(activity.game_id, game_title, activity.changelog.as_ref()),
         (_, Kind::Install) => Notice::install_finished(activity.game_id, game_title),
         (_, Kind::Mod { .. }) => Notice::mod_installed(activity.game_id, &activity.title),

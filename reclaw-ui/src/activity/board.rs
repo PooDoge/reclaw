@@ -27,7 +27,10 @@ pub enum ActivityEvent {
     },
     Failed {
         id: ActivityId,
+        /// One line, for the row.
         reason: String,
+        /// What else to say (the cause, what to do about it), for the notice.
+        details: Vec<String>,
     },
     /// The job was cancelled; it leaves the board.
     Cancelled {
@@ -87,6 +90,7 @@ impl ActivityBoard {
                     bytes_total,
                     rate: None,
                     changelog: None,
+                    details: Vec::new(),
                     outcome: Outcome::Running,
                 });
                 Some((game_id, Change::Started))
@@ -111,9 +115,10 @@ impl ActivityBoard {
                 self.trim();
                 Some((game, Change::Finished))
             }
-            ActivityEvent::Failed { id, reason } => {
+            ActivityEvent::Failed { id, reason, details } => {
                 let a = self.running_mut(id)?;
                 a.outcome = Outcome::Failed { reason };
+                a.details = details;
                 a.rate = None;
                 let game = a.game_id;
                 self.trim();

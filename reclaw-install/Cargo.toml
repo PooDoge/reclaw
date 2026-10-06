@@ -1,0 +1,25 @@
+[package]
+name = "reclaw-install"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+reclaw-net = { path = "../reclaw-net" }
+reclaw-log = { path = "../reclaw-log" }
+reclaw-games = { path = "../reclaw-games" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+# Archives. All pure Rust, so a build needs no system library and the program no tool beyond itself for the common formats.
+zip = { version = "8", default-features = false, features = ["deflate", "deflate64"] }
+tar = "0.4"
+flate2 = "1"
+lzma-rs = "0.3"
+sevenz-rust2 = { version = "0.23", default-features = false, features = ["util", "bzip2", "deflate"] }
+
+[dev-dependencies]
+reclaw-net = { path = "../reclaw-net", features = ["testing"] }
+tempfile = "3"
+sevenz-rust2 = { version = "0.23", default-features = false, features = ["util", "bzip2", "deflate", "compress"] }

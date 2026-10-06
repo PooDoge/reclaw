@@ -1,7 +1,7 @@
 # Artwork, screenshots and READMEs
 
 - last-verified: 2026-10-05
-- owner-paths: reclaw-media/src/**, reclaw-media/tests/**, reclaw-ui/src/media/**, reclaw-ui/src/readme/**, reclaw-ui/src/components/remote_art.rs, reclaw-ui/tests/ui/media.rs
+- owner-paths: reclaw-media/src/**, reclaw-media/tests/**, reclaw-ui/src/media/**, reclaw-ui/src/readme/**, reclaw-ui/src/banner.rs, reclaw-ui/src/components/remote_art.rs, reclaw-ui/src/components/banner_art.rs, reclaw-ui/tests/ui/media.rs, reclaw-ui/tests/ui/banner.rs
 
 What Reclaw fetches from the internet to show, and the rules it fetches by. Everything fetched is written by strangers.
 
@@ -55,6 +55,14 @@ blocks. The stock markdown viewer draws the prose, restyled with Reclaw's colors
 * **Mermaid** fences become a `Diagram` block, shown as source for now.
 * The page shows the start (about 1800 characters of reading) and a *Show the whole README* button.
 
+## The game page's banner (`components/banner_art.rs`, ADR 0016)
+
+The first that works of: the catalog's `heroUrl` (trusted); up to three README pictures, best first (`reclaw-media::readme::banner_candidates`)
+that are at least 480 pixels wide and 1.6 times wider than tall once fetched; a generated banner (a hue from the game's name mixed into
+the theme background, the icon blurred behind a crisp copy of it, no network needed). A failed or unfit step falls through to the next.
+While a step loads, and with downloads switched off, the generated banner shows. The title strip is on `Layer::Relative(12)` so it
+paints over the art (the toolkit paints deeper elements over shallower ones, whatever the order of siblings).
+
 ## Not built / not verified
 
 Drawing diagrams; animated GIFs; SVG pictures that contain text. **An SVG that uses a mask drew nothing at all, with no placeholder
@@ -62,7 +70,8 @@ behind it** (Freya's own logo as a capsule: the file was fetched and cached, the
 falls back when the file fails to parse. The cause was not investigated; rasters are unaffected (the catalog's icons are PNG, JPEG and a few `.ico`); READMEs in other formats (`.rst`, `.adoc`) and docs beyond the
 README; a settings row to clear the cache or show its size; Deck mode has no README view. Verified against the real internet once
 (`cargo test -p reclaw-media --test real_network -- --ignored`: a real README and image over TLS); not verified at scale or on a
-slow or captive network. Prose uses the stock viewer's fonts, not Reclaw's.
+slow or captive network. Prose uses the stock viewer's fonts, not Reclaw's. The banner choice is verified against a fake web with
+flat-coloured pictures; **not** verified against real READMEs at scale, so how often the first wide picture is a good banner is unknown.
 
 ## Real addresses
 
@@ -76,4 +85,6 @@ captive portal, a cold cache offline.
 
 `reclaw-media` unit tests for each module (126), a scrambled-markup test that nothing panics, the ignored real-network test, and
 `reclaw-ui/tests/ui/media.rs` against a fake web: placeholder and picture, one request however many redraws, switched off, a 404, the
-README with native badges and pictures, collapse and expand, a hostile README.
+README with native badges and pictures, collapse and expand, a hostile README. `reclaw-ui/tests/ui/banner.rs` reads the pixels the
+page draws: a wide README picture, a square one refused, the catalog's banner winning, a dead banner falling through, the generated
+colour steady per game and different between games, the icon drawn twice, downloads off.

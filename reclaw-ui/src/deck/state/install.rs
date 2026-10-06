@@ -1,29 +1,18 @@
-//! The Install page: a form with the user's own game file, an install location, two switches.
+//! The Install page: a form with an install location and two switches.
 use reclaw_input::{FocusId, FocusNode};
 
 use super::{DeckState, DeckView, Effect, Screen, TextField, ids, nodes::node};
-use crate::{metrics::*, surface::row_height};
+use crate::{
+    metrics::*,
+    settings::{SettingsTarget, default_install_location},
+    surface::row_height,
+};
 
 /// Values on the Install page that are plain data. The location text lives in `DeckApp` (a text
 /// box needs a Freya state); everything else is here.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct InstallDraft {
-    pub game_file: Option<String>,
-    pub shortcut: bool,
     pub prerelease: bool,
-}
-
-impl Default for InstallDraft {
-    fn default() -> Self {
-        Self { game_file: None, shortcut: true, prerelease: false }
-    }
-}
-
-impl InstallDraft {
-    /// Install is allowed once the user has chosen their own game file.
-    pub fn can_submit(&self) -> bool {
-        self.game_file.is_some()
-    }
 }
 
 impl DeckState {
@@ -37,20 +26,10 @@ impl DeckState {
             y += h + gap;
             n
         };
-        let mut nodes = vec![
-            field(ids::INSTALL_LOCATION, text_h),
-            field(ids::INSTALL_FILE, row_h),
-            field(ids::INSTALL_SHORTCUT, row_h),
-            field(ids::INSTALL_PRERELEASE, row_h),
-        ];
+        let mut nodes = vec![field(ids::INSTALL_LOCATION, text_h), field(ids::INSTALL_PRERELEASE, row_h)];
         nodes.push(node(ids::INSTALL_CANCEL, 0., y + 40., 200., DECK_TARGET_MIN));
         nodes.push(node(ids::INSTALL_SUBMIT, 216., y + 40., 200., DECK_TARGET_MIN));
         nodes
-    }
-
-    /// The host answered `Effect::ChooseFile`.
-    pub fn set_install_file(&mut self, path: impl Into<String>) {
-        self.install.game_file = Some(path.into());
     }
 
     pub(super) fn open_install(&mut self, app: u32, view: &DeckView) {
@@ -61,15 +40,39 @@ impl DeckState {
     pub(super) fn activate_install(&mut self, app: u32, id: FocusId, view: &DeckView, fx: &mut Vec<Effect>) {
         match id {
             i if i == ids::INSTALL_LOCATION => self.begin_entry(TextField::InstallLocation, fx),
-            i if i == ids::INSTALL_FILE => fx.push(Effect::ChooseFile(app)),
-            i if i == ids::INSTALL_SHORTCUT => self.install.shortcut = !self.install.shortcut,
             i if i == ids::INSTALL_PRERELEASE => self.install.prerelease = !self.install.prerelease,
             i if i == ids::INSTALL_CANCEL => self.go_back(view),
-            i if i == ids::INSTALL_SUBMIT && self.install.can_submit() => {
+            i if i == ids::INSTALL_SUBMIT => {
                 fx.push(Effect::SubmitInstall(app));
                 self.go_back(view);
             }
             _ => {}
         }
+    }
+
+    /// The text boxes a page just shown must start with: the install form with the Library default,
+    /// the settings pages with what is stored. Handed to the host of the boxes (`DeckApp`) once per
+    /// arrival, so text being typed is never replaced by a later change elsewhere.
+    pub(super) fn seed_texts_for_screen(&mut self) {
+        self.text_seeds.clear();
+        match self.screen {
+            Screen::Install(_) => self.text_seeds.push((TextField::InstallLocation, default_install_location(&self.values))),
+            Screen::Settings(target) => {
+                let fields: &[TextField] = match target {
+                    SettingsTarget::Global => &[TextField::DefaultLocation],
+                    SettingsTarget::App(_) => &[TextField::LaunchOptions, TextField::SdlOverride],
+                };
+                for &field in fields {
+                    let stored = field.key().and_then(|key| self.values.text(target, key)).unwrap_or_default().to_string();
+                    self.text_seeds.push((field, stored));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Take the boxes to fill since the last call.
+    pub fn take_text_seeds(&mut self) -> Vec<(TextField, String)> {
+        std::mem::take(&mut self.text_seeds)
     }
 }

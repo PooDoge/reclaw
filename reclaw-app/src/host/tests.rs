@@ -30,11 +30,11 @@ impl Collector {
         self.all().into_iter().filter_map(|a| if let AppAction::Notify(n) = a { Some(n) } else { None }).collect()
     }
 
-    fn last_games(&self) -> Option<Vec<reclaw_ui::model::GameEntry>> {
+    pub(super) fn last_games(&self) -> Option<Vec<reclaw_ui::model::GameEntry>> {
         self.all().into_iter().rev().find_map(|a| if let AppAction::SetGames(g) = a { Some(g) } else { None })
     }
 
-    fn wait_for(&self, what: &str, done: impl Fn(&[AppAction]) -> bool) {
+    pub(super) fn wait_for(&self, what: &str, done: impl Fn(&[AppAction]) -> bool) {
         let end = Instant::now() + Duration::from_secs(10);
         while Instant::now() < end {
             if done(&self.all()) {
@@ -234,31 +234,6 @@ fn a_library_that_cannot_be_read_is_left_alone_and_the_user_is_told() {
     rig.host.handle(&Effect::AddToLibrary(id));
     assert_eq!(std::fs::read_to_string(&rig.library_file).expect("read"), damaged, "the file was not touched");
     assert!(rig.sink.notices().iter().any(|n| n.title.contains("read-only")), "{:?}", rig.sink.notices());
-}
-
-#[test]
-fn an_install_keeps_the_app_and_says_plainly_that_installing_is_not_built() {
-    let rig = rig(Some(catalog_server()), None);
-    rig.host.run_refresh(&rig.sync);
-    let id = id_of(&rig, "One");
-    rig.host.handle(&Effect::StartInstall { app: id, location: "/games".into(), game_file: None, shortcut: false, prerelease: false });
-    assert_eq!(rig.sink.last_games().map(|g| g.len()), Some(1), "the app is in the library");
-    let note = rig.sink.notices().pop().expect("a note");
-    assert_eq!(note.kind, NoticeKind::Note);
-    assert!(note.title.contains("Installing") && note.body.contains("One"), "{note:?}");
-}
-
-#[test]
-fn things_that_need_an_installed_game_say_so_instead_of_pretending() {
-    let rig = rig(Some(catalog_server()), None);
-    rig.host.run_refresh(&rig.sync);
-    let id = id_of(&rig, "One");
-    for effect in [Effect::Launch(id), Effect::Update(id), Effect::Verify(id), Effect::Uninstall(id), Effect::OpenFolder(id)] {
-        let before = rig.sink.notices().len();
-        rig.host.handle(&effect);
-        assert_eq!(rig.sink.notices().len(), before + 1, "{effect:?}");
-    }
-    assert!(rig.sink.notices().iter().all(|n| n.kind == NoticeKind::Note));
 }
 
 #[test]

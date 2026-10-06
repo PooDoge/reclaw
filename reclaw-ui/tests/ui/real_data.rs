@@ -36,7 +36,7 @@ const SMALL: &str = r#"{"name": "T", "version": "1", "apps": [
 fn a_catalog_that_arrives_after_the_first_frame_fills_the_page_without_breaking_it() {
     let mut s = Mount::desktop().size(1100., 900.).dev(calm()).games(vec![]).projects(vec![]).start_at(Route::Catalog {});
     assert!(s.has_label("Loading the catalog"), "empty first, and saying why: {:?}", s.labels());
-    let Loaded { projects, games } = catalog_data::load(&apps_from(SMALL).expect("a catalog"), &[]);
+    let Loaded { projects, games } = catalog_data::load(&apps_from(SMALL).expect("a catalog"), &[], &Default::default());
     s.dispatch(AppAction::SetProjects(projects));
     s.dispatch(AppAction::SetGames(games));
     s.settle();
@@ -53,7 +53,7 @@ fn a_catalog_that_arrives_after_the_first_frame_fills_the_page_without_breaking_
 
 #[test]
 fn a_search_that_matches_nothing_and_is_then_cleared_does_not_break_the_grid() {
-    let Loaded { projects, games } = catalog_data::load(&apps_from(SMALL).expect("a catalog"), &[]);
+    let Loaded { projects, games } = catalog_data::load(&apps_from(SMALL).expect("a catalog"), &[], &Default::default());
     // In a compact window the search box sits under the page title.
     let mut s = Mount::desktop().size(900., 900.).dev(calm()).games(games).projects(projects).start_at(Route::Catalog {});
     assert!(s.has_label("Alpha Quest"));
@@ -119,7 +119,7 @@ fn real_apps() -> Option<Vec<CatalogApp>> {
 fn the_real_catalog_fills_both_interfaces() {
     let Some(apps) = real_apps() else { return };
     let library: Vec<_> = apps.iter().step_by(40).map(|a| a.entry.for_library()).collect();
-    let Loaded { projects, games } = catalog_data::load(&apps, &library);
+    let Loaded { projects, games } = catalog_data::load(&apps, &library, &Default::default());
     assert_eq!(projects.len(), apps.len());
     assert!(games.len() >= 5, "{}", games.len());
 

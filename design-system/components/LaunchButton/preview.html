@@ -4,7 +4,7 @@
 <body><div id="r"></div><script>
 var R=window.Reclaw,h=React.createElement;
 function App(){return h("div",{style:{display:"grid",gridTemplateColumns:"260px 1fr",gap:"18px 24px",alignItems:"center",color:"var(--ink-muted)",font:"400 16px var(--font-sans)"}},[
-["Installed, idle","play"],["Update ready","update"],["Not installed / needs file","install"],["Installing","installing"],["Starting","starting"],["Running (deck)","resume",true],["Running (desktop)","stop"],["Stopping: press again to force","force"],["Last run failed","retry",false,"Exited with code 3. The log has details."]
+["Installed, idle","play"],["Update ready","update"],["Not installed","install"],["Installing","installing"],["Starting","starting"],["Running (deck)","resume",true],["Running (desktop)","stop"],["Stopping: press again to force","force"],["Last run failed","retry",false,"Exited with code 3. The log has details."]
 ].map(function(r,i){return [h("span",{key:"l"+i},r[0]),h(R.LaunchButton,{key:"b"+i,verb:r[1],pair:r[2],message:r[3]})]}))}
 ReactDOM.createRoot(document.getElementById("r")).render(h(App));
 </script></body></html>

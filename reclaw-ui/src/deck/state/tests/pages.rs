@@ -4,7 +4,7 @@ use crate::deck::settings::{RowKind, SettingChange, SettingValue, SettingsTarget
 
 fn open_install(f: &Fixture) -> DeckState {
     let mut s = f.state();
-    s.click(tile(1, 3), &f.view()); // Kart Ruins: needs the user's game file
+    s.click(tile(1, 3), &f.view()); // Kart Ruins: not installed
     s.apply(Confirm, &f.view());
     s
 }
@@ -15,26 +15,15 @@ fn install_is_a_page_not_a_popup() {
     let s = open_install(&f);
     assert_eq!(s.screen(), Screen::Install(3));
     assert_eq!(s.focus(), ids::INSTALL_LOCATION);
-    assert!(!s.install_draft().can_submit());
 }
 
 #[test]
-fn install_needs_the_users_own_file_before_it_can_submit() {
+fn install_submits_straight_away_with_nothing_but_the_defaults() {
     let f = Fixture::new();
     let mut s = open_install(&f);
     // The footer buttons sit under the fields; Down from the last field lands on Install (nearest
     // by center), Left from there on Cancel.
-    press(&mut s, &f, &[go(Down), go(Down), go(Down), go(Down)]);
-    assert_eq!(s.focus(), ids::INSTALL_SUBMIT);
-    assert!(press(&mut s, &f, &[Confirm]).is_empty(), "no file chosen yet");
-    assert_eq!(s.screen(), Screen::Install(3));
-
-    press(&mut s, &f, &[go(Up), go(Up), go(Up)]);
-    assert_eq!(s.focus(), ids::INSTALL_FILE);
-    assert_eq!(press(&mut s, &f, &[Confirm]), vec![Effect::ChooseFile(3)]);
-    s.set_install_file("~/Games/kart.z64");
-
-    press(&mut s, &f, &[go(Down), go(Down), go(Down)]);
+    press(&mut s, &f, &[go(Down), go(Down)]);
     assert_eq!(s.focus(), ids::INSTALL_SUBMIT);
     assert_eq!(press(&mut s, &f, &[Confirm]), vec![Effect::SubmitInstall(3)]);
     assert_eq!(s.screen(), Screen::Game(3), "back on the game page");
@@ -44,30 +33,56 @@ fn install_needs_the_users_own_file_before_it_can_submit() {
 fn cancel_is_left_of_install() {
     let f = Fixture::new();
     let mut s = open_install(&f);
-    press(&mut s, &f, &[go(Down), go(Down), go(Down), go(Down), go(Left)]);
+    press(&mut s, &f, &[go(Down), go(Down), go(Left)]);
     assert_eq!(s.focus(), ids::INSTALL_CANCEL);
     press(&mut s, &f, &[Confirm]);
     assert_eq!(s.screen(), Screen::Game(3));
 }
 
 #[test]
-fn install_switches_toggle_in_place() {
+fn the_prerelease_switch_toggles_in_place() {
     let f = Fixture::new();
     let mut s = open_install(&f);
-    press(&mut s, &f, &[go(Down), go(Down), Confirm, go(Down), Confirm]);
-    assert!(!s.install_draft().shortcut, "shortcut was on by default");
+    assert!(!s.install_draft().prerelease);
+    press(&mut s, &f, &[go(Down), Confirm]);
     assert!(s.install_draft().prerelease);
+    press(&mut s, &f, &[Confirm]);
+    assert!(!s.install_draft().prerelease);
 }
 
 #[test]
 fn cancel_discards_the_draft() {
     let f = Fixture::new();
     let mut s = open_install(&f);
-    s.set_install_file("x");
-    press(&mut s, &f, &[Back]);
+    press(&mut s, &f, &[go(Down), Confirm, Back]);
+    assert!(s.install_draft().prerelease, "the switch was on when the page was left");
     s.apply(Confirm, &f.view());
     assert_eq!(s.screen(), Screen::Install(3));
-    assert!(!s.install_draft().can_submit(), "a fresh draft each time");
+    assert!(!s.install_draft().prerelease, "a fresh draft each time");
+}
+
+#[test]
+fn the_location_box_starts_from_the_library_default_each_time_the_page_opens() {
+    let f = Fixture::new();
+    let mut s = f.state();
+    s.values_mut().set_text(SettingsTarget::Global, "default_location", " /mnt/games/Reclaw ".to_string());
+    s.click(tile(1, 3), &f.view());
+    s.apply(Confirm, &f.view());
+    assert_eq!(s.take_text_seeds(), vec![(TextField::InstallLocation, "/mnt/games/Reclaw".to_string())]);
+    assert!(s.take_text_seeds().is_empty(), "a seed is handed out once");
+
+    // The setting changed while the page was closed: the next opening has the new one.
+    press(&mut s, &f, &[Back]);
+    s.values_mut().set_text(SettingsTarget::Global, "default_location", "/data/apps".to_string());
+    s.apply(Confirm, &f.view());
+    assert_eq!(s.take_text_seeds(), vec![(TextField::InstallLocation, "/data/apps".to_string())]);
+}
+
+#[test]
+fn with_no_default_set_the_location_box_shows_the_fallback() {
+    let f = Fixture::new();
+    let mut s = open_install(&f);
+    assert_eq!(s.take_text_seeds(), vec![(TextField::InstallLocation, crate::settings::FALLBACK_LOCATION.to_string())]);
 }
 
 #[test]
@@ -90,9 +105,19 @@ fn reveal_targets_are_fields_in_the_body_never_the_footer() {
     let mut s = open_install(&f);
     let (top, bottom) = s.reveal_target(&f.view()).expect("a body field");
     assert_eq!((top, bottom), (0., 140.), "the tall location field");
-    press(&mut s, &f, &[go(Down), go(Down), go(Down), go(Down)]);
+    press(&mut s, &f, &[go(Down), go(Down)]);
     assert_eq!(s.focus(), ids::INSTALL_SUBMIT);
     assert_eq!(s.reveal_target(&f.view()), None);
+}
+
+#[test]
+fn the_settings_text_boxes_start_from_what_is_stored() {
+    let f = Fixture::new();
+    let mut s = f.state();
+    s.values_mut().set_text(SettingsTarget::Global, "default_location", "/data/apps".to_string());
+    press(&mut s, &f, &[MainMenu, go(Down), go(Down), go(Down), go(Down), Confirm]);
+    assert_eq!(s.screen(), Screen::Settings(SettingsTarget::Global));
+    assert_eq!(s.take_text_seeds(), vec![(TextField::DefaultLocation, "/data/apps".to_string())]);
 }
 
 fn open_global_settings(f: &Fixture) -> DeckState {

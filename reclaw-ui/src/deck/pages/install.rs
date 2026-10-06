@@ -5,11 +5,11 @@ use crate::{
     deck::{FocusFrame, InstallDraft, TextBoxes, TextField, ids},
     metrics::*,
     prelude::*,
+    settings::FALLBACK_LOCATION,
     surface::{RowControl, SettingRow},
 };
 
-/// The body of the Install page: where to put it, which of the user's own files to build from, and
-/// two switches. The footer (Cancel, Install) is the page's, not this component's.
+/// The body of the Install page: where to put it, and two switches. The footer (Cancel, Install) is the page's, not this component's.
 #[derive(Clone, PartialEq)]
 pub struct InstallBody {
     draft: InstallDraft,
@@ -33,7 +33,6 @@ impl Component for InstallBody {
             EventHandler::new(move |()| on_click.call(id))
         };
         let (input, a11y) = self.texts.get(TextField::InstallLocation);
-        let file_text = self.draft.game_file.clone().unwrap_or_else(|| "Choose file".to_string());
 
         rect()
             .vertical()
@@ -42,22 +41,11 @@ impl Component for InstallBody {
             .child(
                 SettingRow::new(
                     "Install location",
-                    RowControl::Text { input, placeholder: "Choose a folder".into(), a11y, secret: false },
+                    RowControl::Text { input, placeholder: FALLBACK_LOCATION.into(), a11y, secret: false },
                     Density::Controller,
                 )
                 .focused(focused(ids::INSTALL_LOCATION))
                 .on_press(press(ids::INSTALL_LOCATION)),
-            )
-            .child(
-                SettingRow::new("Your game file", RowControl::Value { text: file_text, opens_menu: false }, Density::Controller)
-                    .description("Never downloaded for you; Reclaw builds from your copy.")
-                    .focused(focused(ids::INSTALL_FILE))
-                    .on_press(press(ids::INSTALL_FILE)),
-            )
-            .child(
-                SettingRow::new("Create desktop shortcut", RowControl::Toggle(self.draft.shortcut), Density::Controller)
-                    .focused(focused(ids::INSTALL_SHORTCUT))
-                    .on_press(press(ids::INSTALL_SHORTCUT)),
             )
             .child(
                 SettingRow::new("Keep pre-release builds", RowControl::Toggle(self.draft.prerelease), Density::Controller)
@@ -67,8 +55,8 @@ impl Component for InstallBody {
     }
 }
 
-/// Cancel and Install for the footer of the Install page. Install is disabled until a file is chosen.
-pub fn install_footer(draft: &InstallDraft, focus: FocusId, ring_visible: bool, on_click: EventHandler<FocusId>) -> Element {
+/// Cancel and Install for the footer of the Install page.
+pub fn install_footer(focus: FocusId, ring_visible: bool, on_click: EventHandler<FocusId>) -> Element {
     let (a, b) = (on_click.clone(), on_click);
     rect()
         .horizontal()
@@ -85,7 +73,6 @@ pub fn install_footer(draft: &InstallDraft, focus: FocusId, ring_visible: bool, 
                 .icon(IconName::Download)
                 .label("Install")
                 .size(ButtonSize::Controller)
-                .enabled(draft.can_submit())
                 .on_press(move |_| b.call(ids::INSTALL_SUBMIT)),
             ring_visible && focus == ids::INSTALL_SUBMIT,
         ))

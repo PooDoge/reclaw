@@ -61,6 +61,8 @@ pub struct DeckState {
     drilled: bool,
     values: SettingsValues,
     install: InstallDraft,
+    /// Text boxes to fill because a page with text boxes was just shown (see `seed_texts_for_screen`).
+    text_seeds: Vec<(TextField, String)>,
     /// Requests for the router made by the last action, handed out with its effects.
     nav_requests: Vec<Effect>,
     /// The button being held for a notification's hold gesture, while its ring is drawn.
@@ -89,6 +91,7 @@ impl DeckState {
             drilled: false,
             values: SettingsValues::default(),
             install: InstallDraft::default(),
+            text_seeds: Vec::new(),
             nav_requests: Vec::new(),
             holding: None,
             holds_on: false,

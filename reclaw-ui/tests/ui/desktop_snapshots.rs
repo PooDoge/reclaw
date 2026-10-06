@@ -64,15 +64,8 @@ fn component_states() {
                 )
                 .child(
                     rect().horizontal().spacing(8.).children(
-                        [
-                            AppStatus::Installed,
-                            AppStatus::UpdateReady,
-                            AppStatus::Installing,
-                            AppStatus::Failed,
-                            AppStatus::Available,
-                            AppStatus::NeedsFile,
-                        ]
-                        .map(|s| StatusBadge::new(s).into_element()),
+                        [AppStatus::Installed, AppStatus::UpdateReady, AppStatus::Installing, AppStatus::Failed, AppStatus::Available]
+                            .map(|s| StatusBadge::new(s).into_element()),
                     ),
                 )
         }

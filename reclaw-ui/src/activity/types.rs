@@ -22,9 +22,8 @@ pub enum Stage {
     Queued,
     Downloading,
     Verifying,
-    CheckingGameFile,
-    Building,
     Extracting,
+    Finishing,
 }
 
 impl Stage {
@@ -33,9 +32,8 @@ impl Stage {
             Self::Queued => "Queued",
             Self::Downloading => "Downloading",
             Self::Verifying => "Verifying",
-            Self::CheckingGameFile => "Checking your game file",
-            Self::Building => "Building",
             Self::Extracting => "Extracting",
+            Self::Finishing => "Finishing",
         }
     }
 
@@ -84,6 +82,8 @@ pub struct Activity {
     pub rate: Option<u64>,
     /// Set when an update finished; what the sidebar offers to read.
     pub changelog: Option<Changelog>,
+    /// When it failed: what else is worth saying beyond the one-line reason.
+    pub details: Vec<String>,
     pub outcome: Outcome,
 }
 

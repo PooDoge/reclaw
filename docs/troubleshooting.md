@@ -49,6 +49,23 @@ For more detail, set Diagnostics, Log detail to **Detailed**, or start with `REC
 | `WARN reclaw_ui::notices::log: problem shown to the user title="Your library could not be read"` | `apps.json` is damaged or unreadable. Reclaw left it exactly as it is and will not change it. | The notice names the file; fix or move it, then restart. |
 | `WARN reclaw_sync::library: could not back up the library before saving; saving anyway` | The backup copy in `backups/` could not be written; the save still happened. | Check the data folder's space and permissions. |
 
+## Installing and starting apps
+
+None of these has been seen in a real run yet: installs and launches were run against local stand-ins for the services and for games.
+
+| Log line | Meaning | What to do |
+|---|---|---|
+| `WARN reclaw_app::host::install::jobs: the install location is not usable problem=...` | The location box is not a full path (or `~/...`), cannot be made, or the app's folder name is not one plain name. A notice says which. | Type a full path, or change Settings, Library, Default install location. |
+| `INFO ...: several downloads fit; taking the best ranked app=N release=TAG chosen=FILE among=K` | A release had more than one file for this machine; Reclaw took the best match (native before Windows, then by name). There is no chooser yet. | If it picked the wrong one, install that file by hand into the app's folder; a chooser is a planned feature. |
+| `INFO reclaw_install::install: installing repo=R tag=T asset=FILE folder=PATH` then `installed` | The normal path: download, SHA-256 check when the release states one, unpack, move over the folder, `version.txt` last. | Nothing. |
+| `WARN reclaw_install::install: the install failed repo=R tag=T asset=FILE error=...` | Followed by a notice with the reason and a hint. An update leaves the old version in place. A first install that stopped half way leaves `install-incomplete.txt`, which keeps the folder from counting as installed; installing again removes it once the install finishes. | Do what the hint says; the same install can be started again. |
+| `WARN reclaw_install::archive::sink: an archive entry was left out entry=... why=...` or `a link in the archive points outside its folder` | The archive held a path that would land outside the app's folder (`..`, an absolute path, a link out). It was not written. | Nothing, unless the game then fails to start: the release was built badly. |
+| `INFO reclaw_install::archive: the zip reader cannot handle this archive; trying a tool from the system` | A zip used a method the built-in reader lacks. `unzip`/`7z`/`bsdtar` is used if present. | Install one of those tools if the next line says none could run. |
+| `WARN reclaw_app::host::install::actions: an uninstall failed app=N folder=PATH error=...` / `reclaw_install::remove: an uninstall was refused folder=PATH why=...` | Reclaw deletes only a folder marked as an install (`version.txt`, `install-incomplete.txt` or a program in it), and never a short path, your home folder or a parent of it, or one of its own folders. | Remove the folder yourself if you are sure; the app stays in the library. |
+| `WARN reclaw_app::host::launch: an app could not be started app=N error=...` | The program was not found, is not executable, or no runner (Proton or Wine) was found for a Windows `.exe`. The notice says which. | Install Wine, or Steam with Proton; or set a custom runner command in the library entry (`linuxCustomLaunchCommand`). |
+| `INFO reclaw_app::host::launch::events: an app started app=N pid=P` / `an app ended app=N outcome=...` | The supervisor's two events for a run. The notice after a failed run names the exit code or signal. | Read the app's own output in `games/<folder name>.log` inside the log folder. |
+| `WARN reclaw_app::host::launch: launch settings could not be written to the app's config app=NAME error=...` | The game's own config file could not be edited (permissions, a damaged file). The game starts with the setting it had. | Fix the file's permissions or remove the file so the game writes a fresh one. |
+
 ## Updating
 
 | Log line | Meaning | What to do |

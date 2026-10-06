@@ -1,0 +1,10 @@
+<!-- @dsCard group="Media" height=280 subtitle="The game page's wide banner: a picture when there is one, a generated banner when there is not" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
+<body><div id="r"></div><script>
+var R=window.Reclaw,h=React.createElement;
+function App(){return h("div",{className:"row",style:{alignItems:"flex-start"}},
+  [["Starfall 64","Generated"],["Tide Racer","Another game"],["Ship of Harkinian","Same name, same colour"]].map(function(g){return h("div",{key:g[0],style:{width:250}},h("div",{className:"ac-cap"},g[1]),h(R.BannerArt,{seed:g[0],height:180,strip:60}))}),
+  h("div",{style:{width:250}},h("div",{className:"ac-cap"},"README or catalog"),h(R.BannerArt,{kind:"picture",tag:"README PICTURE",height:180})))}
+ReactDOM.createRoot(document.getElementById("r")).render(h(App));
+</script></body></html>

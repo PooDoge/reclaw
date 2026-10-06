@@ -56,14 +56,11 @@ pub enum Effect {
     SubmitInstall(u32),
     StartInstall {
         app: u32,
+        /// Where the app's folder goes; empty means the Library default (`settings::resolve_install_location`).
         location: String,
-        game_file: Option<String>,
-        shortcut: bool,
         prerelease: bool,
     },
     Update(u32),
-    /// Pick the user's own game file; answer with `DeckApp::chosen_file`.
-    ChooseFile(u32),
     OpenFolder(u32),
     Verify(u32),
     CheckUpdate(u32),

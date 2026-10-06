@@ -3,6 +3,6 @@
 <style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
 <body><div id="r"></div><script>
 var R=window.Reclaw,h=React.createElement;
-function App(){return h("div",{className:"row",style:{alignItems:"flex-start",gap:16}},h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed"}),h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed",hover:true}),h(R.GameCapsule,{title:"Kart Ruins",project:"N64Recomp",status:"needsfile",selected:true}),h(R.GameCapsule,{title:"Dino Rush",project:"PS2 recomp",status:"available"}))}
+function App(){return h("div",{className:"row",style:{alignItems:"flex-start",gap:16}},h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed"}),h(R.GameCapsule,{title:"Starfall 64",project:"N64Recomp",status:"installed",hover:true}),h(R.GameCapsule,{title:"Kart Ruins",project:"N64Recomp",status:"available",selected:true}),h(R.GameCapsule,{title:"Dino Rush",project:"PS2 recomp",status:"available"}))}
 ReactDOM.createRoot(document.getElementById("r")).render(h(App));
 </script></body></html>

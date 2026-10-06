@@ -77,5 +77,24 @@
     return h("div", { className: cx("ac ac-art", s), style: { width: p.w || 256, height: p.h || 144 } }, h("span", { className: "tag" }, p.tag || "SCREENSHOT"));
   }
 
-  Object.assign(window.Reclaw, { SystemBadge: SystemBadge, BadgeChip: BadgeChip, IndicatorBadge: IndicatorBadge, CardIndicator: CardIndicator, HoldRing: HoldRing, NoticeToast: NoticeToast, Titlebar: Titlebar, RemoteArt: RemoteArt });
+  // FNV-1a over the UTF-8 bytes, as the app does (reclaw_ui::banner::hue_of): the same game gets the same colour in the app and here.
+  function hueOf(seed) {
+    var bytes = new TextEncoder().encode(String(seed).trim().toLowerCase()), hash = BigInt("0xcbf29ce484222325"), prime = BigInt("0x100000001b3"), mask = (BigInt(1) << BigInt(64)) - BigInt(1);
+    for (var i = 0; i < bytes.length; i++) hash = ((hash ^ BigInt(bytes[i])) * prime) & mask;
+    return Number(hash % BigInt(360));
+  }
+
+  function BannerArt(p) {
+    var hue = hueOf(p.seed || "game"), kind = p.kind || "generated";
+    var wash = "linear-gradient(135deg,color-mix(in srgb,hsl(" + hue + " 62% 46%) 62%,var(--bg-base)),color-mix(in srgb,hsl(" + (hue + 38) % 360 + " 50% 40%) 16%,var(--bg-base)))";
+    var style = Object.assign({ "--bn-strip": (p.strip == null ? 0 : p.strip) + "px" }, p.height ? { height: p.height } : null, p.style);
+    if (kind === "picture") {
+      return h("div", { className: cx("rc-banner pic", p.className), style: style }, h("span", { className: "tag" }, p.tag || "CATALOG BANNER"));
+    }
+    var mark = (p.icon || String(p.seed || "?").trim().charAt(0) || "?").toUpperCase();
+    return h("div", { className: cx("rc-banner gen", p.className), style: Object.assign({ background: wash }, style) },
+      h("div", { className: "bn-room" }, h("div", { className: "bn-glow", "aria-hidden": "true" }), h("div", { className: "bn-icon", style: { "--bn-hue": hue } }, mark)));
+  }
+
+  Object.assign(window.Reclaw, { SystemBadge: SystemBadge, BadgeChip: BadgeChip, IndicatorBadge: IndicatorBadge, CardIndicator: CardIndicator, HoldRing: HoldRing, NoticeToast: NoticeToast, Titlebar: Titlebar, RemoteArt: RemoteArt, BannerArt: BannerArt });
 })();

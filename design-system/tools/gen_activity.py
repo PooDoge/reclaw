@@ -4,7 +4,7 @@ Safe to run again. Run from anywhere: `python3 design-system/tools/gen_activity.
 import os, re, json
 exec(open("tools/gen_components.py").read().split('preview("Button"')[0])
 
-NAMES = ["SystemBadge", "BadgeChip", "IndicatorBadge", "CardIndicator", "HoldRing", "NoticeToast", "Titlebar", "RemoteArt"]
+NAMES = ["SystemBadge", "BadgeChip", "IndicatorBadge", "CardIndicator", "HoldRing", "NoticeToast", "Titlebar", "RemoteArt", "BannerArt"]
 
 def patch(path, start, end, block):
     s = open(path).read()
@@ -62,21 +62,21 @@ Only badges whose address says its label, message and color are drawn this way. 
 """)
 
 # ---- CardIndicator + IndicatorBadge
-rows = [("update", "Update ready", None), ("queued", "Queued", None), ("downloading", "34%", .34), ("installing", "Building", None), ("done", "Updated", 1), ("failed", "Failed", None), ("mods", "+2 mods", None)]
+rows = [("update", "Update ready", None), ("queued", "Queued", None), ("downloading", "34%", .34), ("installing", "Finishing", None), ("done", "Updated", 1), ("failed", "Failed", None), ("mods", "+2 mods", None)]
 cards = ",".join(f'h("div",{{key:{i},style:{{display:"flex",flexDirection:"column",gap:8}}}},h(R.CardIndicator,{{kind:"{k}",label:"{l}",progress:{"null" if p is None else p}}}),h("span",{{className:"ac-cap"}},"{k}"))' for i, (k, l, p) in enumerate(rows))
 card("Activity", "CardIndicator", 620, "What a Deck card shows while its game has background work: an icon chip and a bar along the bottom edge",
  f'''h("div",{{style:{{display:"flex",flexWrap:"wrap",gap:24}}}},{cards})''', deck=True)
 card("Activity", "IndicatorBadge", 120, "The small form, for rows and the desktop sidebar",
- '''h("div",{className:"row"},[["update","Update ready"],["queued","Queued"],["downloading","34%"],["installing","Building"],["done","Updated"],["failed","Failed"],["mods","+2 mods"]].map(function(x){return h(R.IndicatorBadge,{key:x[0],kind:x[0],label:x[1]})}))''')
+ '''h("div",{className:"row"},[["update","Update ready"],["queued","Queued"],["downloading","34%"],["installing","Finishing"],["done","Updated"],["failed","Failed"],["mods","+2 mods"]].map(function(x){return h(R.IndicatorBadge,{key:x[0],kind:x[0],label:x[1]})}))''')
 readme("IndicatorBadge", """
-The icon and short text of a game's background work: "34%", "Building", "Updated", "Update ready". Rust: `reclaw_ui::components::IndicatorBadge`; icon and color per kind in `indicator_look` (below); what a game's indicator is comes from `reclaw_ui::activity::indicator_for`, which is pure and tested.
+The icon and short text of a game's background work: "34%", "Finishing", "Updated", "Update ready". Rust: `reclaw_ui::components::IndicatorBadge`; icon and color per kind in `indicator_look` (below); what a game's indicator is comes from `reclaw_ui::activity::indicator_for`, which is pure and tested.
 
 | Kind | Icon (Lucide) | Color | Meaning |
 |---|---|---|---|
 | UpdateAvailable | download | `warn` | A newer version exists; nothing has started |
 | Queued | clock | `ink-muted` | Waiting for its turn |
 | Downloading | arrow-down-to-line | `accent` | Bytes are arriving |
-| Installing | package | `info` | Verifying, building or extracting |
+| Installing | package | `info` | Verifying, extracting or finishing |
 | Done | check | `ok` | Finished this run; stays until the app restarts, with what changed |
 | Failed | triangle-alert | `danger` | Stopped; the notice says why |
 | Mods | puzzle | `accent` | Only mods are downloading for this game |
@@ -144,4 +144,21 @@ A picture from the internet in the place of a placeholder. Rust: `reclaw_ui::com
 * It never fetches by itself: the file comes from `reclaw-media`'s cache (https only, nothing on the local network, size and time capped, kind decided from the bytes). A component using it is keyed by the address.
 
 A failed picture is **not** reported to the user per image; the placeholder is the whole message. A cache size and a Clear cache button are not built yet.
+""")
+
+# ---- BannerArt
+card("Media", "BannerArt", 280, "The game page's wide banner: a picture when there is one, a generated banner when there is not",
+ '''h("div",{className:"row",style:{alignItems:"flex-start"}},
+  [["Starfall 64","Generated"],["Tide Racer","Another game"],["Ship of Harkinian","Same name, same colour"]].map(function(g){return h("div",{key:g[0],style:{width:250}},h("div",{className:"ac-cap"},g[1]),h(R.BannerArt,{seed:g[0],height:180,strip:60}))}),
+  h("div",{style:{width:250}},h("div",{className:"ac-cap"},"README or catalog"),h(R.BannerArt,{kind:"picture",tag:"README PICTURE",height:180})))''')
+readme("BannerArt", """
+The picture at the top of a game's page. Rust: `reclaw_ui::components::BannerArt`; the colours come from `reclaw_ui::banner`. The catalog mostly carries icons, so a page can rarely count on a wide picture. It uses the best one there is, in this order:
+
+1. **The catalog's banner** (`reclaw.heroUrl`), trusted as it is.
+2. **A picture from the project's README**: up to three, best first, ranked from the text alone (words like banner, header, screenshot; badges, buttons and sponsor images are never candidates). One is used only when its real size is at least 480 px wide and 1.6:1 or wider, so an icon is not blown up and a square is not cropped to a stripe.
+3. **A generated banner**: the game's own colour (a hue taken from its title with FNV-1a, so it is the same on every run and every machine) mixed into the theme's background, with the game's icon blurred behind the icon itself, kept clear of the title strip. It needs no network, so the box is never empty and never a label.
+
+Whatever fails to arrive (offline, a dead link, something that is not an image, "Download artwork and READMEs" switched off) falls through to the next step. Pictures are cropped to the box like cover art. In this mock the icon is the title's first letter, standing in for the catalog icon.
+
+Don't: show a placeholder label such as HERO on a real page; stretch a small or square picture to fill the banner; put the title on the art without the solid strip (`HeroHeader` does this).
 """)

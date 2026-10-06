@@ -1,11 +1,11 @@
-The icon and short text of a game's background work: "34%", "Building", "Updated", "Update ready". Rust: `reclaw_ui::components::IndicatorBadge`; icon and color per kind in `indicator_look` (below); what a game's indicator is comes from `reclaw_ui::activity::indicator_for`, which is pure and tested.
+The icon and short text of a game's background work: "34%", "Finishing", "Updated", "Update ready". Rust: `reclaw_ui::components::IndicatorBadge`; icon and color per kind in `indicator_look` (below); what a game's indicator is comes from `reclaw_ui::activity::indicator_for`, which is pure and tested.
 
 | Kind | Icon (Lucide) | Color | Meaning |
 |---|---|---|---|
 | UpdateAvailable | download | `warn` | A newer version exists; nothing has started |
 | Queued | clock | `ink-muted` | Waiting for its turn |
 | Downloading | arrow-down-to-line | `accent` | Bytes are arriving |
-| Installing | package | `info` | Verifying, building or extracting |
+| Installing | package | `info` | Verifying, extracting or finishing |
 | Done | check | `ok` | Finished this run; stays until the app restarts, with what changed |
 | Failed | triangle-alert | `danger` | Stopped; the notice says why |
 | Mods | puzzle | `accent` | Only mods are downloading for this game |

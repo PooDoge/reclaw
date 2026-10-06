@@ -1,4 +1,5 @@
 target/
+target*
 design-system/tools/vendor
 design-system/tools/shots/
 __pycache__/
