@@ -1,0 +1,8 @@
+<!-- @dsCard group="Progress" height=400 subtitle="Why a job failed: the whole reason, what to do, and the lines it wrote to the log" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
+<body><div id="r"></div><script>
+var R=window.Reclaw,h=React.createElement;
+function App(){return h(R.FailureLog,{title:"Moon Garden v2.0.1",reason:"This release's download for Linux-X64 is a Windows installer, which Reclaw does not install. Pick another release.",details:["The log has more: ~/.local/state/reclaw/logs/reclaw.log"],log:["05:42:00.101  INFO reclaw_app::host::install::jobs: install started app=5 title=\"Moon Garden\" repo=\"example/moon-garden\" host=GitHub platform=Linux-X64","05:42:00.388 DEBUG reclaw_net::net: fetched url=api.github.com/repos/example/moon-garden/releases status=200","05:42:00.405  WARN reclaw_app::host::install::jobs: the install failed app=5 error=This release's download for Linux-X64 is a Windows installer"]})}
+ReactDOM.createRoot(document.getElementById("r")).render(h(App));
+</script></body></html>

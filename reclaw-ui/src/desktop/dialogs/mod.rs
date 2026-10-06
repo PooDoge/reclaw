@@ -3,10 +3,12 @@
 //! tears one down and any page can open one through [`GameDialogs`].
 //!
 //! * `install`: the install form; `manage`: the anchored or centered Options menu; `confirm`: uninstall
+//! * `failure_log`: why a job failed and what it logged, opened from a "Failed" label or badge
 //! * `slot`: one dialog's open state, which also takes a navigation layer so Back closes it
 use freya::prelude::*;
 
 mod confirm;
+mod failure_log;
 mod install;
 mod manage;
 mod picker;
@@ -16,6 +18,7 @@ pub use picker::OpenPicker;
 pub(super) use slot::Slot;
 
 use crate::{
+    activity::ActivityId,
     app_menu::{MenuAction, options_menu},
     model::GameEntry,
     surface::MenuState,
@@ -36,12 +39,19 @@ pub struct GameDialogs {
     pub(super) manage: Slot<OpenManage>,
     pub(super) confirm: Slot<u32>,
     pub(super) picker: Slot<OpenPicker>,
+    pub(super) failure: Slot<ActivityId>,
 }
 
 impl GameDialogs {
     /// Hooks: call once, from the frame.
     pub fn use_new() -> Self {
-        Self { install: Slot::use_new(), manage: Slot::use_new(), confirm: Slot::use_new(), picker: Slot::use_new() }
+        Self {
+            install: Slot::use_new(),
+            manage: Slot::use_new(),
+            confirm: Slot::use_new(),
+            picker: Slot::use_new(),
+            failure: Slot::use_new(),
+        }
     }
 
     /// The game whose install form is open, if any. Reading it subscribes the caller, and it reads
@@ -65,6 +75,11 @@ impl GameDialogs {
         self.picker.open(picker);
     }
 
+    /// Show why a job failed, with what it logged.
+    pub fn failure_log(&self, activity: ActivityId) {
+        self.failure.open(activity);
+    }
+
     /// Ask whether to uninstall a game. Nothing is sent before the answer.
     pub fn uninstall(&self, game: u32) {
         self.confirm.open(game);
@@ -86,5 +101,6 @@ impl Component for GameDialogsLayer {
             .child(manage::ManageView { manage: d.manage, confirm: d.confirm })
             .child(picker::PickerView { picker: d.picker })
             .child(confirm::UninstallConfirm { confirm: d.confirm })
+            .child(failure_log::FailureLogView { open: d.failure })
     }
 }

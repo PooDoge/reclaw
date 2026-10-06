@@ -311,7 +311,9 @@
    ],
    "radius": "2,2,2,2",
    "props": {
-    "kind": "installed|update|installing|failed|available|needsfile"
+    "kind": "installed|update|installing|failed|available|needsfile",
+    "failure": "Option<String>: one-line reason, tooltip on a failed badge (FailedHint)",
+    "on_failure": "press handler: open FailureLog (or the log folder for an earlier run)"
    },
    "map": {
     "installed": {
@@ -521,7 +523,7 @@
     "Building",
     "Extracting"
    ],
-   "note": "fill accent; ok at verified; danger with reason on failure",
+   "note": "fill accent; ok at verified; danger with reason on failure; the Failed label (triangle-alert + mono) is a FailedHint: tooltip to the left, press opens FailureLog",
    "rust": {
     "type": "DownloadItem",
     "module": "reclaw_ui::components",
@@ -1332,6 +1334,61 @@
     "opened by Confirm on a text field in Controller density",
     "grid of 56px keys, spatial navigation, A types, X backspace, Y shift, Start done"
    ]
+  },
+  {
+   "name": "FailedHint",
+   "freya": "TooltipContainer + Tooltip::new_text",
+   "tokens": [
+    "danger",
+    "ink",
+    "bg-deep",
+    "line-strong"
+   ],
+   "radius": "8,8,8,8",
+   "props": {
+    "text": "one line, activity::short_reason (80 chars, cut at a word)",
+    "on_press": "Option<PressHandler>; none = tooltip only (capsule)",
+    "position": "AttachedPosition, Bottom default; Left on a Downloads row"
+   },
+   "action": "hover: tooltip after 500ms; press: FailureLog",
+   "earlier": "no job on the board (after a restart): text activity::EARLIER_FAILURE, press = Effect::OpenLogFolder",
+   "rust": {
+    "type": "FailedHint",
+    "module": "reclaw_ui::components",
+    "built": "TooltipContainer"
+   },
+   "controller": "Controller: none (no hover on Deck); the failure notice carries the details"
+  },
+  {
+   "name": "FailureLog",
+   "freya": "Dialog(SurfaceKind::Form).wide(true)",
+   "tokens": [
+    "bg-panel",
+    "bg-deep",
+    "line",
+    "ink",
+    "ink-muted",
+    "ink-subtle",
+    "warn",
+    "danger"
+   ],
+   "radius": "8,8,8,8",
+   "layout": "col(title, reason body, details meta, LOG eyebrow, ScrollView mono lines <=320px, actions)",
+   "props": {
+    "report": "activity::FailureReport {title, reason, details, log}"
+   },
+   "lineTone": "activity::line_tone: WARN -> warn, ERROR -> danger, else ink-muted",
+   "actions": [
+    "Open log folder (ghost, folder-open) -> Effect::OpenLogFolder",
+    "Close (secondary)"
+   ],
+   "note": "Popup 760px on desktop; full-screen page with Back on touch. Log = Activity::log, recorded by reclaw_log::record around the job (ADR 0019): file level, redacted, last 400 lines.",
+   "rust": {
+    "type": "FailureLogView",
+    "module": "reclaw_ui::desktop::dialogs",
+    "built": "Dialog"
+   },
+   "controller": "Controller: not built on Deck yet"
   }
  ],
  "layout": {

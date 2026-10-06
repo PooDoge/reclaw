@@ -1,6 +1,7 @@
 use freya::prelude::*;
 
 use crate::{
+    activity::FailureHint,
     catalog::GameView,
     desktop::{DesktopEnv, GameDialogs},
     effect::Effect,
@@ -17,6 +18,8 @@ pub(super) struct Ctx {
     pub nav: Nav,
     pub dialogs: GameDialogs,
     pub on_effect: EventHandler<Effect>,
+    /// What the Failed badge says and opens, when the game is shown as failed.
+    pub failure: Option<FailureHint>,
 }
 
 impl Ctx {

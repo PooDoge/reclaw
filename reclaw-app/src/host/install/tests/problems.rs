@@ -17,6 +17,7 @@ fn a_location_that_is_not_a_full_path_is_refused_with_a_reason_and_nothing_start
 
 #[test]
 fn a_release_with_nothing_for_this_system_fails_clearly_and_the_card_says_failed() {
+    reclaw_log::init_for_tests();
     let rig = start(vec![Rel { tag: "v1", files: vec![("Game-macos.zip", vec![1])], slow: Duration::ZERO }], None, |_, _| {});
     let app = rig.app();
     rig.host.handle(&Effect::StartInstall { app, location: String::new(), prerelease: false });
@@ -25,6 +26,10 @@ fn a_release_with_nothing_for_this_system_fails_clearly_and_the_card_says_failed
     let Some(ActivityEvent::Failed { reason, details, .. }) = events.last() else { panic!("{events:?}") };
     assert!(reason.contains("no recognized download for Linux-X64"), "{reason}");
     assert!(details.iter().any(|d| d.contains("reclaw.log")), "the log is named: {details:?}");
+    // The job's own log arrives just before the failure, for the log view behind the "Failed" label.
+    let Some(ActivityEvent::Log { lines, .. }) = events.iter().rev().nth(1) else { panic!("{events:?}") };
+    assert!(lines.iter().any(|l| l.contains("install started") && l.contains("Linux-X64")), "{lines:#?}");
+    assert!(lines.iter().any(|l| l.contains("WARN") && l.contains("no recognized download")), "{lines:#?}");
     assert_eq!(rig.status(), Some(AppStatus::Failed));
 
     // Fixing the release and trying again works, from Failed.

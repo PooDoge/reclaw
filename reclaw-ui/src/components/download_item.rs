@@ -1,8 +1,8 @@
 use freya::prelude::*;
 
-use super::{ArtPlaceholder, PressHandler};
+use super::{ArtPlaceholder, FailedHint, PressHandler};
 use crate::{
-    activity::{Activity, Outcome, format_bytes, format_eta, format_rate},
+    activity::{Activity, Outcome, format_bytes, format_eta, format_rate, short_reason},
     metrics::*,
     prelude::*,
     typography::TypeStyle,
@@ -10,12 +10,14 @@ use crate::{
 
 /// Download queue row for one activity. The stage label names the pipeline step. The fill is accent
 /// while working, ok once finished, and danger on failure, where the reason replaces the detail
-/// line so a red bar never appears without a cause. The button cancels a running job and removes
-/// an ended one.
+/// line so a red bar never appears without a cause. On failure the "Failed" label shows the reason in
+/// a tooltip and opens the job's log when pressed. The button cancels a running job and removes an
+/// ended one.
 #[derive(Clone, PartialEq)]
 pub struct DownloadItem {
     activity: Activity,
     on_cancel: Option<PressHandler>,
+    on_failure: Option<PressHandler>,
     controller: bool,
     cancel_focused: bool,
     key: DiffKey,
@@ -29,7 +31,7 @@ impl KeyExt for DownloadItem {
 
 impl DownloadItem {
     pub fn new(activity: Activity) -> Self {
-        Self { activity, on_cancel: None, controller: false, cancel_focused: false, key: DiffKey::None }
+        Self { activity, on_cancel: None, on_failure: None, controller: false, cancel_focused: false, key: DiffKey::None }
     }
 
     /// Deck mode: larger text and padding, and the button shows the focus frame.
@@ -41,6 +43,12 @@ impl DownloadItem {
 
     pub fn on_cancel(mut self, handler: impl Into<PressHandler>) -> Self {
         self.on_cancel = Some(handler.into());
+        self
+    }
+
+    /// Pressing the "Failed" label: open the job's report and log.
+    pub fn on_failure(mut self, handler: impl Into<PressHandler>) -> Self {
+        self.on_failure = Some(handler.into());
         self
     }
 }
@@ -104,7 +112,21 @@ impl Component for DownloadItem {
                                 .text_overflow(TextOverflow::Ellipsis),
                         ),
                     )
-                    .child(TypeStyle::Mono.text(stage, if failure.is_some() { t.danger } else { t.ink_muted })),
+                    .child(match &failure {
+                        Some(reason) => {
+                            let label = rect()
+                                .horizontal()
+                                .cross_align(Alignment::Center)
+                                .spacing(SPACE_1)
+                                .child(icon(IconName::Alert, 12., t.danger))
+                                .child(TypeStyle::Mono.text(stage, t.danger));
+                            FailedHint::new(label, short_reason(reason))
+                                .position(AttachedPosition::Left)
+                                .map(self.on_failure.clone(), |hint, h| hint.on_press(h))
+                                .into_element()
+                        }
+                        None => TypeStyle::Mono.text(stage, t.ink_muted).into_element(),
+                    }),
             )
             .child(bar)
             .child(

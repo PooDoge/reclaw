@@ -20,13 +20,14 @@ use freya::prelude::*;
 use self::ctx::Ctx;
 use super::common::{BackBar, NotFound, page_scroll};
 use crate::{
+    activity::hint_for_game,
     catalog::GameView,
     desktop::use_desktop_ui,
     metrics::*,
     nav::{use_nav, use_page_motion},
     prelude::*,
     shell::use_shell,
-    store::{use_games, use_mods, use_projects},
+    store::{use_activity_of, use_games, use_mods, use_projects},
 };
 
 #[derive(PartialEq)]
@@ -41,11 +42,13 @@ impl Component for GamePage {
         let motion = use_page_motion();
         let env = *ui.env.read();
         let (games, projects, mods) = (use_games(), use_projects(), use_mods());
+        let activity = use_activity_of(self.id);
         let view = GameView::resolve(self.id, &games, &projects, &mods);
         let Some(view) = view else {
             return NotFound { what: "game", id: self.id.to_string() }.into_element();
         };
-        let c = Ctx { t, env, view, nav, dialogs: ui.dialogs, on_effect: shell.on_effect.clone() };
+        let failure = (view.game.status == AppStatus::Failed).then(|| hint_for_game(&activity, self.id));
+        let c = Ctx { t, env, view, nav, dialogs: ui.dialogs, on_effect: shell.on_effect.clone(), failure };
 
         // After the banner has settled, the sections below it rise in one after another.
         let section = |index: usize, content: Option<Element>| {

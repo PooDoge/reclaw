@@ -8,6 +8,7 @@
 //! * `redact`, `secret`: [`scrub`], [`register_secret`] and [`Secret`]: credentials are never written, whatever shape they have
 //! * `panic`: a panic is logged, with its stack, before anything else happens
 //! * `tail`: the last lines of the file, for the diagnostics report
+//! * `capture`: [`record`] one job's own lines (an install that failed shows what it logged)
 //!
 //! Why this and not `println!`: a launcher is usually started from a menu entry, where standard error goes nowhere. A failure that
 //! is only printed is a failure nobody can look at afterwards. The rule the rest of the workspace follows (and `tests/repo_hygiene.rs`
@@ -20,6 +21,7 @@ use std::{
 
 use tracing_subscriber::{Registry, filter::Targets, fmt, layer::SubscriberExt, reload, util::SubscriberInitExt};
 
+mod capture;
 mod level;
 mod panic;
 mod redact;
@@ -28,6 +30,7 @@ mod secret;
 mod sink;
 mod tail;
 
+pub use capture::{Recording, record};
 pub use level::{LogLevel, OUR_TARGETS};
 pub use redact::scrub;
 pub use rotate::RotatingFile;
@@ -121,7 +124,7 @@ pub fn init(config: LogConfig) -> Logging {
         file.map(|file| fmt::layer().with_ansi(false).with_thread_names(true).with_writer(sink::FileDest(Arc::new(Mutex::new(file)))));
     let stderr_layer = config.stderr.then(|| fmt::layer().with_ansi(false).with_thread_names(true).with_writer(sink::StderrDest));
 
-    match tracing_subscriber::registry().with(filter).with(file_layer).with(stderr_layer).try_init() {
+    match tracing_subscriber::registry().with(filter).with(file_layer).with(stderr_layer).with(capture::CaptureLayer).try_init() {
         Ok(()) => {
             panic::install();
             Logging { handle: Some(handle), dir: config.dir, file: path, problems, overridden }
@@ -133,8 +136,9 @@ pub fn init(config: LogConfig) -> Logging {
     }
 }
 
-/// For tests: send messages to the test harness's captured output, so a failing test shows what the code logged. Safe to call from
-/// every test; only the first call does anything.
+/// For tests: send messages to the test harness's captured output, so a failing test shows what the code logged, and make
+/// [`record`] work. Safe to call from every test; only the first call does anything.
 pub fn init_for_tests() {
-    let _ = tracing_subscriber::fmt().with_test_writer().with_max_level(tracing::Level::DEBUG).try_init();
+    let _ =
+        tracing_subscriber::fmt().with_test_writer().with_max_level(tracing::Level::DEBUG).finish().with(capture::CaptureLayer).try_init();
 }

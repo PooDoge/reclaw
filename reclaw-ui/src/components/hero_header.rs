@@ -29,6 +29,8 @@ pub struct HeroHeader {
     on_favorite: Option<PressHandler>,
     favorite: bool,
     on_settings: Option<PressHandler>,
+    failure: Option<String>,
+    on_failure: Option<PressHandler>,
 }
 
 impl HeroHeader {
@@ -44,6 +46,8 @@ impl HeroHeader {
             on_favorite: None,
             favorite: false,
             on_settings: None,
+            failure: None,
+            on_failure: None,
         }
     }
 
@@ -88,6 +92,13 @@ impl HeroHeader {
     /// A cog button, for the game's own settings page.
     pub fn on_settings(mut self, handler: impl Into<PressHandler>) -> Self {
         self.on_settings = Some(handler.into());
+        self
+    }
+
+    /// A Failed badge's hover text and what pressing it does (see [`StatusBadge::failure`]).
+    pub fn failure(mut self, text: impl Into<String>, handler: impl Into<PressHandler>) -> Self {
+        self.failure = Some(text.into());
+        self.on_failure = Some(handler.into());
         self
     }
 
@@ -178,7 +189,11 @@ impl Component for HeroHeader {
             )
             .child(kv("Version", self.game.version.to_string()))
             .maybe(!narrow, |el| el.child(kv("Source", self.game.source.host().to_string())))
-            .child(StatusBadge::new(self.game.status))
+            .child(
+                StatusBadge::new(self.game.status)
+                    .map(self.failure.clone(), |b, text| b.failure(text))
+                    .map(self.on_failure.clone(), |b, h| b.on_failure(h)),
+            )
             .child(rect().width(Size::flex(1.)))
             .maybe_child(self.on_favorite.clone().map(|h| {
                 // Named when there is room; the star alone says "favorite" to most people but not to a screen reader.
