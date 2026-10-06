@@ -132,6 +132,14 @@ pub enum ModStatus {
     Available,
     Installing,
     Installed,
+    /// Installed, and the site has a newer version.
+    UpdateReady,
+}
+
+impl ModStatus {
+    pub fn is_installed(self) -> bool {
+        matches!(self, Self::Installed | Self::UpdateReady)
+    }
 }
 
 /// A mod for one game, from a mod site. Like `GameEntry`, it carries the user's state (`status`).
@@ -143,10 +151,17 @@ pub struct ModEntry {
     pub title: String,
     pub author: String,
     pub summary: String,
+    /// The newest version the site lists (the installed one when the site does not say).
     pub version: String,
+    /// The version in the game's folder, when installed.
+    pub installed_version: Option<String>,
     pub downloads: u64,
     pub tags: Vec<String>,
     pub status: ModStatus,
+    /// The mod's picture on its site.
+    pub icon: Option<String>,
+    /// The mod's page on its site.
+    pub page_url: Option<String>,
 }
 
 impl ModEntry {

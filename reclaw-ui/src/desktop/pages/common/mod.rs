@@ -5,7 +5,7 @@
 mod mod_row;
 mod not_found;
 
-pub use mod_row::{ModRow, compact_count, mod_action, mod_effect};
+pub use mod_row::{ModRow, compact_count, mod_action, mod_effect, mod_icon, version_text};
 pub use not_found::NotFound;
 
 use freya::prelude::*;

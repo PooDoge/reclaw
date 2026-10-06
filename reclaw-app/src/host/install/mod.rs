@@ -45,7 +45,7 @@ impl Installs {
         self.jobs.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    fn next_activity(&self) -> ActivityId {
+    pub(crate) fn next_activity(&self) -> ActivityId {
         self.next_activity.fetch_add(1, Ordering::Relaxed)
     }
 
@@ -68,6 +68,38 @@ impl Installs {
     /// The places that are never deleted by an uninstall: the home folder and where Reclaw keeps its own files.
     pub(super) fn protected(&self, extra: &[PathBuf]) -> Vec<PathBuf> {
         self.home.iter().cloned().chain(extra.iter().cloned()).collect()
+    }
+}
+
+impl crate::host::Host {
+    /// Create the catalog's marker files (`filesToAdd`) in an app's folder, as Quiver does after every install. `existing`: the
+    /// folder already held an install, so the game may have kept its settings somewhere else until now (a recomp without
+    /// `portable.txt` uses `~/.config/<its name>`), and the person is told where their earlier saves are.
+    pub(crate) fn add_markers(&self, title: &str, folder: &Path, names: &[String], existing: bool) {
+        match reclaw_install::layout::add_marker_files(folder, names) {
+            Ok(created) if !created.is_empty() => {
+                tracing::info!(app = title, folder = %shown(folder), files = ?created, existing, "added the files the catalog asks for");
+                if existing {
+                    self.tell(reclaw_ui::notices::Notice::note(
+                        &format!("{title} now keeps its settings in its own folder"),
+                        &format!("Reclaw added {}, as the catalog asks", created.join(", ")),
+                        vec![
+                            format!("The folder is {}.", shown(folder)),
+                            "Settings and saves from before stay where the game kept them (for the recomps, a folder named after the game in ~/.config); copy them into this folder to keep using them.".to_string(),
+                        ],
+                    ));
+                }
+            }
+            Ok(_) => {}
+            Err(error) => {
+                tracing::warn!(app = title, folder = %shown(folder), %error, "the files the catalog asks for could not be created");
+                self.tell(reclaw_ui::notices::Notice::problem(
+                    &format!("{title} may not find its mods"),
+                    "A file the catalog asks for could not be created in its folder",
+                    vec![error.to_string(), format!("Create {} in {} yourself.", names.join(", "), shown(folder))],
+                ));
+            }
+        }
     }
 }
 

@@ -34,6 +34,8 @@ impl Host {
     pub(crate) fn cancel_activity(&self, id: ActivityId) {
         if self.inner.installs.cancel(id) {
             tracing::info!(activity = id, "an install was cancelled by the user");
+        } else if self.inner.mods.cancel(id) {
+            tracing::info!(activity = id, "a mod install was cancelled by the user");
         }
     }
 
@@ -66,6 +68,8 @@ impl Host {
             Ok(()) => {
                 host.set_install_state(&key, None);
                 host.forget_install_path(app);
+                // Its mods went with its folder.
+                host.publish_mods();
                 host.tell(Notice::note(
                     &format!("{} was uninstalled", entry.name),
                     &format!("Its files in {} were deleted", shown(&folder)),

@@ -69,6 +69,7 @@ pub enum AppAction {
         value: Option<SettingValue>,
     },
     MarkModInstalling {
+        game: u32,
         provider: ModProvider,
         id: String,
     },

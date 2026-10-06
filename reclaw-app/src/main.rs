@@ -241,6 +241,7 @@ fn main() {
         state.games = initial.loaded.games;
         state.catalog = initial.status;
         state.credentials = initial.credentials;
+        state.mods = initial.mods;
     });
     if let Some(warning) = &opened.warning {
         tracing::warn!(%warning, "the settings file was not used as it was");

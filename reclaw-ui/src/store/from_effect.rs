@@ -9,7 +9,7 @@ pub fn ui_action(effect: &Effect) -> Option<AppAction> {
         Effect::Setting(change) => AppAction::Setting(*change),
         Effect::TextCommitted { app, field, value } => AppAction::SettingText { app: *app, field: *field, value: value.clone() },
         Effect::LaunchSetting { app, key, value } => AppAction::LaunchSetting { app: *app, key: *key, value: value.clone() },
-        Effect::InstallMod { provider, id } => AppAction::MarkModInstalling { provider: *provider, id: id.clone() },
+        Effect::InstallMod { game, provider, id } => AppAction::MarkModInstalling { game: *game, provider: *provider, id: id.clone() },
         Effect::DismissActivity(id) => AppAction::Activity(ActivityEvent::Dismiss { id: *id }),
         Effect::DismissNotice(id) => AppAction::DismissNotice(*id),
         Effect::DismissAllNotices => AppAction::DismissAllNotices,

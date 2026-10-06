@@ -96,14 +96,19 @@ pub enum Effect {
     DismissNotice(NoticeId),
     DismissAllNotices,
     Search,
+    /// Install a mod for a game, or update it when it is installed.
     InstallMod {
+        game: u32,
         provider: ModProvider,
         id: String,
     },
     RemoveMod {
+        game: u32,
         provider: ModProvider,
         id: String,
     },
+    /// Ask the mod sites again for the mods of every installed game that has them.
+    RefreshMods,
     /// Open a link (a project page, a release, a video) in the system browser or player.
     OpenUrl(String),
     SwitchToDesktop,

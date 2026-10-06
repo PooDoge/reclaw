@@ -4018,6 +4018,7 @@ dependencies = [
  "reclaw-install",
  "reclaw-log",
  "reclaw-media",
+ "reclaw-mods",
  "reclaw-net",
  "reclaw-runtime",
  "reclaw-sync",
@@ -4114,6 +4115,22 @@ dependencies = [
  "thiserror 2.0.21",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "reclaw-mods"
+version = "0.1.0"
+dependencies = [
+ "reclaw-catalog",
+ "reclaw-games",
+ "reclaw-install",
+ "reclaw-net",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+ "zip",
 ]
 
 [[package]]

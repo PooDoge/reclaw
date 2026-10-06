@@ -3,8 +3,9 @@ use freya::prelude::*;
 use super::common::{NotFound, PageHeader, card, heading, page_scroll};
 use crate::{
     desktop::use_desktop_ui,
+    effect::Effect,
     metrics::*,
-    model::ModProvider,
+    model::{ModProvider, ModStatus},
     nav::{Route, use_nav},
     prelude::*,
     shell::use_shell,
@@ -46,17 +47,31 @@ impl Component for ModDetailPage {
                 .child(rect().width(Size::flex(1.)).child(TypeStyle::Body.text(value, t.ink)))
                 .into_element()
         };
-        let mut lines = vec![
-            line("Author", entry.author.clone()),
-            line("Version", entry.version.clone()),
-            line("Site", entry.provider.label().to_string()),
-            line("Downloads", super::common::compact_count(entry.downloads)),
-        ];
+        let mut lines = vec![line("Author", entry.author.clone()), line("Version", entry.version.clone())];
+        if let Some(installed) = entry.installed_version.clone().filter(|v| *v != entry.version) {
+            lines.push(line("Installed", installed));
+        }
+        lines.extend([line("Site", entry.provider.label().to_string()), line("Downloads", super::common::compact_count(entry.downloads))]);
         if !entry.tags.is_empty() {
             lines.push(line("Tags", entry.tags.join(", ")));
         }
 
         let game_id = entry.game_id;
+        // An installed mod with an update offers Update first; it can still be removed from here.
+        let remove = (entry.status == ModStatus::UpdateReady).then(|| {
+            let (on_effect, provider, id) = (shell.on_effect.clone(), entry.provider, entry.id.clone());
+            ActionButton::new(ButtonVariant::Secondary)
+                .icon(IconName::X)
+                .label("Remove")
+                .on_press(move |_| on_effect.call(Effect::RemoveMod { game: game_id, provider, id: id.clone() }))
+        });
+        let open_page = entry.page_url.clone().map(|url| {
+            let on_effect = shell.on_effect.clone();
+            ActionButton::new(ButtonVariant::Ghost)
+                .icon(IconName::External)
+                .label(format!("Open on {}", entry.provider.label()))
+                .on_press(move |_| on_effect.call(Effect::OpenUrl(url.clone())))
+        });
         let for_game = game.map(|title| {
             ActionButton::new(ButtonVariant::Secondary)
                 .icon(IconName::Library)
@@ -68,9 +83,10 @@ impl Component for ModDetailPage {
         let (label, enabled) = super::common::mod_action(entry.status);
         let effect = super::common::mod_effect(&entry);
         let on_effect = shell.on_effect.clone();
-        let button = ActionButton::new(ButtonVariant::Primary)
+        let variant = if entry.status == ModStatus::Installed { ButtonVariant::Secondary } else { ButtonVariant::Primary };
+        let button = ActionButton::new(variant)
             .label(label)
-            .icon(IconName::Download)
+            .icon(super::common::mod_icon(entry.status))
             .enabled(enabled)
             .size(ButtonSize::for_density(env.density, true))
             .on_press(move |_| {
@@ -95,7 +111,16 @@ impl Component for ModDetailPage {
                         .child(TypeStyle::Body.text(entry.summary.clone(), t.ink)),
                 )
                 .child(rect().vertical().spacing(SPACE_2).width(Size::fill()).child(heading(&t, "Details")).child(card(&t, lines)))
-                .maybe_child(for_game),
+                .child(
+                    rect()
+                        .horizontal()
+                        .content(Content::wrap_spacing(SPACE_2))
+                        .spacing(SPACE_2)
+                        .width(Size::fill())
+                        .maybe_child(for_game)
+                        .maybe_child(remove)
+                        .maybe_child(open_page),
+                ),
         )
     }
 }

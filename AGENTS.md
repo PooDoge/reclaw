@@ -19,6 +19,7 @@ RECLAW_LOG=reclaw_net=debug,warn cargo run -p reclaw   # a log filter; the file 
 cargo test -p reclaw-net --test live -- --ignored --nocapture   # the real GitHub (a few requests); RECLAW_LIVE_REPO=owner/name picks the repository
 cargo test -p reclaw-install --test live -- --ignored --nocapture --test-threads 1   # install real catalog games from GitHub and GitLab (downloads ~200 MB)
 xvfb-run -a cargo test -p reclaw --lib live -- --ignored --nocapture --test-threads 1   # the same through the host: install, verify, play, update, uninstall
+cargo test -p reclaw-mods --test live -- --ignored --nocapture --test-threads 1   # list, install and remove a real mod from Thunderstore and GameBanana
 scripts/update.sh                           # fast-forward this checkout and rebuild; never discards anything (spec: updates)
 scripts/x11-smoke.sh                        # a real window under Xvfb: drag, resize, maximize, close (not part of cargo test)
 ```
@@ -26,7 +27,7 @@ scripts/x11-smoke.sh                        # a real window under Xvfb: drag, re
 Linux needs `libudev-dev` and the GL/EGL dev packages (`libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libwayland-dev`).
 Snapshot PNGs land in `reclaw-ui/target/snapshots/`; look at them after changing any layout.
 Bazzite (immutable) builds in a distrobox: `docs/BUILDING.md`, `scripts/bazzite-build.sh`.
-Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog -p reclaw-net -p reclaw-sync -p reclaw-log -p reclaw`
+Skia makes `target/` huge. If the disk fills, `cargo clean -p reclaw-ui -p reclaw-media -p reclaw-games -p reclaw-input -p reclaw-config -p reclaw-runtime -p reclaw-catalog -p reclaw-mods -p reclaw-net -p reclaw-sync -p reclaw-log -p reclaw`
 keeps the compiled dependencies and drops only ours. Test executables from every feature set pile up in `target/debug/deps` (23 GB were seen, and
 the linker then dies with a bus error): delete the executables over 50 MB there and `target/debug/incremental`, and build with `CARGO_INCREMENTAL=0`.
 

@@ -19,8 +19,11 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
    and config beside the program (ADR 0017).
 3. **Only the first page of releases is read**, and a pinned version outside it silently becomes "latest". Drafts are not filtered.
 4. **Merge and Replace in the catalog review drop the user's `linux*` fields** (read from the code, not run). Worth deciding on deliberately.
-5. **Mods have no disable, no backup, no conflict check and no rollback**, and the provider API shapes could not be checked from the
-   sandbox (the proxy refused thunderstore.io and gamebanana.com). Those must be verified against the live services before they are built.
+5. **Mods have no disable, no backup, no conflict check and no rollback** in Quiver. Reclaw keeps Quiver's record file but refuses to
+   overwrite another mod's files, stages and undoes a failed install, and removes what an update drops (ADR 0020). The provider API
+   shapes could not be checked from the sandbox (the proxy refused thunderstore.io and gamebanana.com); the live suite in `reclaw-mods`
+   is there to check them. Reclaw also did not create `filesToAdd` (`portable.txt`), without which a recomp ignores its `mods` folder;
+   it now does after every install.
 6. **The network layer is `reclaw-net`** (ADR 0010, 0011): one client for the catalog, release APIs, downloads and mod providers, with the
    address policy kept for pictures and READMEs written by strangers.
 7. **Quiver keeps its GitHub token as plain text in `settings.json`, never checks it, and sends it to `github.com` and
@@ -51,7 +54,7 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 | Launch (native, Wine / Proton, AppImage env, Flatpak), process tracking | `GameLaunchService`, `WindowsRunnerService` | partial: `reclaw-runtime` starts and stops process groups; no runner choice | M2 |
 | Uninstall to trash, Locate install, Open folder, Force update, change version | `LibraryActions` | Uninstall (deletes, guarded; **no trash**), Open folder, Verify, Check for updates, Update **done**; Locate install, Force update, change version **no** | M2c |
 | Update checks (cache layers 6 h / 24 h, 60 s deadline, background timer, auto-update) | `LibraryUpdateChecker` | **no**; the activity board shows events the host sends | M3 |
-| Mods (Thunderstore, GameBanana, install / update / uninstall, `.quiver-mods.json`) | `Services/Mods/*` | config schema **done**; providers **no**; page **ui** | M4 |
+| Mods (Thunderstore, GameBanana, install / update / uninstall, `.quiver-mods.json`) | `Services/Mods/*` | **done** (spec: mods) against a fake site; the real sites **not verified**; no enable / disable, no file chooser, no Deck page | live check |
 | Settings (General, Controls, Appearance, App cards, Advanced) | `settings.json`, PascalCase | different file and keys (TOML); Reclaw's own settings **done**; Quiver's import **no** | M5 |
 | Gamepad and keyboard navigation | SDL2 polling | `reclaw-input` on `gilrs` (not hardware-verified) | |
 | Window, tray, close-to-tray, placement | Avalonia | custom frame, monitors, saved placement **done**; tray **no** | |
@@ -68,5 +71,5 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 * **M2 Install and launch**: release fetching, asset choice, download, safe extraction, executable discovery, status, launch, uninstall.
   The first end-to-end install of a real project is the milestone's test.
 * **M3 Updates**: check passes, notifications, auto-update, self-update.
-* **M4 Mods**: after the provider APIs are checked against the live services.
+* **M4 Mods**: built (spec: mods); to be checked against the live services with `reclaw-mods`'s live suite.
 * **M5 Settings and polish**, then the improvements in `docs/ideas.md`.

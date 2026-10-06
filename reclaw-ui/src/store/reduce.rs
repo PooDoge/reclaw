@@ -85,8 +85,8 @@ impl AppState {
                 changes::set_launch_setting(&mut self.launch.defaults, &mut self.launch.apps, app, key, value);
                 if self.launch == before { Vec::new() } else { vec![AppChannel::Launch] }
             }
-            AppAction::MarkModInstalling { provider, id } => {
-                if changes::mark_mod_installing(&mut self.mods, provider, &id) {
+            AppAction::MarkModInstalling { game, provider, id } => {
+                if changes::mark_mod_installing(&mut self.mods, game, provider, &id) {
                     vec![AppChannel::Mods]
                 } else {
                     Vec::new()
