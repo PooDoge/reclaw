@@ -53,10 +53,11 @@ pub fn set_launch_setting(
     }
 }
 
-/// Show a mod as installing the moment the button is pressed; the host moves it to `Installed`.
+/// Show a mod as installing the moment Install or Update is pressed; the host sends the list again when the job ends.
 /// Returns whether anything changed.
-pub fn mark_mod_installing(mods: &mut [ModEntry], provider: ModProvider, id: &str) -> bool {
-    match mods.iter_mut().find(|m| m.provider == provider && m.id == id && m.status == ModStatus::Available) {
+pub fn mark_mod_installing(mods: &mut [ModEntry], game: u32, provider: ModProvider, id: &str) -> bool {
+    let waiting = |s: ModStatus| matches!(s, ModStatus::Available | ModStatus::UpdateReady);
+    match mods.iter_mut().find(|m| m.game_id == game && m.provider == provider && m.id == id && waiting(m.status)) {
         Some(entry) => {
             entry.status = ModStatus::Installing;
             true
@@ -68,6 +69,10 @@ pub fn mark_mod_installing(mods: &mut [ModEntry], provider: ModProvider, id: &st
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn mods_game(mods: &[ModEntry], id: &str) -> u32 {
+        mods.iter().find(|m| m.id == id).map_or(0, |m| m.game_id)
+    }
     use crate::fixtures::{sample_games, sample_mods};
 
     #[test]
@@ -105,12 +110,14 @@ mod tests {
         let mut mods = sample_mods();
         let installed = mods.iter().position(|m| m.status == ModStatus::Installed).expect("a sample installed mod");
         let (provider, id) = (mods[installed].provider, mods[installed].id.clone());
-        assert!(!mark_mod_installing(&mut mods, provider, &id));
+        let game = mods_game(&mods, &id);
+        assert!(!mark_mod_installing(&mut mods, game, provider, &id));
         assert_eq!(mods[installed].status, ModStatus::Installed);
 
         let available = mods.iter().position(|m| m.status == ModStatus::Available).expect("a sample available mod");
         let (provider, id) = (mods[available].provider, mods[available].id.clone());
-        assert!(mark_mod_installing(&mut mods, provider, &id));
+        let game = mods_game(&mods, &id);
+        assert!(mark_mod_installing(&mut mods, game, provider, &id));
         assert_eq!(mods[available].status, ModStatus::Installing);
     }
 }

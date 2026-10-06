@@ -4,7 +4,7 @@
 - owner-paths: reclaw-install/**, reclaw-app/src/host/install/**, reclaw-ui/src/settings/location.rs, reclaw-ui/src/catalog_data.rs, reclaw-ui/src/desktop/dialogs/install.rs, reclaw-ui/src/components/install_dialog.rs, reclaw-ui/src/deck/pages/install.rs, reclaw-ui/src/deck/state/install.rs, reclaw-ui/src/deck/app/text_boxes.rs
 
 What pressing Install does, from the form to a folder on disk, and what Update, Uninstall, Verify, Check for updates and Open folder do.
-Rules are Quiver's (read from its source, not run) unless the text says otherwise. Decision records: ADR 0017, ADR 0018.
+Rules are Quiver's (read from its source, not run) unless the text says otherwise. Decision records: ADR 0017, ADR 0018, ADR 0019 (`filesToAdd`).
 
 ## The form
 
@@ -65,6 +65,9 @@ without a restart; an install that is running keeps showing as running.
 8. No program: the install fails (`NoProgram`) and the folder stays marked incomplete. Otherwise `version.txt` (the release tag) is
    written **last** and the marker removed. The staging folder and the download are deleted; after a failure or a cancel the download
    is kept for the next try.
+9. The catalog's `filesToAdd` (empty marker files such as `portable.txt`) are created in the folder if missing, as Quiver does after
+   every install; they are never overwritten. When the folder already held an install, the person is told that the game's earlier
+   settings stay where it kept them (for the recomps, `~/.config/<Game>`). Mods depend on this (spec: mods, ADR 0019).
 
 If the folder already holds a finished install of exactly the release that would be installed, nothing is downloaded and the user is
 told it is up to date. A failed first install leaves the app marked *Failed* until the next try; a failed or cancelled update leaves

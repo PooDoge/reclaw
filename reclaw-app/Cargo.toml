@@ -32,6 +32,7 @@ reclaw-input = { path = "../reclaw-input" }
 reclaw-install = { path = "../reclaw-install" }
 reclaw-log = { path = "../reclaw-log" }
 reclaw-media = { path = "../reclaw-media" }
+reclaw-mods = { path = "../reclaw-mods" }
 reclaw-net = { path = "../reclaw-net" }
 reclaw-runtime = { path = "../reclaw-runtime" }
 reclaw-sync = { path = "../reclaw-sync" }

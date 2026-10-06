@@ -1,7 +1,7 @@
 //! The part of the program that does what the screens ask: loading the catalog (in the background, so the window never waits for the
-//! network), keeping the library file and the access tokens, opening links and folders, writing the diagnostics report, and saying
-//! plainly when something is not built yet. It owns no windows; it answers [`Effect`]s and sends [`AppAction`]s back through a
-//! [`Sink`], so all of it is tested without a window.
+//! network), keeping the library file and the access tokens, opening links and folders, writing the diagnostics report, and the
+//! games' mods. It owns no windows; it answers [`Effect`]s and sends [`AppAction`]s back through a [`Sink`], so all of it is
+//! tested without a window.
 //!
 //! * this file: [`Host`], [`HostConfig`], the catalog refresh and the library
 //! * `credentials`: saving, checking and removing access tokens, and telling the screens what each service allows
@@ -9,6 +9,7 @@
 //! * `update`: updating a development copy from the git checkout it was built from
 //! * `install`: installing, updating, uninstalling and checking apps (one thread per job, reported as activity)
 //! * `launch`: starting and stopping apps, through a Windows runner when needed, and following how they end
+//! * `mods`: listing, installing, updating and removing the mods of installed games
 use std::{
     path::PathBuf,
     sync::{
@@ -38,6 +39,7 @@ use crate::browse;
 mod credentials;
 mod install;
 mod launch;
+mod mods;
 mod report;
 mod update;
 
@@ -89,6 +91,8 @@ pub struct HostConfig {
     pub api: Option<Api>,
     /// The platform to install builds for. `None`: the one this program was built for.
     pub platform: Option<Platform>,
+    /// Other mod sites than Thunderstore and GameBanana (a test's own server).
+    pub mod_sites: Option<reclaw_mods::ModSites>,
 }
 
 impl HostConfig {
@@ -111,6 +115,7 @@ impl HostConfig {
             probe: None,
             api: None,
             platform: None,
+            mod_sites: None,
         }
     }
 }
@@ -123,6 +128,8 @@ pub struct Initial {
     pub credentials: CredentialsStatus,
     /// Things to tell the user once the window is up (the library could not be read, ...).
     pub notices: Vec<Notice>,
+    /// The installed mods, from the game folders (the sites are asked once the catalog is refreshed).
+    pub mods: Vec<reclaw_ui::model::ModEntry>,
 }
 
 struct State {
@@ -150,6 +157,7 @@ struct Inner {
     logs_dir: Option<PathBuf>,
     logging: Option<Arc<Logging>>,
     installs: install::Installs,
+    mods: mods::Mods,
     runs: launch::Runs,
     protected: Vec<PathBuf>,
 }
@@ -197,6 +205,7 @@ impl Host {
             probe,
             api,
             platform,
+            mod_sites,
         } = config;
         let store = LibraryStore::new(library_file);
         let mut notices = Vec::new();
@@ -229,9 +238,11 @@ impl Host {
         let default_location =
             default_location.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()).unwrap_or_else(|| FALLBACK_LOCATION.to_string());
         let platform = platform.unwrap_or_else(Platform::detect);
+        let downloads_dir = downloads_dir.unwrap_or_else(|| std::env::temp_dir().join("reclaw-downloads"));
+        let mods = mods::Mods::new(net.as_ref(), mod_sites, downloads_dir.join("mods"));
         let installer = net.clone().map(|net| {
             let source = ReleaseSource::new(net.clone()).with_api(api.unwrap_or_default());
-            Installer::new(net, source, downloads_dir.unwrap_or_else(|| std::env::temp_dir().join("reclaw-downloads")))
+            Installer::new(net, source, downloads_dir)
         });
         let installs = scan_installs(&library, &default_location, home.as_deref());
         let (supervisor, session_events) = reclaw_runtime::Supervisor::new(grace.unwrap_or(launch::STOP_GRACE));
@@ -251,6 +262,7 @@ impl Host {
                 logs_dir,
                 logging,
                 installs: install::Installs::new(installer, platform, home.clone()),
+                mods,
                 runs: {
                     let runs = launch::Runs::new(supervisor, home.as_deref());
                     match probe {
@@ -275,7 +287,8 @@ impl Host {
             gitlab = ?credentials.gitlab.source,
             "host opened"
         );
-        (host, Initial { loaded, status, credentials, notices })
+        let mods = host.mod_entries();
+        (host, Initial { loaded, status, credentials, notices, mods })
     }
 
     fn state(&self) -> MutexGuard<'_, State> {
@@ -382,6 +395,8 @@ impl Host {
                 self.send(AppAction::SetProjects(loaded.projects));
                 self.send(AppAction::SetGames(loaded.games));
                 self.send(AppAction::Catalog(status.clone()));
+                // The catalog says which games take mods and where their mods are listed.
+                self.refresh_mods(false);
                 if status.stale || !status.problems.is_empty() {
                     let title =
                         if status.stale { "Showing a saved copy of the catalog" } else { "Part of the catalog could not be loaded" };
@@ -461,22 +476,12 @@ impl Host {
             Effect::Stop(app) => self.stop(*app),
             // Bringing a running app forward is the window system's business (and the pad's, which the shell has already given it).
             Effect::Resume(app) => tracing::debug!(app, "Resume: the app already has the screen"),
-            Effect::InstallMod { .. } | Effect::RemoveMod { .. } => self.not_yet("Installing mods", None),
+            Effect::InstallMod { game, provider, id } => self.install_mod(*game, *provider, id),
+            Effect::RemoveMod { game, provider, id } => self.remove_mod(*game, *provider, id),
+            Effect::RefreshMods => self.refresh_mods(true),
             // The rest is the shell's (pages, the window, settings, text boxes) or the gamepad's.
             _ => {}
         }
-    }
-
-    fn not_yet(&self, what: &str, title: Option<&str>) {
-        let body = match title {
-            Some(title) => format!("{what} is not available yet; {title} is in your library"),
-            None => format!("{what} is not available yet"),
-        };
-        self.tell(Notice::note(
-            &format!("{what} is not built yet"),
-            &body,
-            vec!["It is the next milestone: see docs/quiver-parity.md.".to_string()],
-        ));
     }
 
     fn title_of(&self, id: u32) -> Option<String> {

@@ -260,3 +260,14 @@ fn programs_are_made_executable_and_nothing_else_is() {
     assert_eq!(mode(&program), 0o755);
     assert_eq!(mode(&data) & 0o111, 0);
 }
+
+#[test]
+fn marker_files_are_created_once_and_never_overwritten() {
+    let dir = tempfile::tempdir().expect("dir");
+    fs::write(dir.path().join("keep.cfg"), "mine").expect("write");
+    let names = vec!["portable.txt".to_string(), "keep.cfg".to_string(), "../out.txt".to_string(), " ".to_string()];
+    assert_eq!(add_marker_files(dir.path(), &names).expect("adds"), vec!["portable.txt".to_string()]);
+    assert_eq!(fs::read_to_string(dir.path().join("keep.cfg")).expect("read"), "mine");
+    assert!(!dir.path().parent().expect("parent").join("out.txt").exists());
+    assert!(add_marker_files(dir.path(), &names).expect("again").is_empty(), "already there");
+}

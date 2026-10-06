@@ -38,7 +38,7 @@ pub fn mods(any_known: bool) -> EmptyText {
     if any_known {
         say("No mods match", "Try another site or a different search.")
     } else {
-        say("No mods to show yet", "Mod listings from Thunderstore and GameBanana are not built yet.")
+        say("No mods to show yet", "Install a game that has mods and its mods from Thunderstore and GameBanana appear here.")
     }
 }
 
@@ -73,8 +73,8 @@ mod tests {
     }
 
     #[test]
-    fn mods_say_when_nothing_has_been_built_to_list_them() {
-        assert!(mods(false).text.contains("not built yet"));
+    fn mods_say_where_they_come_from() {
+        assert!(mods(false).text.contains("Install a game that has mods"));
         assert_eq!(mods(true).title, "No mods match");
     }
 }

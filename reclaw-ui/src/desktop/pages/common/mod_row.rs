@@ -40,16 +40,36 @@ pub fn mod_action(status: ModStatus) -> (&'static str, bool) {
         ModStatus::Available => ("Install", true),
         ModStatus::Installing => ("Installing", false),
         ModStatus::Installed => ("Remove", true),
+        ModStatus::UpdateReady => ("Update", true),
+    }
+}
+
+/// The icon beside that label: the button removes an installed mod, so it shows what pressing does, not the state.
+pub fn mod_icon(status: ModStatus) -> IconName {
+    match status {
+        ModStatus::Available | ModStatus::UpdateReady => IconName::Download,
+        ModStatus::Installing => IconName::Queue,
+        ModStatus::Installed => IconName::X,
     }
 }
 
 /// The host command for pressing a mod's button.
 pub fn mod_effect(entry: &ModEntry) -> Option<Effect> {
-    let (provider, id) = (entry.provider, entry.id.clone());
+    let (game, provider, id) = (entry.game_id, entry.provider, entry.id.clone());
     match entry.status {
-        ModStatus::Available => Some(Effect::InstallMod { provider, id }),
-        ModStatus::Installed => Some(Effect::RemoveMod { provider, id }),
+        ModStatus::Available | ModStatus::UpdateReady => Some(Effect::InstallMod { game, provider, id }),
+        ModStatus::Installed => Some(Effect::RemoveMod { game, provider, id }),
         ModStatus::Installing => None,
+    }
+}
+
+/// The version part of a mod's line: the newest one, or what is installed and what it would update to.
+pub fn version_text(entry: &ModEntry) -> String {
+    match (&entry.installed_version, entry.status) {
+        (Some(installed), ModStatus::UpdateReady) => format!("v{installed} \u{2192} v{}", entry.version),
+        (Some(installed), _) => format!("v{installed}"),
+        (None, _) if entry.version.is_empty() => String::new(),
+        (None, _) => format!("v{}", entry.version),
     }
 }
 
@@ -69,11 +89,7 @@ impl Component for ModRow {
 
         let button = ActionButton::new(if e.status == ModStatus::Installed { ButtonVariant::Secondary } else { ButtonVariant::Primary })
             .label(label)
-            .icon(match e.status {
-                ModStatus::Available => IconName::Download,
-                ModStatus::Installing => IconName::Queue,
-                ModStatus::Installed => IconName::Check,
-            })
+            .icon(mod_icon(e.status))
             .enabled(enabled)
             .on_press(move |ev: Event<PressEventData>| {
                 // The button sits inside the pressable row; it must not also open the page.
@@ -105,13 +121,16 @@ impl Component for ModRow {
                     .child(
                         TypeStyle::Meta
                             .text(
-                                format!(
-                                    "{} · {} · v{} · {} downloads",
-                                    e.author,
-                                    e.provider.label(),
-                                    e.version,
-                                    compact_count(e.downloads)
-                                ),
+                                [
+                                    e.author.clone(),
+                                    e.provider.label().to_string(),
+                                    version_text(e),
+                                    format!("{} downloads", compact_count(e.downloads)),
+                                ]
+                                .into_iter()
+                                .filter(|part| !part.is_empty())
+                                .collect::<Vec<_>>()
+                                .join(" · "),
                                 t.ink_subtle,
                             )
                             .max_lines(1)
@@ -140,12 +159,27 @@ mod tests {
     fn the_button_matches_the_mod_state() {
         let mods = sample_mods();
         let by = |status| mods.iter().find(|m| m.status == status).expect("sample mod");
+        let available = by(ModStatus::Available);
         assert_eq!(
-            mod_effect(by(ModStatus::Available)),
-            Some(Effect::InstallMod { provider: by(ModStatus::Available).provider, id: by(ModStatus::Available).id.clone() })
+            mod_effect(available),
+            Some(Effect::InstallMod { game: available.game_id, provider: available.provider, id: available.id.clone() })
         );
         assert!(matches!(mod_effect(by(ModStatus::Installed)), Some(Effect::RemoveMod { .. })));
         assert_eq!(mod_effect(by(ModStatus::Installing)), None);
         assert_eq!(mod_action(ModStatus::Installing), ("Installing", false));
+        let update = ModEntry { status: ModStatus::UpdateReady, installed_version: Some("1.0.0".into()), ..available.clone() };
+        assert!(matches!(mod_effect(&update), Some(Effect::InstallMod { .. })), "Update installs the newer version");
+        assert_eq!(mod_action(ModStatus::UpdateReady), ("Update", true));
+    }
+
+    #[test]
+    fn the_version_says_what_an_update_would_change() {
+        let mods = sample_mods();
+        let base = mods.iter().find(|m| m.status == ModStatus::Available).expect("sample mod").clone();
+        assert_eq!(version_text(&base), format!("v{}", base.version));
+        let update =
+            ModEntry { status: ModStatus::UpdateReady, installed_version: Some("1.0.0".into()), version: "1.1.0".into(), ..base.clone() };
+        assert_eq!(version_text(&update), "v1.0.0 \u{2192} v1.1.0");
+        assert_eq!(version_text(&ModEntry { version: String::new(), ..base }), "");
     }
 }

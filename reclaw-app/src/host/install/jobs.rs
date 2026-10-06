@@ -24,6 +24,8 @@ struct Spec {
     cancel: Cancel,
     /// The version installed before this job, if any.
     previous: Option<String>,
+    /// The catalog's `filesToAdd`, created once the install is in place.
+    markers: Vec<String>,
 }
 
 /// How a job ended.
@@ -119,6 +121,7 @@ impl Host {
             request,
             cancel,
             previous: installed_version,
+            markers: entry.files_to_add.clone(),
         };
         self.set_install_state(&spec.key, Some(InstallState::Installing));
         self.send(AppAction::Activity(ActivityEvent::Started {
@@ -199,6 +202,7 @@ impl Host {
         match end {
             End::Done(done) => {
                 tracing::info!(app = spec.app, version = %done.version, folder = %shown(&done.folder), "install finished");
+                self.add_markers(&spec.title, &done.folder, &spec.markers, spec.previous.is_some());
                 self.set_install_state(&spec.key, Some(InstallState::Installed { version: done.version.clone(), latest: None }));
                 let changelog = (spec.kind == Kind::Update).then(|| Changelog {
                     from: spec.previous.clone().unwrap_or_default(),
@@ -207,6 +211,8 @@ impl Host {
                     url: (!done.page.is_empty()).then(|| done.page.clone()),
                 });
                 self.send(AppAction::Activity(ActivityEvent::Finished { id, changelog }));
+                // A game that takes mods now has a folder to put them in.
+                self.refresh_mods(false);
             }
             End::Current(version) => {
                 self.set_install_state(&spec.key, Some(InstallState::Installed { version: version.clone(), latest: None }));

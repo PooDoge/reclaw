@@ -82,6 +82,10 @@ pub fn sample_projects() -> Vec<reclaw_games::project::ProjectInfo> {
     reclaw_games::fixtures::sample_projects()
 }
 
+fn status_is_installed(status: ModStatus) -> bool {
+    status.is_installed()
+}
+
 pub fn sample_mods() -> Vec<ModEntry> {
     let mod_ = |provider, id: &str, game_id, title: &str, author: &str, summary: &str, version: &str, downloads, status| ModEntry {
         provider,
@@ -91,9 +95,12 @@ pub fn sample_mods() -> Vec<ModEntry> {
         author: author.into(),
         summary: summary.into(),
         version: version.into(),
+        installed_version: status_is_installed(status).then(|| version.into()),
         downloads,
         tags: vec![],
         status,
+        icon: None,
+        page_url: Some(format!("https://example.invalid/mods/{id}")),
     };
     vec![
         mod_(

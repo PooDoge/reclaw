@@ -106,6 +106,29 @@ pub fn merge_into(from: &Path, to: &Path) -> Result<(), InstallError> {
     Ok(())
 }
 
+/// Create the empty files a catalog entry asks to have beside the app (`filesToAdd`; `portable.txt` makes the recomps keep their
+/// settings, saves and mods in their own folder). Ones already there are left alone, whatever is in them. Returns the names that
+/// were created. A name that is not one plain file name is skipped (the catalog has already refused those).
+pub fn add_marker_files(folder: &Path, names: &[String]) -> Result<Vec<String>, InstallError> {
+    let mut created = Vec::new();
+    for name in names.iter().map(|n| n.trim()) {
+        let plain = !name.is_empty()
+            && Path::new(name).components().count() == 1
+            && matches!(Path::new(name).components().next(), Some(Component::Normal(_)));
+        if !plain {
+            tracing::warn!(name, "a file to add is not a plain file name; skipped");
+            continue;
+        }
+        let path = folder.join(name);
+        match fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(_) => created.push(name.to_string()),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(io_error("creating", &path, &error)),
+        }
+    }
+    Ok(created)
+}
+
 /// The version recorded in a folder, if it holds a finished install.
 pub fn installed_version(folder: &Path) -> Option<String> {
     if folder.join(INCOMPLETE_FILE).exists() {

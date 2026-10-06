@@ -21,13 +21,14 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-log` | The log file, its redaction of credentials, the panic hook, the `Secret` type; no dependency on the rest (spec: logging) | no |
 | `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, access tokens that can change and be checked, `probe` (specs: network, credentials) | no |
 | `reclaw-install` | Which release and which file fit this machine (Quiver's rules, ported), fetching releases from GitHub and GitLab, unpacking zip / tar.gz / tar.xz / 7z safely, the install itself (stage, lay over the folder, write the version last), uninstall with its refusals (spec: install) | no |
+| `reclaw-mods` | Mods from Thunderstore and GameBanana: listing, the install (dependencies first, staged, never over another mod's files), removal, and Quiver's `.quiver-mods.json` record (spec: mods) | no |
 | `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock | no |
 | `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save; the access tokens in their own private file | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
-| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and the tokens, runs installs, updates, uninstalls and launches, writes the diagnostics report, updates from source, and answers the screens' requests; `main` starts the log and the window | yes |
+| `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and the tokens, runs installs, updates, uninstalls, launches and mod jobs, writes the diagnostics report, updates from source, and answers the screens' requests; `main` starts the log and the window | yes |
 | `reclaw-ui` | Everything you see: tokens, components, the surface system, both interfaces, the store, the router, the window frame, the `Shell` | yes |
 
-Eleven crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
+Twelve crates never import Freya, so their tests run without a window or a GPU. `reclaw-ui` depends on the others, never the reverse.
 
 ## Inside `reclaw-ui/src`
 
@@ -189,7 +190,8 @@ and the media hub); the shell's own effects are handled inside it.
 
 * Deck's Catalog and Mods pages, and the README on Deck.
 * Drawing mermaid diagrams (they show as source), a cache size and "clear cache" in Settings.
-* Mods (Thunderstore, GameBanana): the provider APIs have not been checked against the live services.
+* Mods: checked against a fake site only (the real Thunderstore and GameBanana were out of reach); no enable / disable, no chooser for a
+  GameBanana mod with several files, no Deck page.
 * Background update passes and auto-update (an explicit Check for updates exists), a chooser when several builds fit, choosing
   which program to start when there are several, a Windows-runner picker (the library's `linuxRunner` fields are honoured), a
   desktop or Steam shortcut, Flatpak bundles. `docs/quiver-parity.md` has the plan.
