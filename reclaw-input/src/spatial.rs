@@ -1,7 +1,8 @@
 use crate::action::Direction;
 
+/// A focus target. 64 bits so an id can carry a whole 32-bit app id beside its kind tag.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
-pub struct FocusId(pub u32);
+pub struct FocusId(pub u64);
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Rect {
@@ -76,7 +77,7 @@ fn gap(a_start: f32, a_len: f32, b_start: f32, b_len: f32) -> f32 {
 mod tests {
     use super::*;
 
-    fn node(id: u32, x: f32, y: f32, w: f32, h: f32) -> FocusNode {
+    fn node(id: u64, x: f32, y: f32, w: f32, h: f32) -> FocusNode {
         FocusNode { id: FocusId(id), rect: Rect::new(x, y, w, h) }
     }
 

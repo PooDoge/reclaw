@@ -8,7 +8,7 @@ use reclaw_ui::{deck::TextField, effect::Effect, fixtures::sample_games};
 /// Home -> Dino Rush (not installed) -> its game page -> Install page. Home's first row is
 /// Starfall, Skyward Quest, Tide Racer; Down reaches the All apps shelf, where Dino Rush is fourth.
 fn open_install(s: &mut Session) {
-    s.presses(&[ArrowDown, ArrowRight, ArrowRight, ArrowRight, Enter, Enter]);
+    s.presses(&[ArrowDown, ArrowRight, Enter, Enter]); // Dino Rush, second on "Not installed"
 }
 
 fn open_settings(s: &mut Session) {

@@ -29,6 +29,12 @@ pub struct SettingsShown {
 pub struct Frame {
     pub state: DeckState,
     pub games: Vec<GameEntry>,
+    /// Every catalog project, as its library entry when the user has added it.
+    pub catalog: Vec<GameEntry>,
+    /// Whether the catalog has loaded, for what its tab says while it is empty.
+    pub catalog_status: crate::store::CatalogStatus,
+    /// How many projects the catalog lists (before any filtering).
+    pub projects: usize,
     pub downloads: Vec<Activity>,
     /// What the Quick access panel lists as pages to jump back to, by title.
     pub recents: Vec<String>,
@@ -62,7 +68,8 @@ pub struct Frame {
 }
 
 impl Frame {
+    /// A game by id: the library's entry, or the catalog's for a project the user has not added.
     pub fn game(&self, id: u32) -> Option<&GameEntry> {
-        self.games.iter().find(|g| g.id == id)
+        self.games.iter().find(|g| g.id == id).or_else(|| self.catalog.iter().find(|g| g.id == id))
     }
 }

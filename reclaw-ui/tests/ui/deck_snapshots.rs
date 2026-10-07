@@ -3,7 +3,7 @@
 use crate::common::*;
 use reclaw_input::{Action::*, ControllerInfo, Direction::*};
 use reclaw_runtime::{Outcome, RunState};
-use reclaw_ui::fixtures::sample_games;
+use reclaw_ui::{fixtures::sample_games, nav::Route};
 
 fn shot(name: &str, mount: Mount) {
     mount.start().snapshot(&format!("deck-{name}"));
@@ -28,7 +28,11 @@ fn deck_with_a_running_app() {
 fn deck_overlays_and_pages() {
     shot("main-menu", Mount::deck().script([MainMenu, Navigate(Down)]));
     shot("game-installed", Mount::deck().script([Confirm]));
-    shot("downloads", Mount::deck().script([NextSection, NextSection]));
+    Mount::deck().start_at(Route::Downloads {}).snapshot("deck-downloads");
+    // A script's effects are dropped, so the router is moved by starting there.
+    Mount::deck().start_at(Route::Catalog {}).snapshot("deck-catalog");
+    Mount::deck().script([Navigate(Down)]).start_at(Route::Catalog {}).snapshot("deck-catalog-second-shelf");
+    Mount::deck().projects(Vec::new()).start_at(Route::Catalog {}).snapshot("deck-catalog-loading");
     shot("quick-access-idle", Mount::deck().pad(None).script([QuickAccess]));
 }
 

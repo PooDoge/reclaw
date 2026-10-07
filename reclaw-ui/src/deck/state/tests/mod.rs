@@ -1,4 +1,5 @@
 //! Tests of the Deck reducer, grouped by what they exercise. Shared fixtures are in `support`.
+mod catalog;
 mod lifecycle;
 mod navigation;
 mod notices;

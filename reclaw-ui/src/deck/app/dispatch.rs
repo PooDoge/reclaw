@@ -8,6 +8,7 @@ use reclaw_input::{Action, Button};
 
 use super::{key_holds::KeyHolds, text_boxes::TextBoxes};
 use crate::{
+    catalog::catalog_entries,
     deck::{
         DeckState, DeckView, Effect, InstallDraft, LastInput, Screen,
         settings::{SettingsTarget, TextField},
@@ -41,12 +42,15 @@ impl Dispatcher {
             self.store.with(|s| {
                 let queue: Vec<_> = s.activity.queue().into_iter().cloned().collect();
                 let launch = LaunchContext { env: &s.display, projects: &s.projects, prefs: &s.launch };
+                let sort = Sort::from_settings(&s.settings);
+                let catalog = catalog_entries(&s.games, &s.projects, None, "", sort);
                 let view = DeckView {
                     games: &s.games,
+                    catalog: &catalog,
                     downloads: &queue,
                     launch: Some(launch),
                     notices: Some(&s.notices),
-                    sort: Sort::from_settings(&s.settings),
+                    sort,
                     recents: &recents,
                 };
                 let mut state = deck.write();

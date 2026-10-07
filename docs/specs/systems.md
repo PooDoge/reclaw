@@ -1,6 +1,6 @@
 # Systems: the console a game came from
 
-- last-verified: 2026-10-04
+- last-verified: 2026-10-07
 - owner-paths: reclaw-games/src/platform.rs, reclaw-ui/src/systems.rs, reclaw-ui/src/components/system_badge.rs, reclaw-ui/tests/ui/systems.rs
 
 Every game is a recompilation of a game from some system. Reclaw shows which, and lets the user narrow and order lists by it.
@@ -25,7 +25,9 @@ game runs today (`pc`, `mobile`); ties go to the tag listed first. `Platform::fr
   a *Sort* chip chooses the order. The hero shows the first game that passes the filters. The Catalog's system chips are in system order.
 * **Sort** is one setting, Library > *Sort games by*, shared by the Library, the Catalog and Deck mode: **Added** (the order the games
   joined; the default, so nothing reorders on its own), **Title**, or **System** (grouped, oldest first, A to Z within a system).
-* **Deck Home:** sorted by system, *All apps* becomes one shelf per system titled with the system's name.
+* **Deck Library:** *Continue* (installed or running) over *Not installed*; a game is on one shelf only, and an empty shelf is left
+  out. Sorted by system, *Not installed* becomes one shelf per system titled with the system's name.
+* **Deck Catalog:** always one shelf per system, system order, A to Z within a system.
 
 ## Where the logic is
 

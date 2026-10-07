@@ -85,6 +85,7 @@ fn a_game_that_disappears_sends_the_router_home() {
     let mut s = f.state();
     press(&mut s, &f, &[Confirm]);
     f.games.retain(|g| g.id != 1);
+    f.catalog.retain(|g| g.id != 1);
     let fx = s.sync(&f.view());
     assert!(fx.contains(&Effect::Navigate(Route::Library {})), "{fx:?}");
 }

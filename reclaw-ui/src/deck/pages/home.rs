@@ -5,16 +5,19 @@ use reclaw_input::FocusId;
 
 use crate::{
     activity::Indicator,
-    deck::{DeckView, NowPlayingBanner, Shelf, ShelfSpec, ids, shelf_top, shelves},
+    deck::{DeckView, NowPlayingBanner, Section, Shelf, ShelfSpec, ids, shelf_top, shelves_of},
     prelude::*,
     systems::Sort,
 };
 
-/// Library home: Now Playing banner (when an app is active) over the "Continue" and "All apps"
-/// shelves. The page snaps vertically to the focused shelf, like Big Picture.
+/// A tab of shelves. The Library: Now Playing banner (when an app is active) over the "Continue" and
+/// "Not installed" shelves. The Catalog: a shelf per system. The page snaps vertically to the focused
+/// shelf, like Big Picture.
 #[derive(Clone, PartialEq)]
 pub struct HomePage {
+    section: Section,
     games: Vec<GameEntry>,
+    catalog: Vec<GameEntry>,
     indicators: Rc<HashMap<u32, Indicator>>,
     sort: Sort,
     focus: FocusId,
@@ -32,7 +35,24 @@ impl HomePage {
         viewport_w: f32,
         on_click: EventHandler<FocusId>,
     ) -> Self {
-        Self { games, indicators, sort: Sort::default(), focus, ring_visible, viewport_w, on_click }
+        Self {
+            section: Section::Library,
+            games,
+            catalog: Vec::new(),
+            indicators,
+            sort: Sort::default(),
+            focus,
+            ring_visible,
+            viewport_w,
+            on_click,
+        }
+    }
+
+    /// Show the Catalog tab's shelves, drawn from `catalog`, instead of the Library's.
+    pub fn catalog(mut self, catalog: Vec<GameEntry>) -> Self {
+        self.section = Section::Catalog;
+        self.catalog = catalog;
+        self
     }
 
     /// How the shelves are ordered; by system there is one per system.
@@ -44,10 +64,18 @@ impl HomePage {
 
 impl Component for HomePage {
     fn render(&self) -> impl IntoElement {
-        let view = DeckView { games: &self.games, downloads: &[], launch: None, notices: None, sort: self.sort, recents: &[] };
-        let active = view.active_game().cloned();
+        let view = DeckView {
+            games: &self.games,
+            catalog: &self.catalog,
+            downloads: &[],
+            launch: None,
+            notices: None,
+            sort: self.sort,
+            recents: &[],
+        };
+        let active = view.active_game().filter(|_| self.section == Section::Library).cloned();
         let banner = active.is_some();
-        let specs: Vec<ShelfSpec> = shelves(&view);
+        let specs: Vec<ShelfSpec> = shelves_of(&view, self.section);
 
         let focused_shelf = ids::tile_shelf(self.focus);
         let offset_y = match focused_shelf {
@@ -56,7 +84,7 @@ impl Component for HomePage {
         };
 
         let shelf_elements = specs.iter().enumerate().map(|(i, spec)| {
-            let games: Vec<GameEntry> = spec.games.iter().filter_map(|id| self.games.iter().find(|g| g.id == *id).cloned()).collect();
+            let games: Vec<GameEntry> = spec.games.iter().filter_map(|id| view.game(*id).cloned()).collect();
             Shelf::new(spec.title, i, games, self.focus, self.ring_visible, self.viewport_w, self.on_click.clone())
                 .indicators(self.indicators.clone())
                 .key(i)

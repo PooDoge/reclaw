@@ -22,6 +22,7 @@ pub(super) fn running() -> RunState {
 /// The sample library and queue, with helpers to build a view and change an app's run state.
 pub(super) struct Fixture {
     pub games: Vec<GameEntry>,
+    pub catalog: Vec<GameEntry>,
     pub downloads: Vec<Activity>,
     pub projects: Vec<ProjectInfo>,
     pub env: DisplayEnvironment,
@@ -32,10 +33,13 @@ pub(super) struct Fixture {
 
 impl Fixture {
     pub fn new() -> Self {
+        let (games, projects) = (sample_games(), sample_projects());
+        let catalog = crate::catalog::catalog_entries(&games, &projects, None, "", crate::systems::Sort::default());
         Self {
-            games: sample_games(),
+            games,
+            catalog,
             downloads: sample_activity().queue().into_iter().cloned().collect(),
-            projects: sample_projects(),
+            projects,
             env: DisplayEnvironment::unknown(),
             launch: LaunchPrefs::default(),
             notices: Notices::default(),
@@ -46,6 +50,7 @@ impl Fixture {
     pub fn view(&self) -> DeckView<'_> {
         DeckView {
             games: &self.games,
+            catalog: &self.catalog,
             downloads: &self.downloads,
             launch: Some(LaunchContext { env: &self.env, projects: &self.projects, prefs: &self.launch }),
             notices: Some(&self.notices),

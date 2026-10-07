@@ -15,8 +15,8 @@ fn moves_along_a_shelf_and_down_to_the_next() {
     press(&mut s, &f, &[go(Right)]);
     assert_eq!(s.focus(), tile(0, 2));
     press(&mut s, &f, &[go(Down)]);
-    // The "All apps" shelf lists games 1..6 in order, so game 2 is directly underneath.
-    assert_eq!((ids::tile_shelf(s.focus()), ids::tile_game(s.focus())), (Some(1), Some(2)));
+    // Continue holds 1, 2 and 6; "Not installed" holds 3, 4 and 5, so under the second tile is game 4.
+    assert_eq!((ids::tile_shelf(s.focus()), ids::tile_game(s.focus())), (Some(1), Some(4)));
     press(&mut s, &f, &[go(Up)]);
     assert_eq!(s.focus(), tile(0, 2));
 }
@@ -90,6 +90,17 @@ fn a_page_for_a_vanished_app_falls_back_home() {
     press(&mut s, &f, &[Confirm]);
     assert_eq!(s.screen(), Screen::Game(1));
     f.games.clear();
+    f.catalog.clear();
     s.sync(&f.view());
     assert_eq!(s.screen(), Screen::Home);
+}
+
+#[test]
+fn a_page_for_an_app_removed_from_the_library_stays_while_the_catalog_lists_it() {
+    let mut f = Fixture::new();
+    let mut s = f.state();
+    press(&mut s, &f, &[Confirm]);
+    f.games.retain(|g| g.id != 1);
+    s.sync(&f.view());
+    assert_eq!(s.screen(), Screen::Game(1));
 }
