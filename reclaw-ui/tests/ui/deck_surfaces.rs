@@ -14,7 +14,7 @@ fn at((w, h): (f32, f32), mount: Mount) -> Mount {
 
 /// Home -> Dino Rush (not installed) -> game page -> Install.
 fn open_install() -> Vec<reclaw_input::Action> {
-    vec![Navigate(Right), Navigate(Right), Navigate(Right), Confirm, Confirm]
+    vec![Navigate(Down), Navigate(Right), Confirm, Confirm] // Dino Rush, second on "Not installed"
 }
 
 #[test]

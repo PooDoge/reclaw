@@ -15,26 +15,45 @@ fn titles(f: &Fixture, ids: &[u32]) -> Vec<String> {
 fn added_order_has_the_two_usual_shelves() {
     let f = Fixture::new();
     let specs = shelves(&f.view());
-    assert_eq!(specs.iter().map(|s| s.title).collect::<Vec<_>>(), ["Continue", "All apps"]);
+    assert_eq!(specs.iter().map(|s| s.title).collect::<Vec<_>>(), ["Continue", "Not installed"]);
 }
 
 #[test]
-fn by_system_all_apps_becomes_a_shelf_per_system_oldest_first() {
+fn a_game_is_on_one_library_shelf_only() {
+    let f = Fixture::new();
+    for sort in [Sort::default(), Sort::Title, Sort::System] {
+        let view = DeckView { sort, ..f.view() };
+        let mut all: Vec<u32> = shelves(&view).into_iter().flat_map(|s| s.games).collect();
+        all.sort();
+        assert_eq!(all, [1, 2, 3, 4, 5, 6], "{sort:?}: every game once");
+    }
+}
+
+#[test]
+fn a_library_with_everything_installed_has_only_continue() {
+    let mut f = Fixture::new();
+    f.games.iter_mut().for_each(|g| g.status = crate::model::AppStatus::Installed);
+    let specs = shelves(&f.view());
+    assert_eq!(specs.iter().map(|s| s.title).collect::<Vec<_>>(), ["Continue"]);
+}
+
+#[test]
+fn by_system_not_installed_becomes_a_shelf_per_system_oldest_first() {
     let f = Fixture::new();
     let view = DeckView { sort: Sort::System, ..f.view() };
     let specs = shelves(&view);
     assert_eq!(specs.iter().map(|s| s.title).collect::<Vec<_>>(), ["Continue", "Nintendo 64", "Game Boy Advance", "PlayStation 2"]);
     let n64 = specs.iter().find(|s| s.title == "Nintendo 64").expect("shelf");
-    assert_eq!(titles(&f, &n64.games), ["Kart Ruins", "Skyward Quest", "Starfall 64", "Tide Racer"], "alphabetical within a system");
+    assert_eq!(titles(&f, &n64.games), ["Kart Ruins"], "the installed N64 games are on Continue");
 }
 
 #[test]
-fn by_title_keeps_one_all_apps_shelf_in_alphabetical_order() {
+fn by_title_keeps_one_not_installed_shelf_in_alphabetical_order() {
     let f = Fixture::new();
     let view = DeckView { sort: Sort::Title, ..f.view() };
     let specs = shelves(&view);
-    let all = specs.iter().find(|s| s.title == "All apps").expect("shelf");
-    assert_eq!(titles(&f, &all.games).first().map(String::as_str), Some("Dino Rush"));
+    let rest = specs.iter().find(|s| s.title == "Not installed").expect("shelf");
+    assert_eq!(titles(&f, &rest.games), ["Dino Rush", "Kart Ruins", "Moon Garden"]);
 }
 
 #[test]

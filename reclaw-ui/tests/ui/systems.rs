@@ -80,10 +80,10 @@ fn the_catalog_offers_system_chips_in_system_order() {
 #[test]
 fn deck_home_splits_into_a_shelf_per_system_when_sorted_by_system() {
     let mut s = Mount::deck().start();
-    assert!(s.has_label("All apps") && !s.has_label("Nintendo 64"), "{:?}", s.labels());
+    assert!(s.has_label("Not installed") && !s.has_label("Nintendo 64"), "{:?}", s.labels());
     s.dispatch(AppAction::Setting(SettingChange { app: None, key: "library_sort", value: SettingValue::Choice(2) }));
     assert!(s.has_label("Nintendo 64"), "{:?}", s.labels());
-    assert!(!s.has_label("All apps"));
+    assert!(!s.has_label("Not installed"));
     s.snapshot("deck-home-by-system");
 }
 

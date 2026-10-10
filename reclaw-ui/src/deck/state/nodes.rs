@@ -7,7 +7,7 @@ use super::{
     DeckState, DeckView, Overlay, Screen, Section, ids,
     scope::{Scope, SettingsPane},
     types::*,
-    view::{BANNER_H, shelves, tile_rect},
+    view::{BANNER_H, shelves_of, tile_rect},
 };
 use crate::{deck::shows_stop_pair, metrics::*};
 
@@ -81,14 +81,15 @@ impl DeckState {
             }
             Scope::Install(_) => self.install_nodes(),
             Scope::Settings(target, pane) => self.settings_nodes(target, pane, view),
-            Scope::Home(Section::Library) => {
-                let banner = view.active_game().is_some();
+            Scope::Home(section @ (Section::Library | Section::Catalog)) => {
+                // The Now Playing banner tops the Library only.
+                let banner = section == Section::Library && view.active_game().is_some();
                 let mut v = Vec::new();
                 if banner {
                     v.push(node(ids::BANNER_RESUME, 0., 0., 190., BANNER_H));
                     v.push(node(ids::BANNER_STOP, 206., 0., 150., BANNER_H));
                 }
-                for (s, shelf) in shelves(view).iter().enumerate() {
+                for (s, shelf) in shelves_of(view, section).iter().enumerate() {
                     for (t, game) in shelf.games.iter().enumerate() {
                         v.push(FocusNode { id: ids::tile(s, *game), rect: tile_rect(s, t, banner) });
                     }

@@ -50,7 +50,16 @@ fn chrome(f: &Frame, section: Section, game_page: Option<u32>) -> Element {
                 .into_element()
         }
         (None, Section::Downloads) => DownloadsPage::new(f.downloads.clone(), state.focus(), f.ring, f.click.clone()).into_element(),
-        (None, Section::Catalog) => EmptyPage::new("Catalog", "Community app lists will appear here.").into_element(),
+        (None, Section::Catalog) if f.catalog.is_empty() => {
+            let say = crate::empty::catalog(&f.catalog_status, f.projects);
+            EmptyPage::new(say.title, say.text).into_element()
+        }
+        (None, Section::Catalog) => {
+            HomePage::new(f.games.clone(), f.indicators.clone(), state.focus(), f.ring, w - 2. * DECK_SAFE_X, f.click.clone())
+                .sort(f.sort)
+                .catalog(f.catalog.clone())
+                .into_element()
+        }
         (None, Section::Mods) => EmptyPage::new("Mods", "Mods from Thunderstore and GameBanana will appear here.").into_element(),
     };
 

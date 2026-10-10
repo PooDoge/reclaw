@@ -32,13 +32,14 @@ pub use text_boxes::TextBoxes;
 use self::frame::SettingsShown;
 use crate::{
     activity::{Indicator, indicator_for},
+    catalog::catalog_entries,
     deck::{DeckState, DeckView, Effect, LastInput, Overlay, ids},
     nav::{RouteStage, use_nav},
     prelude::*,
     shell::use_shell,
     store::{
-        AppChannel, Store, use_activity, use_channel, use_controller, use_display, use_games, use_keyboard_inset, use_launch, use_mods,
-        use_notices, use_projects, use_settings,
+        AppChannel, Store, use_activity, use_catalog_status, use_channel, use_controller, use_display, use_games, use_keyboard_inset,
+        use_launch, use_mods, use_notices, use_projects, use_settings,
     },
     systems::Sort,
 };
@@ -68,18 +69,22 @@ impl Component for DeckApp {
         let recent_routes = nav.recents();
         let (games, activity, controller, keyboard_inset) = (use_games(), use_activity(), use_controller(), use_keyboard_inset());
         let (settings, projects, display, launch, notices) = (use_settings(), use_projects(), use_display(), use_launch(), use_notices());
+        let catalog_status = use_catalog_status();
         let credentials = crate::store::use_credentials();
         let sort = Sort::from_settings(&settings);
+        let catalog = catalog_entries(&games, &projects, None, "", sort);
         let (games_changed, activity_changed, notices_changed) =
             (use_channel(AppChannel::Games), use_channel(AppChannel::Activity), use_channel(AppChannel::Notices));
         let texts = TextBoxes::use_new();
         let root_focus = use_a11y();
 
         let deck = {
-            let (script, games, activity, route) = (self.script.clone(), games.clone(), activity.clone(), route.clone());
+            let (script, games, catalog, activity, route) =
+                (self.script.clone(), games.clone(), catalog.clone(), activity.clone(), route.clone());
             use_state(move || {
                 let queue: Vec<_> = activity.queue().into_iter().cloned().collect();
-                let view = DeckView { games: &games, downloads: &queue, launch: None, notices: None, sort, recents: &[] };
+                let view =
+                    DeckView { games: &games, catalog: &catalog, downloads: &queue, launch: None, notices: None, sort, recents: &[] };
                 let mut state = DeckState::new(&view);
                 // Entering Deck mode shows the page the app is on.
                 state.follow(&route, &view);
@@ -164,8 +169,15 @@ impl Component for DeckApp {
         let kind = pad.as_ref().map_or(ControllerKind::Generic, |c| c.kind);
         let (settings_now, reveal, toast, notice_details) = {
             let launch_ctx = crate::settings::LaunchContext { env: &display, projects: &projects, prefs: &launch };
-            let view =
-                DeckView { games: &g, downloads: &d, launch: Some(launch_ctx), notices: Some(&notices), sort, recents: &recent_routes };
+            let view = DeckView {
+                games: &g,
+                catalog: &catalog,
+                downloads: &d,
+                launch: Some(launch_ctx),
+                notices: Some(&notices),
+                sort,
+                recents: &recent_routes,
+            };
             let target = state.settings_target();
             let schema = target.and_then(|t| state.settings_schema(t, &view));
             // The text of each launch row, worked out here so the page itself needs no engine.
@@ -222,6 +234,9 @@ impl Component for DeckApp {
             reveal,
             state,
             games: g,
+            catalog,
+            catalog_status,
+            projects: projects.len(),
             downloads: d,
             pad,
             kind,

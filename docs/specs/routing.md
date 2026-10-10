@@ -1,6 +1,6 @@
 # Routing
 
-- last-verified: 2026-10-04
+- last-verified: 2026-10-07
 - owner-paths: reclaw-ui/src/nav/**, reclaw-ui/src/pages/**, reclaw-ui/src/deck/app/routes.rs, reclaw-ui/tests/ui/nav_stage.rs, reclaw-ui/tests/ui/deck_routes.rs
 
 Which page shows, how the user got there, how Back works, and how one page gives way to the next. Both interfaces use the same
@@ -34,8 +34,14 @@ sibling routes, so a transition never animates a layout around an outlet.
 * `Nav::recents()`: the pages visited lately, newest first, without the current one. Kept apart from the back stack (the router's
   history cannot be read back) and fed on every change; forms are skipped. `nav::title` names a page for a list.
 
-A route that is a Deck screen the pad cannot show (the Catalog and Mods tabs are placeholders in Deck mode) still routes; the
-reducer shows what it has.
+A route that is a Deck screen the pad cannot show (the Mods tab is a placeholder in Deck mode, and a single mod's page shows that
+tab) still routes; the reducer shows what it has. Deck's Catalog tab is a shelf per system of every catalog project; a tile opens
+the game's page whether or not the game is in the library (the page offers Install and, in Options, *Add to library*). A game page
+stays while the library or the catalog knows the game, and goes back to the tab when neither does.
+
+Deck focus ids (`deck/state/ids.rs`) carry a tile's whole game id in their high 32 bits: app ids are 32-bit hashes, and an
+encoding that packed them beside the kind tag and shelf number lost bits, so a press on a real game did nothing and one game could
+be focused on two shelves at once.
 
 ## Transitions
 

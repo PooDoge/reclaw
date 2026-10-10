@@ -70,7 +70,7 @@ fn app_ending_brings_the_launcher_back() {
 fn update_does_not_need_the_install_page() {
     let f = Fixture::new();
     let mut s = f.state();
-    s.click(tile(1, 2), &f.view()); // Skyward Quest: update ready
+    s.click(tile(0, 2), &f.view()); // Skyward Quest: update ready, so on Continue
     assert_eq!(s.apply(Confirm, &f.view()), vec![Effect::Update(2)]);
     assert!(matches!(s.screen(), Screen::Game(2)));
 }
