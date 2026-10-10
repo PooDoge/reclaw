@@ -49,6 +49,42 @@ fn the_box_opens_over_the_top_bar_and_nothing_moves() {
     s.snapshot("desktop-search-open");
 }
 
+/// The magnifier is drawn at the middle of the button's square: closed, and open (where the square is the bar's right end).
+fn assert_magnifier_centred(s: &mut Session, (cx, cy): (f64, f64), size: f32, when: &str) {
+    // The square less its border, so only the glyph is light.
+    let inset = 3.;
+    let (left, top) = (cx as f32 - size / 2. + inset, cy as f32 - size / 2. + inset);
+    let square = (left as u32, top as u32, (left + size - 2. * inset) as u32, (top + size - 2. * inset) as u32);
+    let (x, y) = s.ink_centre(square).unwrap_or_else(|| panic!("{when}: no magnifier drawn in {square:?}"));
+    assert!(
+        (x - cx as f32).abs() <= 1.5 && (y - cy as f32).abs() <= 1.5,
+        "{when}: the magnifier's middle is at ({x}, {y}), the button's at ({cx}, {cy})"
+    );
+}
+
+#[test]
+fn the_magnifier_sits_in_the_middle_of_the_button_closed_and_open() {
+    let mut s = at(1100., Route::Library {});
+    let button = wide_button(&s);
+    assert_magnifier_centred(&mut s, button, 32., "wide, closed");
+    click(&mut s, button);
+    assert_magnifier_centred(&mut s, button, 32., "wide, open");
+
+    let mut s = at(600., Route::Library {});
+    let size = 44.;
+    let button = (600. - 16. - size / 2., 16. + size / 2.);
+    assert_magnifier_centred(&mut s, button, size as f32, "phone, closed");
+    click(&mut s, button);
+    assert_magnifier_centred(&mut s, button, size as f32, "phone, open");
+
+    let mut s = at(900., Route::Library {});
+    let size = 36.;
+    let button = (900. - 16. - size / 2., 16. + size / 2.);
+    assert_magnifier_centred(&mut s, button, size as f32, "compact, closed");
+    click(&mut s, button);
+    assert_magnifier_centred(&mut s, button, size as f32, "compact, open");
+}
+
 #[test]
 fn a_sent_search_shows_results_on_the_tab_and_clear_brings_everything_back() {
     let mut s = at(1100., Route::Mods {});

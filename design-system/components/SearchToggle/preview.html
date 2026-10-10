@@ -5,6 +5,6 @@
 var R=window.Reclaw,h=React.createElement;
 function App(){return h("div",{className:"col"},
   h("div",null,h("div",{className:"cap"},"Top bar (wide): closed, between Deck mode and the edge"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.Button,{variant:"ghost",icon:"refresh"},"Recent"),h(R.Button,{variant:"ghost"},"Deck mode"),h(R.SearchToggle,{expanded:320}))),
-  h("div",null,h("div",{className:"cap"},"Open, typing; and closed with a search running (the dot)"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.SearchToggle,{open:true,value:"star",expanded:320}),h("span",{style:{width:24}}),h(R.SearchToggle,{active:true}))))}
+  h("div",null,h("div",{className:"cap"},"Open, typing; and closed with a search running (the dot)"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.SearchToggle,{open:true,pinned:true,value:"star",expanded:320}),h("span",{style:{width:24}}),h(R.SearchToggle,{active:true}))))}
 ReactDOM.createRoot(document.getElementById("r")).render(h(App));
 </script></body></html>

@@ -34,7 +34,7 @@ M = json.dumps(MODS)
 preview("SearchToggle", "Inputs", 170, "Press it: it opens to the left over what is beside it, and closes on Enter or a click away",
  '''h("div",{className:"col"},
   h("div",null,h("div",{className:"cap"},"Top bar (wide): closed, between Deck mode and the edge"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.Button,{variant:"ghost",icon:"refresh"},"Recent"),h(R.Button,{variant:"ghost"},"Deck mode"),h(R.SearchToggle,{expanded:320}))),
-  h("div",null,h("div",{className:"cap"},"Open, typing; and closed with a search running (the dot)"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.SearchToggle,{open:true,value:"star",expanded:320}),h("span",{style:{width:24}}),h(R.SearchToggle,{active:true}))))''')
+  h("div",null,h("div",{className:"cap"},"Open, typing; and closed with a search running (the dot)"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.SearchToggle,{open:true,pinned:true,value:"star",expanded:320}),h("span",{style:{width:24}}),h(R.SearchToggle,{active:true}))))''')
 readme("SearchToggle", """
 The search box of the desktop interface. Rust: `reclaw_ui::components::SearchToggle` (drawn), `reclaw_ui::desktop::DesktopSearch` (what it searches, and when it opens and closes), `reclaw_ui::search` (pure: `SearchModel`, `SearchScope`, matching, highlighting).
 

@@ -11,6 +11,14 @@ const SLIDE_MS: u64 = 240;
 /// dialogs and menus are.
 const BAR_LAYER: i16 = 1000;
 
+/// The right padding Freya's `Input` puts around its trailing element (`freya-components` 0.5.0-rc.8, `input.rs`). The magnifier
+/// is drawn this much narrower, with the icon placed from its left, so the icon sits at the centre of the last `size` of the bar:
+/// the centre of the closed square, and the same spot on screen while the bar slides open.
+const INPUT_TRAILING_PAD: f32 = 8.;
+
+/// The magnifier glyph's side.
+const GLYPH: f32 = 16.;
+
 /// A search box that is a square magnifier button until it is pressed, then slides open to the left over whatever is beside it.
 /// Its own size never changes, so nothing around it moves. The field inside is always there: pressing the button, or reaching it
 /// with Tab, focuses it, and the owner opens the box on that focus and closes it when focus goes (see `desktop::search`). While
@@ -119,9 +127,11 @@ impl Component for SearchToggle {
         let on_submit = self.on_submit.clone();
         let open = self.open;
         let magnifier = rect()
-            .width(Size::px(size))
+            .width(Size::px(size - INPUT_TRAILING_PAD))
             .height(Size::px(size))
-            .center()
+            .horizontal()
+            .cross_align(Alignment::Center)
+            .padding(Gaps::new(0., 0., 0., (size - GLYPH) / 2.))
             .a11y_role(AccessibilityRole::Button)
             .a11y_alt(if open { "Search" } else { "Open search" })
             .maybe(open, |el| {
@@ -131,7 +141,7 @@ impl Component for SearchToggle {
                     }
                 })
             })
-            .child(icon(IconName::Search, 16., if open || hovering() { t.ink } else { t.ink_muted }));
+            .child(icon(IconName::Search, GLYPH, if open || hovering() { t.ink } else { t.ink_muted }));
 
         let colors = InputColorsThemePartial {
             background: Some(CLEAR.into()),

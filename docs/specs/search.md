@@ -30,7 +30,8 @@ is chosen on the Mods tab, "Search settings".
 * **Compact and phone**: the same button floats at the page's top right (16 in from the page's edge, 16 from its top), above the page,
   on a tab page only. Open, it covers the page's width less the gutters. Each tab's header leaves room for it (`floating_search_reserve`).
 * The button's own box never changes size: the bar is absolute, anchored at the button's right edge, and grows to the left over its
-  neighbours (`Layer::Relative(1000)`, below dialogs). The width slides in 240 ms (expo out), instant with reduced motion.
+  neighbours (`Layer::Relative(1000)`, below dialogs). The magnifier stays at the middle of the button's square, closed, open
+  and while sliding: it is the bar's right end, which does not move. The width slides in 240 ms (expo out), instant with reduced motion.
 
 ## What a search shows
 

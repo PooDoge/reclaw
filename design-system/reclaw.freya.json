@@ -1434,7 +1434,8 @@
    "rules": [
     "its own box never changes size; the bar is absolute, anchored at its right edge, and slides open to the left over its neighbours",
     "painted on Layer::Relative(1000): above any page, below Layer::Overlay dialogs",
-    "focus opens it (DesktopSearch); losing focus closes it and keeps the text; Enter or the magnifier sends"
+    "focus opens it (DesktopSearch); losing focus closes it and keeps the text; Enter or the magnifier sends",
+    "the magnifier is the bar's last `size` square, so it is centred in the closed button and stays put while the bar slides; Freya's Input pads its trailing element 8 on the right, so the glyph's box is size - 8 wide with the glyph placed (size - 16) / 2 from its left"
    ],
    "note": "Searches the tab that is showing (search::SearchScope). Preview: components/SearchToggle."
   },

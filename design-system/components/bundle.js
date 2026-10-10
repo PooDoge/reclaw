@@ -426,7 +426,7 @@
     var send = function () { setQuery(value.trim()); setOpen(false); if (p.onSubmit) p.onSubmit(value.trim()); };
     return h("span", { className: cx("sr sr-slot", p.size) },
       h("span", { className: cx("sr-bar", open && "open"), style: { width: width }, onClick: function () { if (!open) setOpen(true); } },
-        h("input", { ref: input, value: value, tabIndex: open ? 0 : -1, placeholder: open ? (p.placeholder || "Search your library") : "", onChange: function (e) { setValue(e.target.value); }, onBlur: function () { setOpen(false); }, onKeyDown: function (e) { if (e.key === "Enter") send(); if (e.key === "Escape") e.target.blur(); } }),
+        h("input", { ref: input, value: value, tabIndex: open ? 0 : -1, placeholder: open ? (p.placeholder || "Search your library") : "", onChange: function (e) { setValue(e.target.value); }, onBlur: function () { if (!p.pinned) setOpen(false); }, onKeyDown: function (e) { if (e.key === "Enter") send(); if (e.key === "Escape") e.target.blur(); } }),
         h("span", { className: "sr-mag", onMouseDown: function (e) { if (open) { e.preventDefault(); send(); } } }, Svg(MAG, 16, "search"))),
       !open && query && h("span", { className: "sr-dot", title: "A search is running" }));
   }
