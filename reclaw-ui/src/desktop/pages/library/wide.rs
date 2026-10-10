@@ -25,6 +25,7 @@ pub(super) fn layout(c: &Ctx) -> Element {
         .background(t.bg_base)
         .border(Border::new().fill(t.line).width(BorderWidth { right: 1., ..Default::default() }))
         .child(chips(c))
+        .maybe_child(search_bar(c, true))
         .maybe_child(updates::section(c))
         .child(rect().padding(Gaps::new(SPACE_2, 0., 0., SPACE_1)).child(TypeStyle::Eyebrow.text("Library", t.ink_subtle)))
         .child(ScrollView::new().show_scrollbar(false).height(Size::flex(1.)).child(rect().vertical().spacing(2.).children(rows)));
@@ -34,6 +35,7 @@ pub(super) fn layout(c: &Ctx) -> Element {
                 .vertical()
                 .spacing(SPACE_5)
                 .width(Size::fill())
+                .maybe_child((c.visible.is_empty() && !c.query.is_empty()).then(|| grid_or_nothing(c, 1)))
                 .maybe_child(c.current.clone().map(|g| hero(c, g, false)))
                 .maybe_child(downloads_list(c)),
         ),

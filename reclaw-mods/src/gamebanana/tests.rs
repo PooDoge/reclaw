@@ -17,9 +17,9 @@ fn an_index_page_keeps_free_mods_only() {
         "_aMetadata": {"_nRecordCount": "120", "_bIsComplete": false},
         "_aRecords": [
             {"_idRow": 501, "_sModelName": "Mod", "_sName": "HD Textures", "_sProfileUrl": "https://gamebanana.com/mods/501", "_sVersion": "1.1",
-             "_nLikeCount": 7, "_nDownloadCount": "900", "_aSubmitter": {"_sName": "Ana"},
+             "_nLikeCount": 7, "_nDownloadCount": "900", "_aSubmitter": {"_sName": "Ana"}, "_tsDateAdded": 1700000000, "_tsDateUpdated": 1709648551,
              "_aPreviewMedia": {"_aImages": [{"_sBaseUrl": "https://images.gamebanana.com/img/ss/mods", "_sFile220": "220-90_x.jpg", "_sFile530": "530-90_x.jpg"}]}},
-            {"_idRow": "502", "_sName": "Rated", "_bHasContentRatings": true,
+            {"_idRow": "502", "_sName": "Rated", "_bHasContentRatings": true, "_tsDateModified": "1709000000",
              "_aPreviewContent": {"screenshot": {"_sBaseUrl": "https://i/", "_sFile530": "a.jpg", "_sFile530Sfw": "a-sfw.jpg"}}},
             {"_idRow": 503, "_sModelName": "Tool", "_sName": "Editor"},
             {"_idRow": 504, "_sName": "Paid", "_sPayType": "paid"},
@@ -31,6 +31,8 @@ fn an_index_page_keeps_free_mods_only() {
     let first = &page.packages[0];
     assert_eq!((first.id.as_str(), first.full_name.as_str(), first.version.as_str()), ("501", "Ana-HD Textures", "1.1"));
     assert_eq!((first.downloads, first.rating), (900, 7));
+    assert_eq!((first.created, first.updated), (Some(1_700_000_000), Some(1_709_648_551)));
+    assert_eq!((page.packages[1].created, page.packages[1].updated), (None, Some(1_709_000_000)), "modified stands in for updated");
     assert_eq!(first.icon_url.as_deref(), Some("https://images.gamebanana.com/img/ss/mods/530-90_x.jpg"));
     assert_eq!(page.packages[1].icon_url.as_deref(), Some("https://i/a-sfw.jpg"), "the safe crop of a rated mod");
     assert_eq!(page.packages[1].page_url.as_deref(), Some("https://gamebanana.com/mods/502"));

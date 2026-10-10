@@ -1389,6 +1389,108 @@
     "built": "Dialog"
    },
    "controller": "Controller: not built on Deck yet"
+  },
+  {
+   "name": "SearchToggle",
+   "freya": "rect (absolute bar) + Input",
+   "rust": {
+    "type": "SearchToggle",
+    "module": "reclaw_ui::components",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-panel",
+    "bg-raised",
+    "line",
+    "line-strong",
+    "accent",
+    "ink",
+    "ink-muted",
+    "ink-subtle",
+    "bg-nav"
+   ],
+   "radius": "4,4,4,4",
+   "size": {
+    "closed": "32 square in the top bar; 36 (pointer) or 44 (touch) floating on compact and phone",
+    "open": "320 in the top bar; the page width less gutters on a narrow window"
+   },
+   "props": {
+    "open": "bool",
+    "value": "State<String>",
+    "a11y": "AccessibilityId",
+    "placeholder": "String",
+    "expanded": "f32",
+    "size": "f32",
+    "active": "bool (dot: a search is running)",
+    "animated": "bool",
+    "on_submit": "EventHandler<String>"
+   },
+   "anim": {
+    "name": "open",
+    "ms": 240,
+    "ease": "expo-out",
+    "reduced": "instant"
+   },
+   "rules": [
+    "its own box never changes size; the bar is absolute, anchored at its right edge, and slides open to the left over its neighbours",
+    "painted on Layer::Relative(1000): above any page, below Layer::Overlay dialogs",
+    "focus opens it (DesktopSearch); losing focus closes it and keeps the text; Enter or the magnifier sends",
+    "the magnifier is the bar's last `size` square, so it is centred in the closed button and stays put while the bar slides; Freya's Input pads its trailing element 8 on the right, so the glyph's box is size - 8 wide with the glyph placed (size - 16) / 2 from its left"
+   ],
+   "note": "Searches the tab that is showing (search::SearchScope). Preview: components/SearchToggle."
+  },
+  {
+   "name": "ResultsBar",
+   "freya": "rect",
+   "rust": {
+    "type": "results_bar / no_results / highlighted",
+    "module": "reclaw_ui::desktop::pages::common",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-panel",
+    "accent",
+    "ink",
+    "ink-subtle",
+    "ink-muted"
+   ],
+   "radius": "4,4,4,4",
+   "props": {
+    "scope": "SearchScope",
+    "query": "&str",
+    "found": "usize",
+    "narrow": "bool",
+    "on_clear": "EventHandler<()>"
+   },
+   "note": "The line above a search's results with Clear search; the empty state of a search; matched words in accent. Preview: components/ResultsBar."
+  },
+  {
+   "name": "ModShelf",
+   "freya": "rect + ModRow grid",
+   "rust": {
+    "type": "shelves::{overview, opened, results}",
+    "module": "reclaw_ui::desktop::pages::mods",
+    "built": "custom"
+   },
+   "tokens": [
+    "bg-raised",
+    "accent",
+    "ink",
+    "ink-subtle",
+    "ink-muted"
+   ],
+   "props": {
+    "shelf": "mod_shelves::Shelf",
+    "mods": "Vec<ModEntry>",
+    "columns": "2 wide, 1 compact and phone",
+    "open": "Option<OpenShelf>"
+   },
+   "rules": [
+    "Installed, Most downloaded, Top rated, Recently updated, New releases; an empty shelf is left out",
+    "a shelf shows the mods its site order listed (ModRanks)",
+    "4 in the preview (3 in one column); opened: 20 a page with a pager"
+   ],
+   "note": "The Mods tab without a search. Preview: components/ModShelf."
   }
  ],
  "layout": {

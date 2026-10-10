@@ -23,6 +23,7 @@ use crate::{
     metrics::*,
     nav::{Route, use_nav},
     prelude::*,
+    search::SearchScope,
     shell::use_shell,
     store::{use_activity, use_games, use_settings},
     systems::{Sort, systems_in},
@@ -51,7 +52,7 @@ impl Component for LibraryPage {
                     .vertical()
                     .spacing(SPACE_4)
                     .width(Size::fill())
-                    .child(tab_header(&t, &env, "Library", "No games yet".to_string(), ui.search))
+                    .child(tab_header(&t, &env, "Library", "No games yet".to_string()))
                     .child(empty_state(&t, say.title, say.text))
                     .child(rect().width(Size::fill()).center().child(browse)),
             );
@@ -60,7 +61,8 @@ impl Component for LibraryPage {
         let updates_section = sidebar_entries(&activity, &games);
 
         let systems = systems_in(&games);
-        let visible = filter::visible(&games, *ui.filter.read(), *ui.system.read(), &ui.search.read(), sort);
+        let query = ui.query(SearchScope::Library);
+        let visible = filter::visible(&games, *ui.filter.read(), *ui.system.read(), &query, sort);
         let ctx = Ctx {
             t,
             env,
@@ -77,7 +79,8 @@ impl Component for LibraryPage {
             system: ui.system,
             systems,
             sort,
-            search: ui.search,
+            query,
+            on_clear_search: EventHandler::new(move |()| ui.clear_search(SearchScope::Library)),
             dialogs: ui.dialogs,
             nav,
             on_effect: shell.on_effect.clone(),

@@ -453,6 +453,29 @@ impl Session {
         (buffer[at], buffer[at + 1], buffer[at + 2])
     }
 
+    /// The middle of the light pixels (an icon, text) inside a box of the current render, or `None` when there are none:
+    /// where a glyph really is drawn, which a layout box cannot say when the glyph is offset or clipped inside it.
+    pub fn ink_centre(&mut self, (x0, y0, x1, y1): (u32, u32, u32, u32)) -> Option<(f32, f32)> {
+        let bytes = self.runner.render();
+        let mut reader = png::Decoder::new(std::io::Cursor::new(&bytes[..])).read_info().expect("the render is a PNG");
+        let mut buffer = vec![0; reader.output_buffer_size()];
+        let info = reader.next_frame(&mut buffer).expect("the PNG has a frame");
+        let channels = info.color_type.samples();
+        let (mut sx, mut sy, mut n) = (0., 0., 0.);
+        for y in y0..y1.min(info.height) {
+            for x in x0..x1.min(info.width) {
+                let at = (y as usize * info.width as usize + x as usize) * channels;
+                let luma = 0.3 * f32::from(buffer[at]) + 0.59 * f32::from(buffer[at + 1]) + 0.11 * f32::from(buffer[at + 2]);
+                if luma > 120. {
+                    sx += x as f32;
+                    sy += y as f32;
+                    n += 1.;
+                }
+            }
+        }
+        (n > 0.).then(|| (sx / n + 0.5, sy / n + 0.5))
+    }
+
     pub fn snapshot(&mut self, name: &str) {
         self.runner.sync_and_update();
         self.runner.render_to_file(out_dir().join(format!("{name}.png")));

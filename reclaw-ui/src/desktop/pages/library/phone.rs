@@ -2,7 +2,7 @@
 use freya::prelude::*;
 
 use super::{ctx::Ctx, parts::*, updates};
-use crate::{metrics::*, typography::TypeStyle};
+use crate::metrics::*;
 
 pub(super) fn layout(c: &Ctx) -> Element {
     let t = c.t;
@@ -17,11 +17,11 @@ pub(super) fn layout(c: &Ctx) -> Element {
                     .spacing(SPACE_4)
                     .width(Size::fill())
                     .padding(SPACE_4)
-                    .child(TypeStyle::Eyebrow.text("Library", t.ink_muted))
-                    .child(search_row(c))
+                    .child(top_row(c))
                     .child(chips(c))
                     .maybe_child(updates::section(c))
-                    .child(grid(c, 2)),
+                    .maybe_child(search_bar(c, false))
+                    .child(grid_or_nothing(c, 2)),
             ),
         )
         .into_element()

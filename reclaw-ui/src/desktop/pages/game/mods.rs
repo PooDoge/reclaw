@@ -16,12 +16,7 @@ pub(super) fn view(c: &Ctx) -> Option<Element> {
     if c.view.mods.is_empty() && !c.takes_mods {
         return None;
     }
-    let rows = c
-        .view
-        .mods
-        .iter()
-        .take(SHOWN)
-        .map(|m| ModRow { entry: m.clone(), key: DiffKey::None }.key(format!("{}/{}", m.provider.slug(), m.id)).into_element());
+    let rows = c.view.mods.iter().take(SHOWN).map(|m| ModRow::new(m.clone()).key(format!("{}/{}", m.provider.slug(), m.id)).into_element());
     let label = match c.view.mods.len() {
         0 => "Browse mods for this game".to_string(),
         n => format!("Browse all {n} mods for this game"),

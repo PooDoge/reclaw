@@ -163,7 +163,7 @@ impl Nav {
         self
     }
 
-    /// Top mode only: a slot pushed to the right edge, used for the search field.
+    /// Top mode only: a slot pushed to the right edge, used for the search button. It sizes itself.
     pub fn trailing(mut self, element: impl IntoElement) -> Self {
         self.trailing = Some(element.into_element());
         self
@@ -216,7 +216,7 @@ impl Component for Nav {
                 )
                 .child(rect().width(Size::flex(1.)))
                 .maybe_child(self.actions.clone().map(|el| rect().padding(Gaps::new(0., SPACE_2, 0., 0.)).child(el)))
-                .maybe_child(self.trailing.clone().map(|el| rect().width(Size::px(240.)).child(el)))
+                .maybe_child(self.trailing.clone())
                 .into_element(),
             NavMode::Rail => rect()
                 .vertical()
