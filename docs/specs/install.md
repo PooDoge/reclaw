@@ -1,6 +1,6 @@
 # Installing
 
-- last-verified: 2026-10-06
+- last-verified: 2026-10-10
 - owner-paths: reclaw-install/**, reclaw-app/src/host/install/**, reclaw-ui/src/settings/location.rs, reclaw-ui/src/catalog_data.rs, reclaw-ui/src/desktop/dialogs/install.rs, reclaw-ui/src/components/install_dialog.rs, reclaw-ui/src/deck/pages/install.rs, reclaw-ui/src/deck/state/install.rs, reclaw-ui/src/deck/app/text_boxes.rs
 
 What pressing Install does, from the form to a folder on disk, and what Update, Uninstall, Verify, Check for updates and Open folder do.
@@ -30,6 +30,9 @@ without a restart; an install that is running keeps showing as running.
   pre-release. Drafts are never offered. GitHub is asked for `/releases/latest` alone first; the list (30) only when pre-releases or a pin
   need it, or when latest has no files. GitLab: the project's release list. Explicit actions (Install, Update, Check for updates) revalidate
   with the server (a conditional request); a background look may use an answer under five minutes old.
+* **An app quiverlauncher.com lists** installs the release the site chooses, with the site's links and SHA-256, and a release the
+  site did not verify waits for another press of Install (`host/install/{site,verified}.rs`; spec: community, ADR 0025). The release
+  list then comes with the request (`Request::releases`) and the host service is not asked.
 * **Which file.** Metadata, checksums, signatures, symbol files and source archives are never offered (`names::is_auxiliary`). The
   catalog's `releaseAssetFilter` narrows the list. A file fits this machine by Quiver's markers (`Linux-X64`: a `linux`/`appimage`/`tar.gz`
   label and no other system's marker, no other architecture; a bare `.zip` counts as the Windows build). On Linux the Windows builds also
@@ -96,7 +99,8 @@ Verify and when playing, not for the whole library at start.
 
 ## Other actions
 
-* **Update** is an install into the recorded folder. **Check for updates** asks the host service and says whether a newer release exists.
+* **Update** is an install into the recorded folder. **Check for updates** asks the host service and says whether a newer release exists;
+  for an app quiverlauncher.com lists, and that has no pin, it compares with the site's verified release instead and asks nothing.
 * **Uninstall** (after the confirmation) deletes the app's folder and clears its `installPath`; the app stays in the library. It refuses
   an address that is not a full path in its simplest form, fewer than four path components, a folder that holds the home folder or one of
   Reclaw's own folders, and a folder that is not marked as an install (`version.txt`, `install-incomplete.txt`, or a program in it). A

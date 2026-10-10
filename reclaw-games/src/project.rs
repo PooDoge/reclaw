@@ -113,6 +113,9 @@ pub struct ProjectInfo {
     pub tags: Vec<String>,
     /// Launch settings this game can honor. Empty means the game page shows none.
     pub capabilities: Capabilities,
+    /// What quiverlauncher.com says about it; `None` for a project only the frozen community lists have.
+    #[serde(default)]
+    pub listing: Option<crate::listing::Listing>,
 }
 
 impl ProjectInfo {

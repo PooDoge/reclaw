@@ -1,15 +1,16 @@
-//! What quiverlauncher.com says about the games. After every catalog refresh the site's listing and release feed are read in the
-//! background and each game is linked to its entry (`community::link_all`), which gives the cards and pages their ratings and
-//! facts. A game's own page (who made it, reviews, what the site checked about each release) is read when the page opens.
+//! What quiverlauncher.com says about the games. The site's listing and release feed are read with the catalog (they are the
+//! catalog now, ADR 0025); after every refresh each game is linked to its entry (`community::link_all`), which gives the cards and
+//! pages their ratings and facts, and library apps from the site follow its name, project, icon and tags (`site::follow`). A game's
+//! own page (who made it, reviews, what the site checked about each release) is read when the page opens.
 //!
-//! Nothing here is shown as a notice: the site is extra information. A failure is logged, and a page says it could not be read.
+//! A page that cannot be read is not a notice: it says so on the page, and the failure is logged.
 use std::{
     collections::{HashMap, HashSet},
-    sync::{Mutex, MutexGuard, atomic::AtomicBool, atomic::Ordering},
+    sync::{Mutex, MutexGuard},
     thread,
 };
 
-use reclaw_catalog::site::Links;
+use reclaw_catalog::site::{self, Links};
 use reclaw_net::Net;
 use reclaw_sync::{SiteClient, SiteError};
 use reclaw_ui::{
@@ -19,14 +20,21 @@ use reclaw_ui::{
 
 use crate::host::Host;
 
+/// What an install needs to know about a game's entry on the site.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Linked {
+    pub slug: String,
+    /// The release the site verified, from its status feed.
+    pub verified: Option<String>,
+}
+
 /// What the host keeps for the site.
 pub struct Community {
     client: Option<SiteClient>,
-    /// Each game's slug, by game id, from the last linking.
-    slugs: Mutex<HashMap<u32, String>>,
+    /// Each game's entry on the site, by game id, from the last linking.
+    linked: Mutex<HashMap<u32, Linked>>,
     /// Pages being read, so opening a page twice asks once.
     loading: Mutex<HashSet<u32>>,
-    reading: AtomicBool,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -47,52 +55,75 @@ impl Community {
             Some(api) => SiteClient::with_base(net.clone(), api),
             None => SiteClient::new(net.clone()),
         });
-        Self { client, slugs: Mutex::default(), loading: Mutex::default(), reading: AtomicBool::new(false) }
+        Self { client, linked: Mutex::default(), loading: Mutex::default() }
+    }
+
+    /// The client, shared with the catalog's refresh so both use the fallback host once one has needed it.
+    pub fn client(&self) -> Option<SiteClient> {
+        self.client.clone()
+    }
+
+    /// A game's entry on the site, from the last linking.
+    pub fn linked(&self, id: u32) -> Option<Linked> {
+        lock(&self.linked).get(&id).cloned()
     }
 }
 
 impl Host {
-    /// Read the site's listing and link every game to it, in the background. One at a time; a second request while one runs does
-    /// nothing (the catalog refresh that asked for it is the only caller).
-    pub(crate) fn refresh_community(&self) {
-        let community = &self.inner.community;
-        let Some(client) = community.client.clone() else { return };
-        if community.reading.swap(true, Ordering::SeqCst) {
-            return;
-        }
-        let host = self.clone();
-        let started = thread::Builder::new().name("reclaw-site".into()).spawn(move || {
-            host.run_community_refresh(&client);
-            host.inner.community.reading.store(false, Ordering::SeqCst);
-        });
-        if let Err(error) = started {
-            community.reading.store(false, Ordering::SeqCst);
-            tracing::error!(%error, "the quiverlauncher.com listing could not be read: a thread did not start");
-        }
-    }
-
-    /// The body of [`refresh_community`](Self::refresh_community); runs directly in tests.
-    pub(crate) fn run_community_refresh(&self, client: &SiteClient) {
-        match client.links() {
-            Ok(links) => self.publish_community(&links),
-            Err(error) => tracing::warn!(error = %error, hint = error.hint(), "quiverlauncher.com's listing could not be read"),
-        }
-    }
-
-    fn publish_community(&self, links: &Links) {
+    /// Link every game to the site's listing (read with the catalog) and tell the screens what the site says about each.
+    pub(crate) fn publish_community(&self, links: &Links) {
         let apps = {
             let state = self.state();
             community::link_all(&state.catalog, &state.library, links)
         };
         tracing::info!(linked = apps.len(), "games linked to quiverlauncher.com");
-        *lock(&self.inner.community.slugs) = apps.iter().map(|(id, app)| (*id, app.slug.clone())).collect();
+        *lock(&self.inner.community.linked) = apps
+            .iter()
+            .map(|(id, app)| {
+                // The status feed is what Quiver trusts for the verified release; the listing's copy is the fallback.
+                let fed = links.status_of(app).and_then(|s| s.verified.as_ref()).map(|v| v.version.trim()).filter(|v| !v.is_empty());
+                (*id, Linked { slug: app.slug.clone(), verified: fed.or_else(|| app.verified_version()).map(str::to_string) })
+            })
+            .collect();
         self.send(AppAction::SetCommunity(apps));
+    }
+
+    /// Library apps from the site take its current name, project, icon and tags, unless the person changed that field since the site
+    /// last set it; saved once if anything moved. A library that cannot be written is left alone (it was reported when it was read).
+    pub(crate) fn follow_site(&self, links: &Links) {
+        let mut state = self.state();
+        if !state.library_writable {
+            return;
+        }
+        let mut next = state.library.clone();
+        let mut moved = 0usize;
+        for entry in next.iter_mut() {
+            let Some(app) = site::link(entry, links).and_then(|slug| links.app(&slug)) else { continue };
+            if site::follow(entry, app) {
+                moved += 1;
+            }
+        }
+        if moved == 0 {
+            return;
+        }
+        match self.inner.store.save(&next) {
+            Ok(()) => {
+                tracing::info!(apps = moved, "library apps took quiverlauncher.com's current name, icon or tags");
+                state.library = next;
+            }
+            Err(error) => {
+                drop(state);
+                tracing::warn!(%error, "the library could not be saved after following quiverlauncher.com");
+            }
+        }
     }
 
     /// A game's page opened: read its page, reviews and releases from the site, unless it has no entry there or is being read.
     pub(crate) fn load_community_page(&self, id: u32) {
         let community = &self.inner.community;
-        let (Some(client), Some(slug)) = (community.client.clone(), lock(&community.slugs).get(&id).cloned()) else { return };
+        let (Some(client), Some(slug)) = (community.client.clone(), lock(&community.linked).get(&id).map(|l| l.slug.clone())) else {
+            return;
+        };
         if !lock(&community.loading).insert(id) {
             return;
         }

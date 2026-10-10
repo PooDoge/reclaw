@@ -17,7 +17,7 @@ use std::{
 };
 
 use reclaw_catalog::site::{self, Detail, HistoryRelease, Links, Page, ReadError, ReleaseStatus, Review, SiteApp};
-use reclaw_net::{Fetched, Net, NetError, Request};
+use reclaw_net::{Fetched, Net, NetError, Request, Source};
 use serde::de::DeserializeOwned;
 
 /// The listing and the feed change when an app is added or a release is checked: Quiver reads them every 30 minutes.
@@ -46,6 +46,27 @@ impl SiteError {
             _ => None,
         }
     }
+}
+
+/// Every page of one list, and whether any page was a saved copy standing in for a failed request.
+struct Read<T> {
+    items: Vec<T>,
+    stale: Option<NetError>,
+    fetched_at: u64,
+    /// Where the oldest page came from.
+    source: Source,
+}
+
+/// The whole catalog as the site lists it, and how fresh that is.
+#[derive(Clone, PartialEq, Debug)]
+pub struct Listing {
+    pub links: Links,
+    /// Why a saved copy was used instead of a fresh answer, when one was.
+    pub stale: Option<NetError>,
+    /// Unix seconds when the oldest page was last confirmed.
+    pub fetched_at: u64,
+    /// Where the oldest page came from (the network, or a saved copy).
+    pub source: Source,
 }
 
 #[derive(Clone)]
@@ -95,28 +116,50 @@ impl SiteClient {
         if let Some(fallback) = self.fallback.as_deref().filter(|_| self.on_fallback.load(Ordering::Relaxed)) {
             return self.net.fetch(&Self::request(fallback, path, ttl));
         }
-        let first = match self.net.fetch(&Self::request(&self.base, path, ttl)) {
-            Ok(answer) => return Ok(answer),
-            Err(error) => error,
+        // A saved copy stands in for an unreachable host, but the fallback may have a fresh answer: ask it first.
+        let (first, saved) = match self.net.fetch(&Self::request(&self.base, path, ttl)) {
+            Ok(answer) => match answer.stale_because.clone() {
+                Some(reason) if self.fallback.is_some() && Self::unreachable(&reason) => (reason, Some(answer)),
+                _ => return Ok(answer),
+            },
+            Err(error) => (error, None),
         };
-        let Some(fallback) = self.fallback.as_deref().filter(|_| Self::unreachable(&first)) else { return Err(first) };
-        match self.net.fetch(&Self::request(fallback, path, ttl)) {
-            Ok(answer) => {
+        let Some(fallback) = self.fallback.as_deref().filter(|_| Self::unreachable(&first)) else { return saved.ok_or(first) };
+        match self.net.fetch(&Self::request(fallback, path, ttl)).ok().filter(|a| saved.is_none() || a.stale_because.is_none()) {
+            Some(answer) => {
                 tracing::warn!(error = %first, fallback, "quiverlauncher.com's API could not be reached; using its deployment host from now on");
                 self.on_fallback.store(true, Ordering::Relaxed);
                 Ok(answer)
             }
-            Err(second) => {
-                tracing::debug!(error = %second, "the fallback host did not answer either");
-                Err(first)
+            None => {
+                tracing::debug!(fallback, "the fallback host did not answer either");
+                saved.ok_or(first)
             }
         }
     }
 
-    fn all<T: DeserializeOwned>(&self, path: impl Fn(Option<&str>) -> String) -> Result<Vec<T>, SiteError> {
+    /// The saved copy of a request, from whichever host answered it last; nothing touches the network.
+    fn saved(&self, path: &str) -> Option<Fetched> {
+        let primary = self.net.cached(&Self::request(&self.base, path, LISTING_TTL));
+        primary.or_else(|| self.fallback.as_deref().and_then(|f| self.net.cached(&Self::request(f, path, LISTING_TTL))))
+    }
+
+    fn all<T: DeserializeOwned>(&self, path: impl Fn(Option<&str>) -> String, saved_only: bool) -> Result<Read<T>, SiteError> {
         let (mut items, mut cursor, mut skipped) = (Vec::new(), None::<String>, 0);
+        let (mut stale, mut fetched_at, mut source) = (None::<NetError>, u64::MAX, Source::Network);
         for _ in 0..MAX_PAGES {
-            let fetched = self.get(&path(cursor.as_deref()), LISTING_TTL).map_err(SiteError::Net)?;
+            let fetched = if saved_only {
+                self.saved(&path(cursor.as_deref())).ok_or_else(|| SiteError::Net(NetError::Other("nothing was saved".into())))?
+            } else {
+                self.get(&path(cursor.as_deref()), LISTING_TTL).map_err(SiteError::Net)?
+            };
+            if let Some(reason) = &fetched.stale_because {
+                stale = stale.or_else(|| Some(reason.clone()));
+            }
+            if fetched.fetched_at <= fetched_at {
+                source = fetched.source;
+            }
+            fetched_at = fetched_at.min(fetched.fetched_at);
             let page: Page<T> = site::parse_page(&fetched.text()).map_err(SiteError::Read)?;
             skipped += page.skipped;
             items.extend(page.items);
@@ -125,19 +168,41 @@ impl SiteClient {
                 if skipped > 0 {
                     tracing::warn!(skipped, path = %path(None), "quiverlauncher.com entries that could not be read were left out");
                 }
-                return Ok(items);
+                return Ok(Read { items, stale, fetched_at, source });
             }
         }
         Err(SiteError::Endless)
     }
 
-    /// Every app, and the feed that links each to its repository. Either failing fails both: a listing without the feed links
-    /// nothing, and a feed without the listing would link apps to entries with nothing to show.
+    fn listing_with(&self, saved_only: bool) -> Result<Listing, SiteError> {
+        let status: Read<ReleaseStatus> = self.all(site::path::release_status, saved_only)?;
+        let apps: Read<SiteApp> = self.all(site::path::apps, saved_only)?;
+        if !saved_only {
+            tracing::info!(apps = apps.items.len(), linked = status.items.len(), "quiverlauncher.com catalog read");
+        }
+        Ok(Listing {
+            source: if status.fetched_at <= apps.fetched_at { status.source } else { apps.source },
+            stale: status.stale.or(apps.stale),
+            fetched_at: status.fetched_at.min(apps.fetched_at),
+            links: Links::new(status.items, apps.items),
+        })
+    }
+
+    /// Every app and the feed that links each to its repository, through the cache (a saved copy stands in when the site cannot be
+    /// reached). Either failing fails both: a listing without the feed has no repositories, and a feed without the listing has
+    /// nothing to show.
+    pub fn listing(&self) -> Result<Listing, SiteError> {
+        self.listing_with(false)
+    }
+
+    /// What was saved by an earlier run, with no network at all; `None` when nothing (or only part) was saved.
+    pub fn saved_listing(&self) -> Option<Listing> {
+        self.listing_with(true).ok()
+    }
+
+    /// The listing's links alone.
     pub fn links(&self) -> Result<Links, SiteError> {
-        let status: Vec<ReleaseStatus> = self.all(site::path::release_status)?;
-        let apps: Vec<SiteApp> = self.all(site::path::apps)?;
-        tracing::info!(apps = apps.len(), linked = status.len(), "quiverlauncher.com catalog read");
-        Ok(Links::new(status, apps))
+        self.listing().map(|l| l.links)
     }
 
     /// An app's page; `None` when the site no longer lists it.
@@ -162,6 +227,42 @@ impl SiteClient {
             Err(NetError::Status { status: 404, .. }) => Ok(Vec::new()),
             Err(error) => Err(SiteError::Net(error)),
         }
+    }
+}
+
+/// What went wrong with a download of a release's file, as the site's report takes it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum DownloadProblem {
+    /// The file is gone (a 404 or 410): its developer deleted it since the site listed it.
+    Missing,
+    /// The file is not the one the site checked (its SHA-256 differs).
+    Mismatch,
+}
+
+impl DownloadProblem {
+    fn word(self) -> &'static str {
+        match self {
+            Self::Missing => "missing",
+            Self::Mismatch => "mismatch",
+        }
+    }
+}
+
+impl SiteClient {
+    /// Tell the site a download of one of an app's files failed, as Quiver 3.5 does: it reads that release back from its repository
+    /// straight away and takes it down or pulls it if it should; the report changes nothing by itself. Only a nudge: a failure is
+    /// returned for the log, never shown.
+    pub fn report_download_problem(&self, slug: &str, version: &str, file: &str, problem: DownloadProblem) -> Result<(), SiteError> {
+        let base = match self.fallback.as_deref() {
+            Some(fallback) if self.on_fallback.load(Ordering::Relaxed) => fallback,
+            _ => self.base.as_str(),
+        };
+        let body = serde_json::json!({ "version": version, "file": file, "problem": problem.word() }).to_string().into_bytes();
+        let request = Request::post_json(format!("{base}{}", site::path::download_problem(slug)), body)
+            .accept("application/json")
+            .max_bytes(64 * 1024)
+            .timeout(TIMEOUT);
+        self.net.fetch(&request).map(|_| ()).map_err(SiteError::Net)
     }
 }
 

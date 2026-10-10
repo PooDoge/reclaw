@@ -103,6 +103,7 @@ impl Rig {
             preferred_version: None,
             allow_prerelease: false,
             asset: None,
+            releases: None,
         }
     }
 

@@ -101,3 +101,53 @@ fn an_api_that_answers_with_an_error_is_not_routed_around() {
     assert!(matches!(client.detail("sm64"), Err(SiteError::Net(NetError::Status { status: 500, .. }))));
     assert_eq!(deployment.count(), 0, "a status is an answer: the site is up and said no");
 }
+
+#[test]
+fn a_failed_download_is_reported_as_a_post_to_the_apps_address() {
+    let server = TestServer::start(|req, _| {
+        if req.method == "POST" && req.path == "/api/v1/apps/sm%2064/download-problem" {
+            Reply::new(202, "{}")
+        } else {
+            Reply::new(404, "")
+        }
+    });
+    let client = SiteClient::with_base(net(None), server.url("/api/v1"));
+    assert_eq!(client.report_download_problem("sm 64", "v2", "sm64-linux.zip", DownloadProblem::Missing), Ok(()));
+    assert!(client.report_download_problem("other", "v2", "x.zip", DownloadProblem::Mismatch).is_err());
+}
+
+#[test]
+fn a_saved_copy_of_an_unreachable_api_gives_way_to_a_fresh_answer_from_the_fallback() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let api = TestServer::start(|req, _| catalog(req));
+    let base = api.url("/api/v1");
+    assert!(SiteClient::with_base(net(Some(&dir)), base.clone()).listing().is_ok(), "saved once");
+    drop(api);
+    age_saved_copies(dir.path());
+    let deployment = TestServer::start(|req, _| catalog(req));
+    let client = SiteClient::with_fallback(net(Some(&dir)), &base, &deployment.url("/api/v1"));
+    let listing = client.listing().expect("read");
+    assert!(listing.stale.is_none(), "fresh from the fallback, not the saved copy: {:?}", listing.stale);
+    assert!(deployment.count() > 0);
+}
+
+/// Make every saved answer under `dir` an hour old, past the listing's half hour.
+fn age_saved_copies(dir: &std::path::Path) {
+    for entry in std::fs::read_dir(dir).expect("dir").flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            age_saved_copies(&path);
+            continue;
+        }
+        let bytes = std::fs::read(&path).expect("read");
+        let text = String::from_utf8_lossy(&bytes);
+        let Some(at) = text.find("\"fetched_at\":") else { continue };
+        let digits_start = at + "\"fetched_at\":".len();
+        let digits_end = digits_start + text[digits_start..].bytes().take_while(u8::is_ascii_digit).count();
+        let old: u64 = text[digits_start..digits_end].parse().expect("a number");
+        let mut out = bytes[..digits_start].to_vec();
+        out.extend(old.saturating_sub(3600).to_string().as_bytes());
+        out.extend(&bytes[digits_end..]);
+        std::fs::write(&path, out).expect("write");
+    }
+}

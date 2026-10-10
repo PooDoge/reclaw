@@ -39,6 +39,9 @@ pub struct Request {
     pub allow_prerelease: bool,
     /// The name of a file the person chose when asked which one.
     pub asset: Option<String>,
+    /// The releases to choose from when they are already known (quiverlauncher.com lists a catalog app's, with the checksums it
+    /// verified); `None` asks the host.
+    pub releases: Option<Vec<Release>>,
 }
 
 /// Where the work is, for the screens.
@@ -135,11 +138,17 @@ impl Installer {
 
     /// Find the release and the file to install, without downloading anything.
     pub fn resolve(&self, request: &Request) -> Result<Plan, InstallError> {
-        let whole_list = request.allow_prerelease || request.preferred_version.is_some();
-        let found = self.source.fetch(request.host, &request.repo, whole_list, true)?;
-        let release =
-            select_release(&found.list, request.preferred_version.as_deref(), found.latest_tag.as_deref(), request.allow_prerelease)
-                .ok_or_else(|| InstallError::NoDownload("No release of this app has files to install.".to_string()))?;
+        let fetched;
+        let (list, latest_tag) = match &request.releases {
+            Some(known) => (known.as_slice(), None),
+            None => {
+                let whole_list = request.allow_prerelease || request.preferred_version.is_some();
+                fetched = self.source.fetch(request.host, &request.repo, whole_list, true)?;
+                (fetched.list.as_slice(), fetched.latest_tag.as_deref())
+            }
+        };
+        let release = select_release(list, request.preferred_version.as_deref(), latest_tag, request.allow_prerelease)
+            .ok_or_else(|| InstallError::NoDownload("No release of this app has files to install.".to_string()))?;
         let selection = Selection::of(release, request.platform, request.filter.as_deref());
 
         let chosen = match request.asset.as_deref() {

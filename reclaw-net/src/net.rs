@@ -386,7 +386,11 @@ impl Net {
 
     async fn once(&self, request: &Request, url: &Url, validators: Option<&Meta>) -> Result<Outcome, Attempt> {
         let host = url.host_str().unwrap_or_default().to_string();
-        let mut builder = self.inner.api.get(url.clone()).timeout(request.timeout);
+        let mut builder = match &request.json {
+            Some(body) => self.inner.api.post(url.clone()).header(CONTENT_TYPE, "application/json").body(body.clone()),
+            None => self.inner.api.get(url.clone()),
+        }
+        .timeout(request.timeout);
         if let Some(accept) = &request.accept {
             builder = builder.header(ACCEPT, accept);
         }

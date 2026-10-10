@@ -117,3 +117,25 @@ fn a_hostile_archive_cannot_write_outside_the_app_folder() {
     assert!(!rig.folder().join("../escaped.txt").exists() && !rig.folder().join(STAGE_DIR).join("escaped.txt").exists());
     first_install_left_nothing_behind(&rig);
 }
+
+#[test]
+fn releases_given_with_the_request_are_used_without_asking_the_host_and_their_checksums_hold() {
+    let body = game_zip("1");
+    let rig = Rig::new(vec![("v1", false, vec![Served::new("Game-Linux.zip", body.clone())])]);
+    let known = |sha256: String| Release {
+        tag: "v1".into(),
+        assets: vec![Asset {
+            name: "Game-Linux.zip".into(),
+            url: rig.server.url("/dl/v1/Game-Linux.zip"),
+            size: None,
+            sha256: Some(sha256),
+        }],
+        ..Default::default()
+    };
+    let request = Request { releases: Some(vec![known("0".repeat(64))]), ..rig.request() };
+    let error = rig.install(&request).expect_err("refused");
+    assert!(matches!(error, InstallError::Net(NetError::Integrity(_))), "the listed checksum is checked: {error:?}");
+    let request = Request { releases: Some(vec![known(sha256_hex(&body))]), ..rig.request() };
+    assert_eq!(rig.install(&request).expect("installed").version, "v1");
+    assert!(rig.server.requests().iter().all(|r| !r.path.starts_with("/repos/")), "the host was never asked");
+}

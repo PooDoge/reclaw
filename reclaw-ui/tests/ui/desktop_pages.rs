@@ -1,9 +1,12 @@
 //! The routed desktop pages, drawn from the sample library and catalog.
 use reclaw_ui::{
+    catalog_browse::KEY_CATALOG_HIDE_LIBRARY,
     effect::Effect,
     model::ModProvider,
     nav::Route,
+    settings::{SettingChange, SettingValue},
     shell::{DevOverrides, MotionOverride},
+    store::AppAction,
 };
 
 use crate::common::*;
@@ -79,6 +82,9 @@ fn a_video_opens_in_the_system_player_through_the_host() {
 #[test]
 fn the_catalog_lists_every_project_and_filters_by_system() {
     let mut s = at(Route::Catalog {});
+    // Every sample project is in the sample library, which the Catalog leaves out by default, as Quiver's Browse does.
+    assert!(s.has_label("Everything here is in your library") && !s.has_label("Dino Rush"), "{:?}", s.labels());
+    s.dispatch(AppAction::Setting(SettingChange { app: None, key: KEY_CATALOG_HIDE_LIBRARY, value: SettingValue::Bool(false) }));
     assert!(s.has_label("Catalog") && s.has_label("Dino Rush") && s.has_label("Moon Garden"), "{:?}", s.labels());
     s.snapshot("desktop-catalog");
     s.click_label("PlayStation 2");

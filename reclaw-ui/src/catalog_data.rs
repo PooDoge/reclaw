@@ -5,8 +5,14 @@
 //! must not depend on the order the catalog lists things: [`IdMap`] derives it from the app's identity.
 use std::{borrow::Cow, collections::BTreeMap};
 
-use reclaw_catalog::AppEntry;
-use reclaw_games::project::{Platform, ProjectInfo, Release, RepoHost, RepoRef};
+use reclaw_catalog::{
+    AppEntry,
+    site::{AiLevel, SiteApp},
+};
+use reclaw_games::{
+    listing::{AiUse, Listing, Ratings},
+    project::{Platform, ProjectInfo, Release, RepoHost, RepoRef},
+};
 use reclaw_runtime::RunState;
 use reclaw_sync::CatalogApp;
 
@@ -83,42 +89,83 @@ fn source_of(entry: &AppEntry) -> Source {
     }
 }
 
-/// A catalog app as the Catalog and the game page show it. The release is the one the platform metadata looked at: its tag, with a
-/// link to its page. (The date and notes are not in that file; the game page fetches the README itself.)
+/// JavaScript milliseconds as Unix seconds; nothing for zero or less.
+fn seconds(millis: f64) -> Option<u64> {
+    (millis.is_finite() && millis > 0.).then(|| (millis / 1000.) as u64)
+}
+
+/// The site's facts about an app, as the catalog sorts, filters and shows them.
+pub fn listing_of(site: &SiteApp) -> Listing {
+    Listing {
+        added_at: seconds(site.added_at),
+        updated_at: site.last_release_at.and_then(seconds),
+        ratings: Ratings { runs: site.recommended, issues: site.report_issues, broken: site.report_broken },
+        project_type: site.project_type.trim().to_lowercase(),
+        runs_on: site.supported_os.iter().map(|o| o.trim().to_lowercase()).collect(),
+        ai: match site.ai_level {
+            AiLevel::None => AiUse::None,
+            AiLevel::Assisted => AiUse::Assisted,
+            AiLevel::Generated => AiUse::Generated,
+        },
+        verified: site.verified_version().map(str::to_string),
+        latest: site.last_release_version.as_deref().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string),
+        based_on: site.games.iter().map(|g| g.title.trim().to_string()).filter(|t| !t.is_empty()).collect(),
+    }
+}
+
+/// The system the game came from: the site's first console when it names one Reclaw knows, else what the entry says.
+pub fn system_of(entry: &AppEntry, site: Option<&SiteApp>) -> Platform {
+    site.and_then(|s| s.consoles.iter().find_map(|c| Platform::from_tag(c))).unwrap_or_else(|| entry.system())
+}
+
+/// The release the screens call current: the one the site verified (what Reclaw installs), else the one the platform metadata
+/// looked at.
+fn current_release(app: &CatalogApp) -> Option<&str> {
+    app.site.as_deref().and_then(SiteApp::verified_version).or_else(|| app.release.as_ref().map(|r| r.release_tag.as_str()))
+}
+
+/// A catalog app as the Catalog and the game page show it. The release is the verified one (or the one the platform metadata looked
+/// at): its tag, with a link to its page. (The notes are not known here; the game page reads the site's releases itself.)
 pub fn project_from(app: &CatalogApp, id: u32) -> ProjectInfo {
     let entry = &app.entry;
+    let site = app.site.as_deref();
     let repo = repo_ref(entry);
     let extension = entry.extension.clone().unwrap_or_default();
-    let releases = app
-        .release
-        .as_ref()
-        .filter(|r| !r.release_tag.is_empty())
-        .map(|r| Release {
-            tag: r.release_tag.clone(),
-            name: r.release_tag.clone(),
-            published: String::new(),
+    let published = site.and_then(|s| s.verified.as_ref()).and_then(|v| v.released_at).filter(|ms| ms.is_finite() && *ms > 0.);
+    let releases = current_release(app)
+        .filter(|tag| !tag.trim().is_empty())
+        .map(|tag| Release {
+            tag: tag.to_string(),
+            name: tag.to_string(),
+            published: published.map(crate::community::day).unwrap_or_default(),
             notes: String::new(),
-            url: release_url(&repo, &r.release_tag),
-            prerelease: false,
+            url: if entry.is_manual() { String::new() } else { release_url(&repo, tag) },
+            prerelease: site.and_then(|s| s.verified.as_ref()).is_some_and(|v| v.prerelease),
         })
         .into_iter()
         .collect();
+    let summary = extension.summary.clone().or_else(|| site.map(|s| s.description.trim().to_string()).filter(|d| !d.is_empty()));
     ProjectInfo {
         id,
         title: entry.name.clone(),
         project: entry.project.clone().unwrap_or_default(),
-        summary: extension.summary.clone().unwrap_or_default(),
+        summary: summary.unwrap_or_default(),
         description: extension.description.clone().unwrap_or_default(),
-        platform: entry.system(),
+        platform: system_of(entry, site),
         repo,
-        hero_url: extension.hero_url.clone(),
-        // The catalog gives an icon, which is the best picture it has; a portrait capsule from the `reclaw` block wins over it.
-        capsule_url: extension.capsule_url.clone().or_else(|| entry.icon_url.clone()),
+        // Pictures an author put in the `reclaw` block win; then the site's SteamGridDB art; then the catalog's icon.
+        hero_url: extension.hero_url.clone().or_else(|| site.and_then(SiteApp::hero).map(str::to_string)),
+        capsule_url: extension
+            .capsule_url
+            .clone()
+            .or_else(|| site.and_then(SiteApp::capsule).map(str::to_string))
+            .or_else(|| entry.icon_url.clone()),
         media: extension.media(),
         releases,
         requirements: extension.requirements.clone(),
         tags: entry.tags.clone(),
         capabilities: extension.capabilities.clone().unwrap_or_default(),
+        listing: site.map(listing_of),
     }
 }
 
@@ -140,6 +187,11 @@ pub type InstallStates = std::collections::HashMap<String, InstallState>;
 /// on disk. An installed app shows the version it has, and "update ready" when the catalog knows a newer one; an app that is not
 /// installed shows the version it would install.
 pub fn game_from(entry: &AppEntry, release: Option<&str>, id: u32, state: Option<&InstallState>) -> GameEntry {
+    game_with(entry, None, release, id, state)
+}
+
+/// [`game_from`], with the site's entry for the app when it has one (its art and its system).
+pub fn game_with(entry: &AppEntry, site: Option<&SiteApp>, release: Option<&str>, id: u32, state: Option<&InstallState>) -> GameEntry {
     let extension = entry.extension.clone().unwrap_or_default();
     let (status, version) = match state {
         Some(InstallState::Installed { version, latest }) => {
@@ -158,10 +210,13 @@ pub fn game_from(entry: &AppEntry, release: Option<&str>, id: u32, state: Option
         source: source_of(entry),
         status,
         tags: entry.tags.iter().cloned().map(Cow::Owned).collect(),
-        platform: entry.system(),
+        platform: system_of(entry, site),
         art: Art {
-            capsule: extension.capsule_url.or_else(|| entry.icon_url.clone()),
-            hero: extension.hero_url,
+            capsule: extension
+                .capsule_url
+                .or_else(|| site.and_then(SiteApp::capsule).map(str::to_string))
+                .or_else(|| entry.icon_url.clone()),
+            hero: extension.hero_url.or_else(|| site.and_then(SiteApp::hero).map(str::to_string)),
             repo: (!entry.is_manual()).then(|| repo_ref(entry)),
         },
         in_library: true,
@@ -174,12 +229,14 @@ pub fn load(catalog: &[CatalogApp], library: &[AppEntry], states: &InstallStates
     let ids = IdMap::for_keys(catalog.iter().map(|a| key_of(&a.entry)).chain(library.iter().map(key_of)));
     let id = |entry: &AppEntry| ids.get(&key_of(entry)).unwrap_or_default();
     let projects: Vec<ProjectInfo> = catalog.iter().map(|app| project_from(app, id(&app.entry))).collect();
+    let by_key: std::collections::HashMap<String, &CatalogApp> = catalog.iter().map(|a| (key_of(&a.entry), a)).collect();
     let games = library
         .iter()
         .map(|entry| {
-            let release =
-                catalog.iter().find(|a| key_of(&a.entry) == key_of(entry)).and_then(|a| a.release.as_ref()).map(|r| r.release_tag.as_str());
-            game_from(entry, release, id(entry), states.get(&key_of(entry)))
+            let key = key_of(entry);
+            let app = by_key.get(&key).copied();
+            let release = app.and_then(|a| current_release(a));
+            game_with(entry, app.and_then(|a| a.site.as_deref()), release, id(entry), states.get(&key))
         })
         .collect();
     Loaded { projects, games }

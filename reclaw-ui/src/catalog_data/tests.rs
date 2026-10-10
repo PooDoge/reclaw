@@ -27,7 +27,7 @@ fn release(source: RepoSource, repo: &str, tag: &str) -> PlatformEntry {
 
 fn app(entry: AppEntry, tag: Option<&str>) -> CatalogApp {
     let release = tag.map(|t| release(entry.source, &entry.repository, t));
-    CatalogApp { entry, lists: vec!["Nintendo".into()], release }
+    CatalogApp { entry, lists: vec!["Nintendo".into()], release, site: None }
 }
 
 #[test]

@@ -1,27 +1,37 @@
-//! The answers of the quiverlauncher.com catalog API, typed after the site's public responses (Quiver's `@quiverlauncher/api`
+//! The answers of the quiverlauncher.com catalog API other than an app itself (`app.rs`), typed after the site's public responses (Quiver's `@quiverlauncher/api`
 //! package and its C# `QuiverCatalogClient`). Read leniently: a field that is missing takes its default, a field the site added later
 //! is ignored, and a word Reclaw does not know (a new release state, a new verdict) becomes the most careful one it does.
 use serde::{Deserialize, Deserializer};
 
+use super::SiteApp;
+
 /// A count the site sends as a JavaScript number: anything that is not a finite positive number is zero.
-fn count<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+pub(super) fn count<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
     let n = Option::<f64>::deserialize(d)?.unwrap_or(0.);
     Ok(if n.is_finite() && n > 0. { n.min(f64::from(u32::MAX)) as u32 } else { 0 })
 }
 
 /// A time in JavaScript milliseconds that may be `null` (zero then).
-fn millis<'de, D: Deserializer<'de>>(d: D) -> Result<f64, D::Error> {
+pub(super) fn millis<'de, D: Deserializer<'de>>(d: D) -> Result<f64, D::Error> {
     Ok(Option::<f64>::deserialize(d)?.filter(|n| n.is_finite()).unwrap_or(0.))
 }
 
 /// A string that may be `null`.
-fn text<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+pub(super) fn text<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
     Ok(Option::<String>::deserialize(d)?.unwrap_or_default())
 }
 
 /// A list that may be `null`.
-fn list<'de, D: Deserializer<'de>, T: Deserialize<'de>>(d: D) -> Result<Vec<T>, D::Error> {
+pub(super) fn list<'de, D: Deserializer<'de>, T: Deserialize<'de>>(d: D) -> Result<Vec<T>, D::Error> {
     Ok(Option::<Vec<T>>::deserialize(d)?.unwrap_or_default())
+}
+
+/// A list that may be `null`, or some other value standing for "none" (`false`). An item that does not read is left out.
+fn list_or_none<'de, D: Deserializer<'de>, T: serde::de::DeserializeOwned>(d: D) -> Result<Vec<T>, D::Error> {
+    Ok(match serde_json::Value::deserialize(d)? {
+        serde_json::Value::Array(items) => items.into_iter().filter_map(|item| serde_json::from_value(item).ok()).collect(),
+        _ => Vec::new(),
+    })
 }
 
 /// How much of an app AI wrote, as the site judged it.
@@ -141,78 +151,6 @@ pub struct Verified {
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
-pub struct GameRef {
-    #[serde(deserialize_with = "text")]
-    pub slug: String,
-    #[serde(deserialize_with = "text")]
-    pub title: String,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct Launcher {
-    #[serde(deserialize_with = "text")]
-    pub folder_name: String,
-    pub release_asset_filter: Option<String>,
-}
-
-/// An app in the catalog (the API's `Entry`): what it is, what players said about it, and the newest release.
-#[derive(Clone, PartialEq, Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct SiteApp {
-    #[serde(deserialize_with = "text")]
-    pub id: String,
-    /// The id the entry had in the community lists (`catalogId` there), for entries that came from them.
-    pub catalog_id: Option<String>,
-    #[serde(deserialize_with = "text")]
-    pub slug: String,
-    #[serde(deserialize_with = "text")]
-    pub name: String,
-    #[serde(deserialize_with = "text")]
-    pub description: String,
-    #[serde(deserialize_with = "text")]
-    pub project_name: String,
-    /// The original games it plays.
-    #[serde(deserialize_with = "list")]
-    pub games: Vec<GameRef>,
-    #[serde(deserialize_with = "list")]
-    pub tags: Vec<String>,
-    pub launcher: Launcher,
-    /// `port`, `tool`, `emulator` or `game`.
-    #[serde(deserialize_with = "text")]
-    pub project_type: String,
-    /// `windows`, `linux`, `macos`, `android`, `ios`.
-    #[serde(rename = "supportedOS", deserialize_with = "list")]
-    pub supported_os: Vec<String>,
-    pub ai_level: AiLevel,
-    pub developer: Option<Developer>,
-    /// Players who said it runs well.
-    #[serde(deserialize_with = "count")]
-    pub recommended: u32,
-    #[serde(deserialize_with = "count")]
-    pub review_count: u32,
-    #[serde(deserialize_with = "count")]
-    pub report_issues: u32,
-    #[serde(deserialize_with = "count")]
-    pub report_broken: u32,
-    /// JavaScript milliseconds (they can have a fraction).
-    #[serde(deserialize_with = "millis")]
-    pub added_at: f64,
-    /// The newest release upstream, verified or not.
-    pub last_release_at: Option<f64>,
-    pub last_release_version: Option<String>,
-    pub verified: Option<Verified>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct Developer {
-    #[serde(deserialize_with = "text")]
-    pub name: String,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
 pub struct Evidence {
     #[serde(deserialize_with = "text")]
     pub kind: String,
@@ -281,7 +219,9 @@ pub struct Checking {
 pub struct Detail {
     pub entry: SiteApp,
     pub project: SiteProject,
-    #[serde(deserialize_with = "list")]
+    /// The releases the site took back. The live API answers a plain `false` here when there are none (seen in Quiver 3.5's test
+    /// of a real answer), so anything but a list is none.
+    #[serde(deserialize_with = "list_or_none")]
     pub withdrawn: Vec<Withdrawn>,
     pub checking: Option<Checking>,
 }

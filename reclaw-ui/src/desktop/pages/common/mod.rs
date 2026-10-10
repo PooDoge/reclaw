@@ -105,6 +105,17 @@ pub fn heading(t: &Reclaw, text: &'static str) -> Rect {
 /// Pressing one opens that game's page. `nav` is read by the caller, at the top of its render: this function is only reached when there
 /// is something to show, and a hook that runs only sometimes panics on the render where it does not (AGENTS rule 5).
 pub fn capsule_grid(games: &[GameEntry], columns: usize, selected: Option<State<Option<u32>>>, nav: Nav) -> Rect {
+    capsule_grid_with(games, &std::collections::HashMap::new(), columns, selected, nav)
+}
+
+/// [`capsule_grid`], with what each Catalog card says under its title (by game id).
+pub fn capsule_grid_with(
+    games: &[GameEntry],
+    notes: &std::collections::HashMap<u32, crate::catalog_browse::CardNote>,
+    columns: usize,
+    selected: Option<State<Option<u32>>>,
+    nav: Nav,
+) -> Rect {
     rect().vertical().spacing(SPACE_3).width(Size::fill()).children(games.chunks(columns.max(1)).enumerate().map(|(row, chunk)| {
         let mut line = rect().horizontal().content(Content::Flex).spacing(SPACE_3).width(Size::fill());
         for game in chunk {
@@ -113,6 +124,7 @@ pub fn capsule_grid(games: &[GameEntry], columns: usize, selected: Option<State<
             line = line.child(
                 rect().width(Size::flex(1.)).child(
                     GameCapsule::new(game.clone())
+                        .note(notes.get(&id).cloned())
                         .fluid(true)
                         .selected(current == Some(id))
                         .on_press(move |_| {

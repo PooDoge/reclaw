@@ -10,7 +10,8 @@
 //! * `install`: installing, updating, uninstalling and checking apps (one thread per job, reported as activity)
 //! * `launch`: starting and stopping apps, through a Windows runner when needed, and following how they end
 //! * `mods`: listing, installing, updating and removing the mods of installed games
-//! * `community`: what quiverlauncher.com says about each game (ratings, reviews, verified releases), read after a refresh and when a page opens
+//! * `community`: what quiverlauncher.com says about each game (ratings, reviews, verified releases), linked after each refresh and read
+//!   when a page opens; library apps following the site's name, icon and tags
 use std::{
     path::PathBuf,
     sync::{
@@ -230,8 +231,13 @@ impl Host {
         let (tokens, token_notices) = credentials::TokenBook::open(secrets_file, env_tokens, net.as_ref());
         notices.extend(token_notices);
         let credentials = tokens.status();
+        let community = community::Community::new(net.as_ref(), site_api);
         let sync = net.clone().map(|net| {
             let sync = CatalogSync::new(net);
+            let sync = match community.client() {
+                Some(site) => sync.with_site(site),
+                None => sync,
+            };
             match index_url {
                 Some(url) => sync.with_index_url(url),
                 None => sync,
@@ -239,7 +245,7 @@ impl Host {
         });
         let saved = sync.as_ref().and_then(CatalogSync::saved);
         let (catalog, status) = match &saved {
-            Some(snapshot) => (snapshot.apps(), status_from(snapshot)),
+            Some(snapshot) => (snapshot.apps_for(&library), status_from(snapshot)),
             None => (Vec::new(), CatalogStatus::default()),
         };
         let default_location =
@@ -247,7 +253,6 @@ impl Host {
         let platform = platform.unwrap_or_else(Platform::detect);
         let downloads_dir = downloads_dir.unwrap_or_else(|| std::env::temp_dir().join("reclaw-downloads"));
         let mods = mods::Mods::new(net.as_ref(), mod_sites, downloads_dir.join("mods"));
-        let community = community::Community::new(net.as_ref(), site_api);
         let installer = net.clone().map(|net| {
             let source = ReleaseSource::new(net.clone()).with_api(api.unwrap_or_default());
             Installer::new(net, source, downloads_dir)
@@ -284,6 +289,10 @@ impl Host {
         };
         host.watch_sessions(session_events);
         host.watch_for_refused_tokens();
+        // What the site said last time, until the first refresh says it again: ratings and verified releases work offline.
+        if let Some(site) = saved.as_ref().and_then(|s| s.site.as_ref()) {
+            host.publish_community(&site.links);
+        }
         // Read under one lock: a second `state()` in the same statement would wait for the first for ever.
         let (apps_in_library, apps_in_catalog) = {
             let state = host.state();
@@ -395,9 +404,13 @@ impl Host {
         match sync.refresh() {
             Ok(snapshot) => {
                 let status = status_from(&snapshot);
+                if let Some(site) = &snapshot.site {
+                    // Library apps from the site take its current name, project, icon and tags, unless the person changed them.
+                    self.follow_site(&site.links);
+                }
                 let loaded = {
                     let mut state = self.state();
-                    state.catalog = snapshot.apps();
+                    state.catalog = snapshot.apps_for(&state.library);
                     state.status = status.clone();
                     catalog_data::load(&state.catalog, &state.library, &state.installs)
                 };
@@ -406,8 +419,10 @@ impl Host {
                 self.send(AppAction::Catalog(status.clone()));
                 // The catalog says which games take mods and where their mods are listed.
                 self.refresh_mods(false);
-                // The games are known: link them to what quiverlauncher.com says about them.
-                self.refresh_community();
+                // The games are known: link them to what quiverlauncher.com says about them (read with the catalog).
+                if let Some(site) = &snapshot.site {
+                    self.publish_community(&site.links);
+                }
                 if status.stale || !status.problems.is_empty() {
                     let title =
                         if status.stale { "Showing a saved copy of the catalog" } else { "Part of the catalog could not be loaded" };

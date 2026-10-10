@@ -39,6 +39,26 @@ pub const KEY_DECK_FULLSCREEN: &str = "deck_fullscreen";
 pub const KEY_DECK_DISPLAY: &str = "deck_display";
 pub const KEY_LOG_LEVEL: &str = "log_level";
 
+/// How the Catalog is sorted and narrowed, as Quiver 3.5's App Catalog offers it (`catalog_browse`).
+fn catalog_section() -> Section {
+    use crate::catalog_browse::*;
+    Section {
+        id: "catalog",
+        title: "Catalog",
+        groups: vec![
+            Group::new(vec![
+                choice(KEY_CATALOG_SORT, "Sort apps by", SORT_OPTIONS, 0)
+                    .described("Recently added shows what is new on quiverlauncher.com."),
+                choice(KEY_CATALOG_RUNS_ON, "Show", RUNS_ON_OPTIONS, 0),
+                choice(KEY_CATALOG_KIND, "Project type", KIND_OPTIONS, 0),
+                choice(KEY_CATALOG_AI, "AI use", AI_OPTIONS, 0).described("As quiverlauncher.com judged each app."),
+                toggle(KEY_CATALOG_HIDE_LIBRARY, "Hide apps in my library", true).described("So new ones are easier to find."),
+            ])
+            .noted("The catalog comes from quiverlauncher.com, as in Quiver Launcher 3.5."),
+        ],
+    }
+}
+
 fn toggle(key: &'static str, label: &'static str, default: bool) -> Row {
     Row::new(key, label, RowKind::Toggle { default })
 }
@@ -221,6 +241,7 @@ fn global_sections(displays: &DisplayEnvironment) -> Schema {
                     .headed("Install location"),
                 ],
             },
+            catalog_section(),
             network_section(),
             Section {
                 id: "diagnostics",
