@@ -5,6 +5,7 @@ use super::{dialogs::GameDialogs, pages::library::Filter};
 use crate::{
     metrics::{Density, LayoutClass},
     model::ModProvider,
+    nav::{Nav, Route},
     surface::SurfaceContext,
 };
 
@@ -40,7 +41,19 @@ pub struct DesktopUi {
     pub platform: State<Option<Platform>>,
     /// The Mods list's provider chip; `None` is All.
     pub provider: State<Option<ModProvider>>,
+    /// The Mods list's game, by id; `None` is all games. Set by the game chip and by a Game page's link.
+    pub mod_game: State<Option<u32>>,
     pub dialogs: GameDialogs,
+}
+
+impl DesktopUi {
+    /// Open the Mods tab on one game's mods: every site, no search, so what it shows is everything listed for the game.
+    pub fn show_mods_for(mut self, nav: Nav, game: u32) {
+        self.mod_game.set(Some(game));
+        self.provider.set(None);
+        self.search.set(String::new());
+        nav.open(Route::Mods {});
+    }
 }
 
 /// The frame's shared state. Panics outside a `DesktopFrame`, which is a bug in the caller.

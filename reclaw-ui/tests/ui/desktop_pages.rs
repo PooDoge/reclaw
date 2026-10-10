@@ -98,6 +98,41 @@ fn mods_list_filter_install_and_open() {
 }
 
 #[test]
+fn the_game_chip_narrows_the_mods_to_one_installed_game() {
+    let mut s = at(Route::Mods {});
+    s.click_label("All games");
+    for text in ["Skyward Quest (2)", "Starfall 64 (2)", "Tide Racer (1)"] {
+        assert!(s.has_label(text), "{text}: {:?}", s.labels());
+    }
+    assert!(!s.has_label("Kart Ruins (0)"), "a game that is not installed is not offered");
+    s.click_label("Tide Racer (1)");
+    assert!(s.has_label("1 mod for Tide Racer") && s.has_label("Ghost Data Pack"), "{:?}", s.labels());
+    assert!(!s.has_label("HD Texture Pack") && !s.has_label("Randomizer"), "{:?}", s.labels());
+    s.snapshot("desktop-mods-one-game");
+    s.click_label("Tide Racer");
+    s.click_label("All games");
+    assert!(s.has_label("HD Texture Pack") && s.has_label("Randomizer"), "{:?}", s.labels());
+}
+
+#[test]
+fn a_game_that_takes_mods_links_to_its_mods() {
+    // Tall enough that the Mods and Links sections are on screen without scrolling.
+    let tall = |id| Mount::desktop().size(1100., 2400.).dev(calm()).start_at(Route::Game { id });
+    let mut s = tall(1);
+    assert!(s.has_label("Browse mods"), "the Links card: {:?}", s.labels());
+    s.click_label("Browse all 2 mods for this game");
+    assert!(s.has_label("2 mods for Starfall 64") && s.has_label("Free Camera"), "{:?}", s.labels());
+    assert!(!s.has_label("Randomizer"), "another game's mod: {:?}", s.labels());
+
+    let mut s = tall(2);
+    s.click_label("Browse mods");
+    assert!(s.has_label("2 mods for Skyward Quest") && s.has_label("Randomizer"), "{:?}", s.labels());
+
+    let s = tall(3);
+    assert!(!s.has_label("Browse mods"), "Kart Ruins is not installed: {:?}", s.labels());
+}
+
+#[test]
 fn a_mod_page_shows_its_details_and_links_to_its_game() {
     let mut s = at(Route::ModDetail { provider: "thunderstore".into(), mod_id: "hd-textures".into() });
     for text in ["HD Texture Pack", "pixelwright", "2.1.0", "For Starfall 64"] {

@@ -1,6 +1,6 @@
 //! Mods for the installed games: what the sites list for each, what each game's folder records as installed, and installing,
-//! updating and removing mods on worker threads reported as activity. The screens get the whole list (`AppAction::SetMods`) each
-//! time any of it changes; nothing about mods is kept outside the game folders but the last listings, in memory.
+//! updating and removing mods on worker threads reported as activity. The screens get the whole list (`AppAction::SetMods`, and
+//! the games it covers in `SetModdable`) each time any of it changes; nothing about mods is kept outside the game folders but the last listings, in memory.
 //!
 //! * this file: [`Mods`], which games take mods, and building the list the screens show
 //! * `entries`: joining a listing with a game's record (pure)
@@ -128,10 +128,13 @@ impl Host {
 
     /// The list the screens show, from the last listings and what each game's folder records.
     pub(crate) fn mod_entries(&self) -> Vec<ModEntry> {
-        let games = self.moddable();
+        self.mod_entries_of(&self.moddable())
+    }
+
+    fn mod_entries_of(&self, games: &[Game]) -> Vec<ModEntry> {
         let listings = self.inner.mods.listings().clone();
         let mut all = Vec::new();
-        for game in &games {
+        for game in games {
             let records = match Document::load(&game.folder) {
                 Ok(document) => document.mods,
                 Err(error) => {
@@ -148,8 +151,11 @@ impl Host {
     }
 
     /// Send the screens the list as it is now.
+    /// The games are sent too, so the Mods tab can offer a game whose sites have listed nothing yet.
     pub(crate) fn publish_mods(&self) {
-        self.send(AppAction::SetMods(self.mod_entries()));
+        let games = self.moddable();
+        self.send(AppAction::SetModdable(games.iter().map(|g| g.id).collect()));
+        self.send(AppAction::SetMods(self.mod_entries_of(&games)));
     }
 }
 

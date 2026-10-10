@@ -27,6 +27,7 @@ impl AppState {
             }
             AppAction::SetProjects(projects) => set_if_changed(&mut self.projects, projects, AppChannel::Projects),
             AppAction::SetMods(mods) => set_if_changed(&mut self.mods, mods, AppChannel::Mods),
+            AppAction::SetModdable(ids) => set_if_changed(&mut self.moddable, ids, AppChannel::Mods),
             AppAction::Catalog(status) => set_if_changed(&mut self.catalog, status, AppChannel::Catalog),
             AppAction::Credentials { provider, status } => {
                 if self.credentials.of(provider) == &status {

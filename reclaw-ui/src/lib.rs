@@ -21,6 +21,7 @@ pub mod launch;
 pub mod launch_request;
 pub mod media;
 pub mod metrics;
+pub mod mod_games;
 pub mod model;
 pub mod nav;
 pub mod notices;
