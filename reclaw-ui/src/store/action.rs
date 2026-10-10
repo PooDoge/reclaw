@@ -25,6 +25,8 @@ pub enum AppAction {
     SetGames(Vec<GameEntry>),
     SetProjects(Vec<ProjectInfo>),
     SetMods(Vec<ModEntry>),
+    /// The installed games whose mods can be browsed, by id.
+    SetModdable(Vec<u32>),
     /// The catalog loader's progress and findings.
     Catalog(super::status::CatalogStatus),
     /// What is known about one service's access token.

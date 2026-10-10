@@ -1,7 +1,7 @@
 # Mods
 
-- last-verified: 2026-10-06
-- owner-paths: reclaw-mods/**, reclaw-app/src/host/mods/**, reclaw-ui/src/desktop/pages/mods.rs, reclaw-ui/src/desktop/pages/mod_detail.rs, reclaw-ui/src/desktop/pages/common/mod_row.rs, reclaw-ui/src/store/changes.rs
+- last-verified: 2026-10-10
+- owner-paths: reclaw-mods/**, reclaw-app/src/host/mods/**, reclaw-ui/src/desktop/pages/mods.rs, reclaw-ui/src/mod_games.rs, reclaw-ui/src/desktop/pages/game/mods.rs, reclaw-ui/src/desktop/pages/mod_detail.rs, reclaw-ui/src/desktop/pages/common/mod_row.rs, reclaw-ui/src/store/changes.rs
 
 Which games take mods, where their mods are listed, and what Install, Update and Remove do to a game's folder. The format of the
 record and the site addresses are Quiver's (read from its source, not run) unless the text says otherwise. Decision record: ADR 0020.
@@ -37,6 +37,19 @@ What the screens get (`entries.rs`): the installed mods first, in the record's o
 Deprecated and adult mods are shown only when installed. An installed mod the site no longer lists is still shown, so it can be removed.
 `_` in a name is shown as a space. A mod is **Update** when the site's version is newer than the installed one: versions that read as
 numbers compare as release tags do; two that do not (GameBanana allows any text) are an update when they differ.
+
+## The Mods tab and a game's page (`reclaw-ui/src/mod_games.rs`, `desktop/pages/mods.rs`, `desktop/pages/game/mods.rs`)
+
+The host sends the games that take mods (above) as their own list, `AppAction::SetModdable`, every time it sends the mods. The
+screens do not work it out from the mods: a game whose sites have listed nothing yet, or did not answer, still takes mods.
+
+* **The game chip** on the Mods tab ("All games", or the chosen game's name) opens a list of "All games" and every game that takes
+  mods, by title, each with how many mods are listed for it. Choosing one narrows the list to its mods; the site chips' counts and the
+  heading ("2 mods for Starfall 64") count within it. The choice stays while moving between pages, like the site chip and the search.
+  A chosen game that stops taking mods (uninstalled) means all games again.
+* **A game's page**, for a game that takes mods, has **Browse mods** under Links and a *Mods for this game* section even before
+  anything is listed. Both open the Mods tab on that game with the site chip on All sites and the search cleared, so it shows
+  everything listed for the game. A game that does not take mods has neither.
 
 ## Install and update (`reclaw-mods::install`, `reclaw-app/src/host/mods/jobs.rs`)
 
@@ -104,5 +117,7 @@ in `~/.config/<Game>` and can be copied over.
 `reclaw-mods` (32): addresses and answers of both sites, source parsing, the record's load and save, placements and conflicts,
 paths that stay inside the folder, and the whole install against a fake site with real zips (dependencies first, an update that drops
 old files, a conflict refused, removal with folders pruned, an unreadable record, a single-file mod, a missing dependency).
-`reclaw` (`host::mods`): the list joined from a listing and a record, and listing, installing, updating and removing through the host
+`reclaw-ui`: `mod_games` (the choices, their order and counts, a choice that is gone), the store's `SetModdable`, and the
+desktop pages (the game chip narrows the list; a game's page links to its mods, and only for a game that takes them).
+`reclaw` (`host::mods`): the list joined from a listing and a record, the games sent with it, and listing, installing, updating and removing through the host
 with `portable.txt` created, a conflict reported as a failed job, and an unknown game refused. Live, by hand: the command above.

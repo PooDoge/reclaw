@@ -206,3 +206,11 @@ fn rebuilding_the_game_list_keeps_what_is_running() {
     assert!(matches!(s.games[0].run, RunState::Running { pid: 7, .. }), "the host's rebuild does not know what runs");
     assert_eq!(s.games[0].version, "v9", "the rest of the new list is taken");
 }
+
+#[test]
+fn the_moddable_games_are_told_on_the_mods_channel_only_when_they_change() {
+    let mut s = state();
+    assert_eq!(s.reduce(AppAction::SetModdable(vec![2, 1])), vec![AppChannel::Mods]);
+    assert_eq!(s.moddable, vec![2, 1]);
+    assert!(s.reduce(AppAction::SetModdable(vec![2, 1])).is_empty());
+}

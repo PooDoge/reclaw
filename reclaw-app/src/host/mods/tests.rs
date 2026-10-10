@@ -86,6 +86,8 @@ fn a_mod_is_listed_installed_updated_and_removed() {
     assert_eq!(listed.len(), 1, "the deprecated mod is not offered: {listed:?}");
     assert_eq!((listed[0].title.as_str(), listed[0].version.as_str()), ("Better Camera", "1.0.0"));
     let game = listed[0].game_id;
+    let moddable = rig.sink.all().into_iter().rev().find_map(|a| if let AppAction::SetModdable(ids) = a { Some(ids) } else { None });
+    assert_eq!(moddable, Some(vec![game]), "the screens are told which games take mods");
 
     rig.host.handle(&Effect::InstallMod { game, provider: ModProvider::Thunderstore, id: "Cam-Better_Camera".into() });
     rig.wait_ended(1);

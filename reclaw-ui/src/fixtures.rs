@@ -166,6 +166,13 @@ use crate::store::AppState;
 impl AppState {
     /// A state with the fixtures and no saved settings.
     pub fn sample() -> Self {
-        Self { games: sample_games(), projects: sample_projects(), mods: sample_mods(), activity: sample_activity(), ..Self::default() }
+        Self {
+            games: sample_games(),
+            projects: sample_projects(),
+            mods: sample_mods(),
+            moddable: vec![1, 2, 6],
+            activity: sample_activity(),
+            ..Self::default()
+        }
     }
 }

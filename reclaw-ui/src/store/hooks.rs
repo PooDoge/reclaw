@@ -51,6 +51,11 @@ pub fn use_mods() -> Vec<ModEntry> {
     read(AppChannel::Mods, |s| s.mods.clone())
 }
 
+/// The installed games whose mods can be browsed, by id.
+pub fn use_moddable() -> Vec<u32> {
+    read(AppChannel::Mods, |s| s.moddable.clone())
+}
+
 /// All background work. Redraws on every progress tick of any job; a card for one game should use
 /// [`use_activity_of`].
 pub fn use_activity() -> ActivityBoard {
