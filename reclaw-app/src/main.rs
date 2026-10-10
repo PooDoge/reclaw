@@ -222,6 +222,8 @@ fn main() {
     let (host, initial) = Host::open(
         HostConfig {
             index_url: get("RECLAW_CATALOG_INDEX").filter(|u| !u.is_empty()),
+            // Quiver's own override for its catalog API, honoured the same way.
+            site_api: get("QUIVER_API").filter(|u| !u.is_empty()),
             secrets_file: dirs.as_ref().map(AppDirs::secrets_file),
             logs_dir: dirs.as_ref().map(|d| d.logs.clone()),
             logging: Some(logging.clone()),

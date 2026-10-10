@@ -71,6 +71,11 @@ pub fn library_value(e: &AppEntry) -> Value {
         }
     }
     put_list(&mut o, "tags", &e.tags);
+    // Quiver 3.5's link to the site's entry and what the site last set, in the place Quiver writes them.
+    put_trimmed(&mut o, "catalogEntryId", &e.catalog_entry_id);
+    if let Some(snapshot) = &e.catalog_snapshot {
+        put(&mut o, "catalog", snapshot.to_value());
+    }
     put_list(&mut o, "filesToAdd", &e.files_to_add);
     if hosted {
         put_trimmed(&mut o, "releaseAssetFilter", &e.release_asset_filter);

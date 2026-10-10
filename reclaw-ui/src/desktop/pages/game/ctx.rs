@@ -23,6 +23,10 @@ pub(super) struct Ctx {
     pub ui: DesktopUi,
     /// Whether the game is installed and Reclaw can list mods for it.
     pub takes_mods: bool,
+    /// What quiverlauncher.com says about the game, when it has an entry there.
+    pub community: crate::community::CommunityOf,
+    /// Now, in JavaScript milliseconds, for "updated 3 d ago".
+    pub now: f64,
 }
 
 impl Ctx {

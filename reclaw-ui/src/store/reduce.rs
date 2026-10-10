@@ -28,6 +28,17 @@ impl AppState {
             AppAction::SetProjects(projects) => set_if_changed(&mut self.projects, projects, AppChannel::Projects),
             AppAction::SetMods(mods) => set_if_changed(&mut self.mods, mods, AppChannel::Mods),
             AppAction::SetModdable(ids) => set_if_changed(&mut self.moddable, ids, AppChannel::Mods),
+            AppAction::SetCommunity(apps) => set_if_changed(&mut self.community.apps, apps, AppChannel::Community),
+            AppAction::CommunityPage { id, page } => {
+                // A page read again keeps showing what it had until the new answer arrives.
+                let reloading = page == crate::community::PageState::Loading
+                    && matches!(self.community.pages.get(&id), Some(crate::community::PageState::Loaded(_)));
+                if reloading || self.community.pages.get(&id) == Some(&page) {
+                    return Vec::new();
+                }
+                self.community.pages.insert(id, page);
+                vec![AppChannel::Community]
+            }
             AppAction::Catalog(status) => set_if_changed(&mut self.catalog, status, AppChannel::Catalog),
             AppAction::Credentials { provider, status } => {
                 if self.credentials.of(provider) == &status {

@@ -130,6 +130,7 @@ pub fn start(releases: Vec<Rel>, library_text: Option<&str>, configure: impl FnO
     let sink = Arc::new(Collector::default());
     let mut config = HostConfig::new(Some(net.clone()), library_file.clone());
     config.index_url = Some(server.url("/index.json"));
+    config.site_api = Some(server.url("/api/v1"));
     config.api = Some(Api { github: server.url(""), gitlab: server.url("/gitlab") });
     config.platform = Some(Platform::LinuxX64);
     config.downloads_dir = Some(root.path().join("downloads"));

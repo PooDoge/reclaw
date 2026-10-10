@@ -9,6 +9,9 @@
 //! * `index.rs`: the community `index.json` that points at the lists.
 //! * `platform_index.rs`, `timestamp.rs`: the generated `platform-index.json` and the dates in it.
 //! * `extension.rs`: Reclaw's optional `reclaw` block on an entry, which Quiver ignores.
+//! * `snapshot.rs`: what the site's catalog last set on a library app (Quiver 3.5's `catalog` block), kept as it was.
+//! * `site/`: the quiverlauncher.com catalog API's answers (apps, their details, player reviews, release history) and how a catalog
+//!   or library app is linked to its entry there.
 //! * `mods.rs`, `display_name.rs`, `source.rs`, `normalize.rs`, `json.rs`, `error.rs`: the pieces those share.
 pub mod display_name;
 pub mod entry;
@@ -22,6 +25,8 @@ pub mod mods;
 pub mod normalize;
 pub mod parse;
 pub mod platform_index;
+pub mod site;
+pub mod snapshot;
 pub mod source;
 pub mod timestamp;
 pub mod write;

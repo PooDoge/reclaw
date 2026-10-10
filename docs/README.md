@@ -37,6 +37,7 @@
 | `specs/credentials.md` | Access tokens: where they live, how they are sent, checked and dropped, the Network settings |
 | `specs/search.md` | The desktop search button: which tab, open and close, what is kept, what results show |
 | `specs/updates.md` | `scripts/update.sh` and Settings, About, "Update from source" |
+| `specs/community.md` | What quiverlauncher.com says about a game: linking, ratings, reviews, releases, facts |
 
 ## Decisions
 
@@ -57,3 +58,4 @@
 | `adr/0013-the-log-is-a-file-written-from-the-first-line.md` | One `tracing` subscriber writes a rotating file from the first line, with credentials removed |
 | `adr/0014-tokens-have-their-own-file-and-a-refused-one-is-not-sent.md` | Tokens in a private file, sent to one host, checked when pasted, dropped when refused |
 | `adr/0015-the-app-updates-by-running-the-script-a-terminal-would.md` | One script, run by the terminal or by Settings; fast-forward only; no self-restart |
+| `adr/0023-read-quiverlauncher-com-beside-the-frozen-lists.md` | The site is read beside the frozen lists for ratings, reviews and release checks; the library keeps Quiver's link to it |

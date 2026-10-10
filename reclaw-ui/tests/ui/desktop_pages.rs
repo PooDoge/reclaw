@@ -169,3 +169,68 @@ fn the_library_sidebar_has_the_updates_section() {
     assert!(s.has_label("34% · 6 s left · 7.4 MB/s") && s.has_label("1 mod downloading"), "{:?}", s.labels());
     s.snapshot("desktop-library-updates");
 }
+
+#[test]
+fn a_game_on_quiverlauncher_com_shows_how_it_runs_its_reviews_its_releases_and_who_made_it() {
+    use std::collections::BTreeMap;
+
+    use reclaw_catalog::site::{Detail, HistoryRelease, ReleaseState, Review, RunResult, SiteApp, SiteProject, Verified};
+    use reclaw_ui::{
+        community::{PageData, PageState},
+        store::AppAction,
+    };
+
+    let mut s = at(Route::Game { id: 1 });
+    assert!(!s.has_label("HOW IT RUNS"), "a game the site does not list has none of it");
+    assert!(s.take_effects().is_empty(), "nothing to read for a game with no entry");
+
+    let app = SiteApp {
+        slug: "starfall-64".into(),
+        recommended: 2,
+        report_issues: 1,
+        supported_os: vec!["linux".into()],
+        verified: Some(Verified { version: "v1.4.1".into(), ..Default::default() }),
+        ..Default::default()
+    };
+    s.dispatch(AppAction::SetCommunity(BTreeMap::from([(1, app.clone())])));
+    assert!(s.take_effects().contains(&Effect::LoadCommunity(1)), "linked after the page opened: its page is read now");
+    assert!(s.has_label("Runs well") && s.has_label("Loading reviews…"), "{:?}", s.labels());
+
+    let page = PageData {
+        detail: Ok(Some(Detail {
+            entry: app,
+            project: SiteProject { author: Some("Starfall Team".into()), ..Default::default() },
+            ..Default::default()
+        })),
+        reviews: Ok(vec![Review { author: "Sam".into(), result: RunResult::Issues, body: "Audio crackles.".into(), ..Default::default() }]),
+        releases: Ok(vec![
+            HistoryRelease {
+                version: "v1.5.0".into(),
+                state: ReleaseState::Blocked,
+                reasons: vec!["A file was replaced.".into()],
+                ..Default::default()
+            },
+            HistoryRelease { version: "v1.4.1".into(), state: ReleaseState::Verified, ..Default::default() },
+        ]),
+    };
+    s.dispatch(AppAction::CommunityPage { id: 1, page: PageState::Loaded(Box::new(page)) });
+    for text in [
+        "HOW IT RUNS",
+        " · 2 run well, 1 with issues",
+        "Sam",
+        "Runs with issues",
+        "Audio crackles.",
+        "RELEASES",
+        "BLOCKED",
+        "A file was replaced.",
+        "ON QUIVERLAUNCHER.COM",
+        "Starfall Team",
+        "Linux",
+    ] {
+        assert!(s.has_label(text), "{text}: {:?}", s.labels());
+    }
+    assert!(!s.has_label("RECENT UPDATES"), "the site's releases take the catalog's place");
+    s.snapshot("desktop-game-community");
+    s.click_label("Share how it runs");
+    assert_eq!(s.take_effects(), vec![Effect::OpenUrl("https://quiverlauncher.com/apps/starfall-64?tab=how-it-runs".into())]);
+}

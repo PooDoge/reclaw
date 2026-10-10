@@ -100,6 +100,8 @@ pub fn parse_app(value: &Value, mode: Mode) -> Result<AppEntry, CatalogError> {
         release_asset_filter: normalize::asset_filter(text(object, "releaseAssetFilter")?.as_deref()),
         mods: object.get("mods").map_or(Ok(ModsConfig::default()), |v| ModsConfig::from_value(v, mode == Mode::Strict))?,
         catalog_id: blank_to_none(text(object, "catalogId")?),
+        catalog_entry_id: blank_to_none(text(object, "catalogEntryId")?),
+        catalog_snapshot: crate::snapshot::CatalogSnapshot::from_value(object.get("catalog")),
         extension: object.get("reclaw").and_then(|v| Extension::from_value(v).0),
         install_path: text(object, "installPath")?,
         preferred_version: text(object, "preferredVersion")?,

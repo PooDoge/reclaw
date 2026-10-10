@@ -1,10 +1,12 @@
 # Catalog and library format (Quiver-compatible)
 
-- last-verified: 2026-10-05
+- last-verified: 2026-10-10
 - owner-paths: reclaw-catalog/src/**, reclaw-catalog/tests/real_catalog.rs, reclaw-games/src/platform.rs, reclaw-sync/src/**, reclaw-sync/tests/sync.rs, reclaw-ui/src/catalog_data.rs, reclaw-app/src/**
 
 Reclaw reads and writes the same four documents as the Quiver launcher, so the community catalog works unchanged and a catalog
-Reclaw publishes can be read by Quiver. The crate is `reclaw-catalog`: plain data in and out, no network, no disk, no window.
+Reclaw publishes can be read by Quiver. Since 2026-10-09 the community lists are **frozen**: Quiver 3.5 browses quiverlauncher.com
+instead, and the lists stay in place "so existing installs keep working". Reclaw still reads them as its catalog and reads the site
+beside them (spec: community, ADR 0023). The crate is `reclaw-catalog`: plain data in and out, no network, no disk, no window.
 Why this and not a schema of our own: ADR 0009.
 
 ## The four documents
@@ -28,6 +30,10 @@ A catalog list is somebody else's file and one bad entry must not hide 231 good 
   `catalogId`.
 * **What belongs to this user** (library only): `installPath`, `preferredVersion`, `skippedUpdateVersion`, `customDisplayName`,
   `autoUpdate`, `deferUpdateTracking`, `linuxRunner`, `linuxPrefixPath`, `linuxProtonPath`, `linuxCustomLaunchCommand`.
+* **Quiver 3.5's link to quiverlauncher.com** (library only): `catalogEntryId` (the site entry the app was added from or last linked
+  to) and `catalog` (`{name, project, appIconUrl, tags}`, what the site last set, so a later change of the site's does not overwrite
+  the user's). Reclaw reads and writes both unchanged (`snapshot.rs`); it uses `catalogEntryId` to link the app (spec: community) and
+  does not yet move a field with the site. Before this, saving the library dropped them, which unlinked a library Quiver shares.
 * A **manual** app has no `repository`. It cannot be pinned, skipped, auto-updated or filtered; reading forces those off.
 * **Identity** is `manual:<folder>` or `<source>:<repository>`; the **tile** (instance) key adds `:<folder>`, because one repository can hold
   several games (told apart by `releaseAssetFilter`) and each has its own folder. Keys compare ignoring case but keep their spelling.
@@ -36,7 +42,8 @@ A catalog list is somebody else's file and one bad entry must not hide 231 good 
   `filesToAdd` are plain file names (no separators, no `.`/`..`, no characters a file name cannot hold), de-duplicated ignoring case;
   `mods.path` is `/`-separated with no `.`/`..` (otherwise it is dropped whole); `releaseAssetFilter` is trimmed and blank means none.
 * **Writing** the library follows Quiver's key order: `name, folderName, installPath, appIconUrl` always (explicit nulls), then for a hosted
-  app `repository, preferredVersion, skippedUpdateVersion`, then the optional keys, then `tags, filesToAdd, releaseAssetFilter, mods`.
+  app `repository, preferredVersion, skippedUpdateVersion`, then the optional keys, then `tags, catalogEntryId, catalog, filesToAdd,
+  releaseAssetFilter, mods`.
   Defaults are not written (`autoUpdate` only when true, `linuxRunner` not when `auto`). A catalog entry leaves out the user's fields.
 
 ## List, index and platform index

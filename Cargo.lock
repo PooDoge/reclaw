@@ -4169,6 +4169,7 @@ dependencies = [
  "reclaw-catalog",
  "reclaw-log",
  "reclaw-net",
+ "serde",
  "sha2",
  "tempfile",
  "thiserror 2.0.21",

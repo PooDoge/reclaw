@@ -7,6 +7,7 @@ publish = false
 [dependencies]
 reclaw-catalog = { path = "../reclaw-catalog" }
 reclaw-net = { path = "../reclaw-net" }
+serde = "1"
 sha2 = "0.10"
 thiserror = "2"
 tracing = "0.1"
