@@ -88,7 +88,8 @@ impl Host {
         }
     }
 
-    /// Ask the host service what the newest release is and say whether it is newer than what is installed.
+    /// Say whether a newer release than the installed one is out: the site's verified release for an app it lists, else the newest
+    /// release the repository's host has.
     pub(crate) fn check_update(&self, app: u32) {
         let Some(installer) = self.inner.installs.installer.clone() else {
             self.tell(Notice::problem("No network", "The network layer could not start, so updates cannot be checked", vec![]));
@@ -100,6 +101,23 @@ impl Host {
             return;
         };
         let (host, key) = (self.clone(), key_of(&entry));
+        // An app quiverlauncher.com lists updates only to the release it verified (Quiver 3.5), unless the person pinned one.
+        let verified = self.inner.community.linked(app).and_then(|l| l.verified).filter(|_| entry.preferred_version.is_none());
+        if let Some(tag) = verified {
+            let newer = reclaw_games::version::is_newer(&tag, &installed);
+            tracing::info!(app, installed = %installed, verified = %tag, newer, "update checked against quiverlauncher.com's verified release");
+            if newer {
+                self.set_install_state(&key, Some(InstallState::Installed { version: installed, latest: Some(tag) }));
+            } else {
+                self.set_install_state(&key, Some(InstallState::Installed { version: installed.clone(), latest: None }));
+                self.tell(Notice::note(
+                    &format!("{} is up to date", entry.name),
+                    &format!("Version {installed} is the newest release quiverlauncher.com verified"),
+                    vec![],
+                ));
+            }
+            return;
+        }
         let work = move || {
             let repo_host = if entry.source == reclaw_catalog::RepoSource::Gitlab { RepoHost::GitLab } else { RepoHost::GitHub };
             let found = installer.releases().fetch(repo_host, entry.repository.trim(), entry.preferred_version.is_some(), true);

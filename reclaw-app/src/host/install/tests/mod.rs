@@ -2,6 +2,7 @@
 mod flow;
 mod live;
 mod problems;
+mod site;
 
 use std::{
     io::Write,
@@ -56,7 +57,12 @@ pub type Releases = Arc<Mutex<Vec<Rel>>>;
 
 /// The catalog (one app, "One", repository o/one, folder One) and GitHub's release API and downloads, on one server.
 pub fn server(releases: Releases) -> TestServer {
-    TestServer::start(move |req, _| {
+    TestServer::start(move |req, _| reply(&releases, req))
+}
+
+/// What [`server`] answers.
+pub fn reply(releases: &Releases, req: &reclaw_net::testing::Req) -> Reply {
+    {
         let host = req.header("host").unwrap_or("127.0.0.1").to_string();
         let path = req.path.split('?').next().unwrap_or_default().to_string();
         match path.as_str() {
@@ -93,7 +99,7 @@ pub fn server(releases: Releases) -> TestServer {
             return reply;
         }
         Reply::new(404, "no")
-    })
+    }
 }
 
 pub struct Rig {
@@ -117,6 +123,11 @@ pub fn rel(tag: &'static str) -> Rel {
 pub fn start(releases: Vec<Rel>, library_text: Option<&str>, configure: impl FnOnce(&mut HostConfig, &Path)) -> Rig {
     let releases: Releases = Arc::new(Mutex::new(releases));
     let server = server(releases.clone());
+    start_on(releases, server, library_text, configure)
+}
+
+/// [`start`] against a server of the test's own.
+pub fn start_on(releases: Releases, server: TestServer, library_text: Option<&str>, configure: impl FnOnce(&mut HostConfig, &Path)) -> Rig {
     let root = tempfile::tempdir().expect("tempdir");
     let library_file = root.path().join("data/apps.json");
     if let Some(text) = library_text {

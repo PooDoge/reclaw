@@ -294,3 +294,19 @@ fn several_requests_at_once_share_the_work() {
     want.sort();
     assert_eq!(got, want);
 }
+
+#[test]
+fn a_json_report_is_a_post_with_its_type_and_is_never_saved() {
+    let server = TestServer::start(|req, _| {
+        let ok = req.method == "POST" && req.header("content-type") == Some("application/json");
+        Reply::new(if ok { 202 } else { 400 }, "")
+    });
+    let dir = tempfile::tempdir().expect("dir");
+    let mut config = local_config();
+    config.cache_dir = Some(dir.path().to_path_buf());
+    let net = Net::new(config).expect("net");
+    let request = Request::post_json(server.url("/report"), br#"{"problem":"missing"}"#.to_vec()).cached(Duration::from_secs(60), true);
+    assert!(request.cache.is_none(), "a report is not an answer to keep");
+    assert_eq!(net.fetch(&request).expect("accepted").status, 202);
+    assert_eq!(server.count(), 1);
+}

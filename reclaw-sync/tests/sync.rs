@@ -1,11 +1,12 @@
 //! The whole sync against a server on this machine that plays the catalog's host: the index, the lists, the platform metadata.
 use std::{fs, path::PathBuf, time::Duration};
 
+use reclaw_catalog::RepoSource;
 use reclaw_net::{
     Net, NetConfig,
     testing::{Reply, TestServer, local_config},
 };
-use reclaw_sync::{CatalogSync, Origin, SyncError};
+use reclaw_sync::{CatalogSync, Origin, SiteClient, SyncError};
 
 const PLATFORM: &str = r#"{"formatRevision": 1, "generatedAt": "2026-10-04T12:29:25+00:00", "entries": [
   {"provider": "github", "repository": "o/one", "preferredRelease": null, "releaseTag": "v1.2.0", "assetNames": ["one-windows.zip", "one-linux.tar.gz"], "validatedAt": "2026-10-04T12:28:25+00:00", "selectionRevision": 1}
@@ -225,4 +226,56 @@ fn the_live_catalog_loads_from_the_web_and_a_second_start_is_instant() {
     eprintln!("from disk: {} apps in {warm:?}", saved.apps().len());
     assert_eq!(saved.apps(), apps);
     assert!(warm < Duration::from_millis(500), "{warm:?}");
+}
+
+/// The site's API on the same test server: one new app the lists never had, and One, which they do.
+fn site_answer(path: &str) -> Option<Reply> {
+    match path {
+        "/api/v1/release-status?limit=100" => Some(Reply::ok(
+            r#"{"items":[{"id":"k1","slug":"one","provider":"github","repository":"o/one"},{"id":"k9","slug":"fresh","provider":"gitlab","repository":"g/fresh"}],"isDone":true}"#,
+        )),
+        "/api/v1/apps?limit=100" => Some(Reply::ok(
+            r#"{"items":[{"id":"k1","slug":"one","name":"One","addedAt":1,"launcher":{"folderName":"One"}},
+                         {"id":"k9","slug":"fresh","name":"Fresh Port","addedAt":2,"recommended":3,"launcher":{"folderName":"Fresh"}}],"isDone":true}"#,
+        )),
+        _ => None,
+    }
+}
+
+fn sync_with_site(server: &TestServer) -> CatalogSync {
+    let mut config = local_config();
+    config.attempts = 1;
+    let net = Net::new(config).expect("net");
+    CatalogSync::new(net.clone()).with_index_url(server.url("/index.json")).with_site(SiteClient::with_base(net, server.url("/api/v1")))
+}
+
+#[test]
+fn the_sites_new_apps_join_the_catalog_ahead_of_the_frozen_lists() {
+    let server = catalog_server(|path, r| site_answer(path).unwrap_or(r));
+    let snapshot = sync_with_site(&server).refresh().expect("loaded");
+    assert!(snapshot.problems.is_empty(), "{:?}", snapshot.problems);
+    let apps = snapshot.apps();
+    let names: Vec<_> = apps.iter().map(|a| a.entry.name.as_str()).collect();
+    assert_eq!(names, ["Fresh Port", "One", "Two", "Three"], "the site's newest first, then what only the lists have");
+    assert_eq!((apps[0].entry.repository.as_str(), apps[0].entry.source), ("g/fresh", RepoSource::Gitlab));
+    assert_eq!(apps[1].lists, ["quiverlauncher.com", "Nintendo"]);
+    assert!(apps[1].release.is_some(), "the platform metadata still covers One");
+}
+
+#[test]
+fn a_site_that_cannot_be_read_leaves_the_lists_and_says_so() {
+    let server = catalog_server(|path, r| if path.starts_with("/api/") { Reply::new(500, "down") } else { r });
+    let snapshot = sync_with_site(&server).refresh().expect("the lists loaded");
+    assert_eq!(snapshot.apps().len(), 3);
+    assert!(snapshot.site.is_none());
+    assert!(snapshot.problems[0].what.contains("quiverlauncher.com"), "{:?}", snapshot.problems);
+}
+
+#[test]
+fn lists_that_cannot_be_read_leave_the_site_as_the_catalog() {
+    let server = catalog_server(|path, r| site_answer(path).unwrap_or(if path == "/index.json" { Reply::new(404, "gone") } else { r }));
+    let snapshot = sync_with_site(&server).refresh().expect("the site is a catalog");
+    let names: Vec<_> = snapshot.apps().into_iter().map(|a| a.entry.name).collect();
+    assert_eq!(names, ["Fresh Port", "One"]);
+    assert!(snapshot.problems.iter().any(|p| p.what == "The community lists"), "{:?}", snapshot.problems);
 }

@@ -1,5 +1,10 @@
 use reclaw_catalog::{CommunityIndex, parse_list};
 
+use reclaw_catalog::{
+    AppEntry,
+    site::{Links, SiteApp},
+};
+
 use super::*;
 
 fn app(repo: &str, folder: &str) -> String {
@@ -19,7 +24,7 @@ fn list_snapshot(id: &str, name: &str, apps: &[String]) -> ListSnapshot {
 fn snapshot(lists: Vec<ListSnapshot>) -> CatalogSnapshot {
     let index =
         CommunityIndex::parse(r#"{"version": 2, "lists": [{"id": "a", "remoteLocation": "https://e.test/a.json"}]}"#).expect("index");
-    CatalogSnapshot { index, index_origin: Origin::Network, lists, platform: None, problems: vec![], fetched_at: 0 }
+    CatalogSnapshot { index, index_origin: Origin::Network, lists, platform: None, site: None, problems: vec![], fetched_at: 0 }
 }
 
 #[test]
@@ -60,4 +65,63 @@ fn the_origin_follows_where_the_network_layer_got_the_bytes() {
     assert_eq!(Origin::from(Source::CacheFresh), Origin::Saved);
     assert_eq!(Origin::from(Source::CacheRevalidated), Origin::Revalidated);
     assert_eq!(Origin::from(Source::CacheStale), Origin::Stale);
+}
+
+fn site_app(slug: &str, name: &str, folder: &str, added_at: f64) -> SiteApp {
+    SiteApp {
+        id: format!("id-{slug}"),
+        slug: slug.into(),
+        name: name.into(),
+        added_at,
+        launcher: reclaw_catalog::site::Launcher { folder_name: folder.into(), ..Default::default() },
+        ..Default::default()
+    }
+}
+
+fn feed(slug: &str, repo: &str) -> reclaw_catalog::site::ReleaseStatus {
+    reclaw_catalog::site::ReleaseStatus {
+        id: format!("id-{slug}"),
+        slug: slug.into(),
+        provider: "github".into(),
+        repository: Some(repo.into()),
+        ..Default::default()
+    }
+}
+
+fn with_site(mut snap: CatalogSnapshot, apps: Vec<SiteApp>, status: Vec<reclaw_catalog::site::ReleaseStatus>) -> CatalogSnapshot {
+    snap.site = Some(SiteSnapshot { links: Links::new(status, apps), origin: Origin::Network, fetched_at: 0 });
+    snap
+}
+
+#[test]
+fn the_sites_apps_come_first_newest_first_and_the_lists_add_only_what_it_lacks() {
+    let mut list = list_snapshot("a", "Nintendo", &[app("o/one", "One"), app("o/old", "Old")]);
+    list.list.apps[0].extension = Some(reclaw_catalog::Extension { summary: Some("From the list".into()), ..Default::default() });
+    let snap = with_site(
+        snapshot(vec![list]),
+        vec![site_app("one", "One (site)", "One", 1.0), site_app("new", "Brand New", "New", 2.0), site_app("lost", "No feed", "L", 3.0)],
+        vec![feed("one", "o/one"), feed("new", "o/new")],
+    );
+    let apps = snap.apps();
+    let names: Vec<_> = apps.iter().map(|a| a.entry.name.as_str()).collect();
+    assert_eq!(names, ["Brand New", "One (site)", "Old"], "newest first; an app missing from the feed is left out; the list's own after");
+    assert_eq!(apps[1].lists, [SITE_LIST, "Nintendo"]);
+    assert_eq!(apps[1].entry.extension.as_ref().and_then(|e| e.summary.as_deref()), Some("From the list"), "the reclaw block survives");
+    assert!(apps[1].site.is_some() && apps[2].site.is_none());
+    assert_eq!(apps[0].entry.catalog_entry_id.as_deref(), Some("id-new"));
+}
+
+#[test]
+fn a_site_app_the_library_holds_takes_the_librarys_folder() {
+    let snap = with_site(snapshot(vec![]), vec![site_app("one", "One", "SiteFolder", 1.0)], vec![feed("one", "o/one")]);
+    let library = AppEntry {
+        name: "One".into(),
+        repository: "o/one".into(),
+        folder_name: "MyFolder".into(),
+        catalog_entry_id: Some("id-one".into()),
+        ..Default::default()
+    };
+    let apps = snap.apps_for(std::slice::from_ref(&library));
+    assert!(apps[0].entry.same_instance(&library), "one game, not a tile and a look-alike card");
+    assert_eq!(snap.apps()[0].entry.folder_name, "SiteFolder");
 }

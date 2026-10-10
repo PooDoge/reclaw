@@ -2,15 +2,24 @@
 //! frozen, "so existing installs keep working"). Plain data: where each answer is asked for, what it looks like, and which entry a
 //! catalog or library app is. Asking is `reclaw-sync`'s job.
 //!
-//! * `types.rs`: the answers (an app, its page, a review, a release with its state and VirusTotal verdict, the release status feed)
+//! * `app.rs`: an app as the catalog lists it (what it is, how it installs, its art, its ratings and releases)
+//! * `entry.rs`: a listed app as a catalog entry in Quiver's list format (`AppEntry`), so the rest of Reclaw installs it as any other
+//! * `follow.rs`: keeping a library app's name, project, icon and tags in step with its entry, as Quiver 3.5 does
+//! * `types.rs`: the other answers (its page, a review, a release with its state and VirusTotal verdict, the release status feed)
 //! * `link.rs`: which site entry an app is (its entry id, its `catalogId`, its repository, then its download filter or folder)
 //! * this file: the addresses, and reading a page of a list leniently
+mod app;
+mod entry;
+mod follow;
 mod link;
 mod types;
 
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
+pub use app::*;
+pub use entry::{folder_for, to_entry};
+pub use follow::follow;
 pub use link::{Links, link};
 pub use types::*;
 
@@ -27,6 +36,10 @@ pub const REVIEWS_SHOWN: u32 = 10;
 
 /// Percent-encodes everything but the unreserved characters, for a path segment or a query value.
 fn escape(text: &str) -> String {
+    // `.` and `..` would be read as path segments (even percent-encoded) and send the request to another endpoint.
+    if text.bytes().all(|b| b == b'.') {
+        return "_".to_string();
+    }
     let mut out = String::with_capacity(text.len());
     for byte in text.bytes() {
         if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
@@ -63,6 +76,11 @@ pub mod path {
     /// What players said, newest first.
     pub fn reviews(slug: &str, limit: u32) -> String {
         format!("/apps/{}/reviews?limit={limit}", escape(slug))
+    }
+
+    /// Where a launcher reports a download of one of the app's files that failed (POST).
+    pub fn download_problem(slug: &str) -> String {
+        format!("/apps/{}/download-problem", escape(slug))
     }
 
     /// Every release of the app's repository, newest first, each with its state.

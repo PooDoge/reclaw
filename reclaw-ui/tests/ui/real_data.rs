@@ -23,7 +23,7 @@ fn apps_from(list_json: &str) -> Result<Vec<CatalogApp>, CatalogError> {
     Ok(parse_list(list_json)?
         .apps
         .into_iter()
-        .map(|entry| CatalogApp { entry, lists: vec!["Test".into()], release: None::<PlatformEntry> })
+        .map(|entry| CatalogApp { entry, lists: vec!["Test".into()], release: None::<PlatformEntry>, site: None })
         .collect())
 }
 
@@ -107,7 +107,7 @@ fn real_apps() -> Option<Vec<CatalogApp>> {
         let text = std::fs::read_to_string(dir.join("community-app-catalog").join(format!("{name}.json"))).expect("a list");
         for entry in parse_list(&text).expect("a list").apps {
             let release = index.get(entry.source, &entry.repository, entry.preferred_version.as_deref()).cloned();
-            apps.push(CatalogApp { entry, lists: vec![name.into()], release });
+            apps.push(CatalogApp { entry, lists: vec![name.into()], release, site: None });
         }
     }
     Some(apps)

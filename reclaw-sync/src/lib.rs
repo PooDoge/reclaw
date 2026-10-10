@@ -3,7 +3,7 @@
 //! atomically with backups and never over a read error).
 //!
 //! * `catalog`: [`CatalogSync`], `refresh` (network) and `saved` (disk only)
-//! * `snapshot`: [`CatalogSnapshot`], the result, and the merged list of [`CatalogApp`]s
+//! * `snapshot`: [`CatalogSnapshot`], the result, and the merged list of [`CatalogApp`]s (the site's first, then what only the lists have)
 //! * `library`: [`LibraryStore`]
 //! * `site`: [`SiteClient`], asking quiverlauncher.com (the catalog Quiver moved to) for its listing, an app's page, reviews and releases
 //! * `error`: what can go wrong, as values
@@ -16,5 +16,5 @@ pub mod snapshot;
 pub use catalog::{CatalogSync, DEFAULT_INDEX_URL};
 pub use error::SyncError;
 pub use library::{LibraryError, LibraryStore};
-pub use site::{SiteClient, SiteError};
-pub use snapshot::{CatalogApp, CatalogSnapshot, ListSnapshot, Origin, PlatformSnapshot, Problem};
+pub use site::{DownloadProblem, Listing, SiteClient, SiteError};
+pub use snapshot::{CatalogApp, CatalogSnapshot, ListSnapshot, Origin, PlatformSnapshot, Problem, SITE_LIST, SiteSnapshot};

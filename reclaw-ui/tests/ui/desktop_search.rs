@@ -2,8 +2,11 @@
 //! search is sent or focus goes, keeps what was typed, and each tab shows its results with a way back. The Mods tab's shelves.
 use freya::prelude::NamedKey;
 use reclaw_ui::{
+    catalog_browse::KEY_CATALOG_HIDE_LIBRARY,
     nav::Route,
+    settings::{SettingChange, SettingValue},
     shell::{DevOverrides, MotionOverride},
+    store::AppAction,
 };
 
 use crate::common::*;
@@ -151,6 +154,7 @@ fn settings_are_searched_and_the_rows_found_work_where_they_are() {
 fn on_a_narrow_window_the_button_floats_at_the_top_right_and_searches_the_page() {
     // Compact: the box floats over the page instead of a search field under the title.
     let mut s = at(900., Route::Catalog {});
+    s.dispatch(AppAction::Setting(SettingChange { app: None, key: KEY_CATALOG_HIDE_LIBRARY, value: SettingValue::Bool(false) }));
     let (_, top, _, _) = s.label_box("Catalog").expect("the page title");
     let size = 36.;
     let button = ((900. - 16. - size / 2.), (16. + size / 2.));

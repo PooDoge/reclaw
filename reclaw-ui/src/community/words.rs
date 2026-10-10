@@ -165,8 +165,8 @@ haven't been swapped since, and it sat through a 48-hour wait with its files sca
 
 /// The note above the releases. Reclaw shows what the site says; it does not yet hold back the releases the site has not verified,
 /// as Quiver Launcher does, and the note says so rather than promising it.
-pub const RELEASES_NOTE: &str = "Quiver Launcher only updates to verified releases. Reclaw shows what quiverlauncher.com says about \
-each release; it does not hold back unverified ones yet.";
+pub const RELEASES_NOTE: &str = "Reclaw updates an app only to the release quiverlauncher.com verified, and checks its files against \
+the site's checksums. Installing an unverified release takes a second press of Install; a blocked one, two more.";
 
 /// The date a review was written, as "4 Oct 2026" (in UTC: the site gives no time zone, and a day either way does not matter here).
 pub fn day(ms: f64) -> String {

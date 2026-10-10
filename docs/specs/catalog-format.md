@@ -5,8 +5,8 @@
 
 Reclaw reads and writes the same four documents as the Quiver launcher, so the community catalog works unchanged and a catalog
 Reclaw publishes can be read by Quiver. Since 2026-10-09 the community lists are **frozen**: Quiver 3.5 browses quiverlauncher.com
-instead, and the lists stay in place "so existing installs keep working". Reclaw still reads them as its catalog and reads the site
-beside them (spec: community, ADR 0023). The crate is `reclaw-catalog`: plain data in and out, no network, no disk, no window.
+instead, and the lists stay in place "so existing installs keep working". Reclaw's catalog is now the site's apps first and the
+lists' after, each site app made into an entry of this format (spec: community, ADR 0025). The crate is `reclaw-catalog`: plain data in and out, no network, no disk, no window.
 Why this and not a schema of our own: ADR 0009.
 
 ## The four documents
@@ -32,8 +32,8 @@ A catalog list is somebody else's file and one bad entry must not hide 231 good 
   `autoUpdate`, `deferUpdateTracking`, `linuxRunner`, `linuxPrefixPath`, `linuxProtonPath`, `linuxCustomLaunchCommand`.
 * **Quiver 3.5's link to quiverlauncher.com** (library only): `catalogEntryId` (the site entry the app was added from or last linked
   to) and `catalog` (`{name, project, appIconUrl, tags}`, what the site last set, so a later change of the site's does not overwrite
-  the user's). Reclaw reads and writes both unchanged (`snapshot.rs`); it uses `catalogEntryId` to link the app (spec: community) and
-  does not yet move a field with the site. Before this, saving the library dropped them, which unlinked a library Quiver shares.
+  the user's). Reclaw reads and writes both (`snapshot.rs`); it uses `catalogEntryId` to link the app, and after a refresh moves the
+  name, project, icon and tags with the site where the user has not changed them, updating `catalog` (spec: community). Before this, saving the library dropped them, which unlinked a library Quiver shares.
 * A **manual** app has no `repository`. It cannot be pinned, skipped, auto-updated or filtered; reading forces those off.
 * **Identity** is `manual:<folder>` or `<source>:<repository>`; the **tile** (instance) key adds `:<folder>`, because one repository can hold
   several games (told apart by `releaseAssetFilter`) and each has its own folder. Keys compare ignoring case but keep their spelling.

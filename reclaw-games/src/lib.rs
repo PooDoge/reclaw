@@ -2,6 +2,7 @@
 //! ([`project`]), which launch settings the game supports and how to apply them ([`settings`]).
 //! No UI types, no I/O except the config-file editors, so it is tested without a window.
 //!
+//! * `listing`: what the catalog's website says about a project (dates, ratings, kind, AI use, verified release)
 //! * `platform`: the systems games were recompiled from, how they are named, grouped and ordered
 //! * `project`: catalog metadata, art, media, releases, requirements
 //! * `settings`: the setting keys, a game's capabilities, layered values, the launch plan
@@ -9,6 +10,7 @@
 //! * `fixtures` (tests and the `fixtures` feature): invented projects that exercise every kind of launch setting
 #[cfg(any(test, feature = "fixtures"))]
 pub mod fixtures;
+pub mod listing;
 pub mod platform;
 pub mod project;
 pub mod settings;

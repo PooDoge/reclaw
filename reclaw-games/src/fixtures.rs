@@ -126,6 +126,7 @@ pub fn sample_projects() -> Vec<ProjectInfo> {
         requirements: None,
         tags: vec![],
         capabilities: Capabilities::default(),
+        listing: None,
     };
     vec![
         ProjectInfo {

@@ -10,7 +10,7 @@ use reclaw_ui::{
     store::AppAction,
 };
 
-use super::{Running, paths, shown};
+use super::{Running, paths, shown, site::SiteJob, verified::Check};
 use crate::host::{Host, find, read_only, save_failed};
 
 /// Everything a job needs, copied so the thread owns it.
@@ -26,6 +26,8 @@ struct Spec {
     previous: Option<String>,
     /// The catalog's `filesToAdd`, created once the install is in place.
     markers: Vec<String>,
+    /// quiverlauncher.com's side, for an app it lists.
+    site: Option<SiteJob>,
 }
 
 /// How a job ended.
@@ -33,8 +35,15 @@ enum End {
     Done(Box<Installed>),
     /// The folder already holds the release that would be installed.
     Current(String),
-    Failed(InstallError),
+    /// The error, and anything more to say about it.
+    Failed(InstallError, Vec<String>),
     Cancelled,
+    /// The site did not verify this release: it installs only when Install is pressed `remaining` more times.
+    Confirm {
+        version: String,
+        check: Check,
+        remaining: u8,
+    },
 }
 
 fn host_of(entry: &AppEntry) -> RepoHost {
@@ -102,15 +111,18 @@ impl Host {
             }
             jobs.insert(app, Running { activity, cancel: cancel.clone() });
         }
+        // A release offered after another's files were found gone is taken by this press, for this job only.
+        let offered = self.take_offer(app);
         let request = Request {
             host: host_of(&entry),
             repo: entry.repository.trim().to_string(),
             folder,
             platform: installs.platform,
             filter: entry.release_asset_filter.clone(),
-            preferred_version: entry.preferred_version.clone(),
+            preferred_version: offered.or_else(|| entry.preferred_version.clone()),
             allow_prerelease: prerelease,
             asset: None,
+            releases: None,
         };
         let spec = Spec {
             app,
@@ -122,6 +134,7 @@ impl Host {
             cancel,
             previous: installed_version,
             markers: entry.files_to_add.clone(),
+            site: self.site_job(app),
         };
         self.set_install_state(&spec.key, Some(InstallState::Installing));
         self.send(AppAction::Activity(ActivityEvent::Started {
@@ -152,7 +165,7 @@ impl Host {
     }
 
     /// The job, recorded: what it and the layers under it log goes to the file and to the failure's log view.
-    fn run_job(&self, installer: reclaw_install::Installer, spec: Spec) {
+    fn run_job(&self, installer: reclaw_install::Installer, mut spec: Spec) {
         let recording = reclaw_log::record();
         let end = recording.span().in_scope(|| {
             let r = &spec.request;
@@ -166,38 +179,57 @@ impl Host {
                 pinned = ?r.preferred_version,
                 prerelease = r.allow_prerelease,
                 folder = %shown(&r.folder),
+                site = ?spec.site.as_ref().map(|s| &s.linked.slug),
                 "install started"
             );
-            self.work(&installer, &spec)
+            self.work(&installer, &mut spec)
         });
         self.inner.installs.jobs().remove(&spec.app);
         recording.span().in_scope(|| self.end_job(&spec, end, &recording));
     }
 
-    fn work(&self, installer: &reclaw_install::Installer, spec: &Spec) -> End {
-        let resolved: Resolved = match installer.resolve(&spec.request) {
+    fn work(&self, installer: &reclaw_install::Installer, spec: &mut Spec) -> End {
+        let mut request = spec.request.clone();
+        if let Some(site) = spec.site.as_mut() {
+            site.plan(&mut request);
+        }
+        let mut resolved: Resolved = match installer.resolve(&request) {
             Ok(Plan::Ready(resolved)) => *resolved,
             Ok(Plan::Choose { release, choices }) => {
                 // Several builds fit and nothing says which; take the one most likely to just work, and say so.
                 let Some(best) = pick_best(&choices) else {
-                    return End::Failed(InstallError::NoDownload("No download could be chosen for this release.".to_string()));
+                    return End::Failed(InstallError::NoDownload("No download could be chosen for this release.".to_string()), vec![]);
                 };
                 tracing::info!(app = spec.app, release = %release.tag, chosen = %best, among = choices.len(), "several downloads fit; taking the best ranked");
-                let mut request = spec.request.clone();
                 request.asset = Some(best);
                 match installer.resolve(&request) {
                     Ok(Plan::Ready(resolved)) => *resolved,
                     Ok(Plan::Choose { .. }) => {
-                        return End::Failed(InstallError::NoDownload("The download to take is still ambiguous.".to_string()));
+                        return End::Failed(InstallError::NoDownload("The download to take is still ambiguous.".to_string()), vec![]);
                     }
-                    Err(error) => return End::Failed(error),
+                    Err(error) => return End::Failed(error, vec![]),
                 }
             }
-            Err(error) => return End::Failed(error),
+            Err(error) => return End::Failed(error, vec![]),
         };
-        tracing::info!(release = %resolved.release.tag, asset = %resolved.asset.name, "release chosen");
+        tracing::info!(release = %resolved.release.tag, asset = %resolved.asset.name, checksum = resolved.asset.sha256.is_some(), "release chosen");
         if resolved.already_installed {
             return End::Current(resolved.release.tag.clone());
+        }
+        if let Some(site) = &spec.site {
+            site.fill_digest(&mut resolved);
+            let check = site.check(&resolved);
+            // The press confirms this file at this address with this checksum: a release changed in between asks again.
+            let what =
+                format!("{}\n{}\n{}", resolved.release.tag, resolved.asset.url, resolved.asset.sha256.as_deref().unwrap_or_default());
+            let (confirmed, remaining) = self.confirmed(spec.app, &what, &check);
+            tracing::info!(release = %resolved.release.tag, ?check, confirmed, "quiverlauncher.com's check");
+            if spec.cancel.is_cancelled() {
+                return End::Cancelled;
+            }
+            if !confirmed {
+                return End::Confirm { version: resolved.release.tag.clone(), check, remaining };
+            }
         }
         let sink = |step: Step| {
             self.send(AppAction::Activity(ActivityEvent::Progress {
@@ -208,10 +240,23 @@ impl Host {
                 rate: step.rate,
             }));
         };
-        match installer.install(&spec.request, &resolved, &spec.cancel, &mut |step| sink(step)) {
+        match installer.install(&request, &resolved, &spec.cancel, &mut |step| sink(step)) {
             Ok(done) => End::Done(Box::new(done)),
             Err(error) if error.is_cancelled() => End::Cancelled,
-            Err(error) => End::Failed(error),
+            Err(error) => {
+                let more = match spec.site.as_ref().and_then(|site| site.after_failure(&error, &resolved)) {
+                    Some((_, Some(other))) => {
+                        self.offer_release(spec.app, &other);
+                        vec![
+                            "quiverlauncher.com was told, so it can check the release again.".to_string(),
+                            format!("Press Install again to install {other}, the newest other release it verified."),
+                        ]
+                    }
+                    Some(_) => vec!["quiverlauncher.com was told, so it can check the release again.".to_string()],
+                    None => vec![],
+                };
+                End::Failed(error, more)
+            }
         }
     }
 
@@ -245,7 +290,12 @@ impl Host {
                 self.restore_state(spec);
                 self.send(AppAction::Activity(ActivityEvent::Cancelled { id }));
             }
-            End::Failed(error) => {
+            End::Confirm { version, check, remaining } => {
+                self.restore_state(spec);
+                self.send(AppAction::Activity(ActivityEvent::Cancelled { id }));
+                self.tell(confirm_notice(&spec.title, &version, &check, remaining));
+            }
+            End::Failed(error, more) => {
                 tracing::warn!(app = spec.app, title = %spec.title, %error, "the install failed");
                 match &spec.previous {
                     Some(_) => self.restore_state(spec),
@@ -253,6 +303,7 @@ impl Host {
                 }
                 let mut details = vec![error.to_string()];
                 details.extend(error.hint());
+                details.extend(more);
                 details.push(format!(
                     "The log has more: {}",
                     self.inner.logs_dir.as_ref().map_or_else(|| "reclaw.log".to_string(), |d| shown(&d.join("reclaw.log")))
@@ -302,6 +353,24 @@ impl Host {
             }
         }
     }
+}
+
+/// Why a release waits for another press of Install, and how many.
+fn confirm_notice(title: &str, version: &str, check: &Check, remaining: u8) -> Notice {
+    let (heading, what) = match check {
+        Check::Blocked(_) => (format!("{title} {version} is blocked by quiverlauncher.com"), "It was withdrawn, taken down or flagged"),
+        Check::Flagged { .. } => {
+            (format!("{title} {version} is flagged by antivirus engines"), "quiverlauncher.com verified it, but VirusTotal flags its file")
+        }
+        _ => (format!("{title} {version} is not verified by quiverlauncher.com"), "Nobody has checked this release yet"),
+    };
+    let times = if remaining > 1 { format!("{remaining} more times") } else { "again".to_string() };
+    let mut details = check.reasons();
+    details.push(format!(
+        "To install it anyway, press Install {times} within {} minutes. Nothing was downloaded.",
+        super::verified::WINDOW.as_secs() / 60
+    ));
+    Notice::problem(&heading, what, details)
 }
 
 /// One line for the activity row.

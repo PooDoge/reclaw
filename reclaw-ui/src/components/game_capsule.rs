@@ -1,11 +1,12 @@
 use freya::prelude::*;
 
 use super::{ArtPlaceholder, PressHandler, RemoteArt, StatusBadge, hoverable, pointer_cursor};
-use crate::{metrics::*, prelude::*, typography::TypeStyle};
+use crate::{catalog_browse::CardNote, community::Tone, metrics::*, prelude::*, typography::TypeStyle};
 
 /// Steam-style library tile: 3:4 art, title, project, status badge. Hover draws an accent border
 /// and, for installed games, a Play button over the art. Touch has no hover, so Play lives in the
-/// hero there. A Failed badge shows why on hover; its log is on the game's page.
+/// hero there. A Failed badge shows why on hover; its log is on the game's page. In the Catalog a
+/// card can also say how the app runs for players and carry a NEW badge, as quiverlauncher.com's do.
 #[derive(Clone, PartialEq)]
 pub struct GameCapsule {
     game: GameEntry,
@@ -15,6 +16,7 @@ pub struct GameCapsule {
     on_press: Option<PressHandler>,
     on_play: Option<PressHandler>,
     failure: Option<String>,
+    note: Option<CardNote>,
     key: DiffKey,
 }
 
@@ -26,7 +28,17 @@ impl KeyExt for GameCapsule {
 
 impl GameCapsule {
     pub fn new(game: GameEntry) -> Self {
-        Self { game, selected: false, fluid: false, hovered: false, on_press: None, on_play: None, failure: None, key: DiffKey::None }
+        Self {
+            game,
+            selected: false,
+            fluid: false,
+            hovered: false,
+            on_press: None,
+            on_play: None,
+            failure: None,
+            note: None,
+            key: DiffKey::None,
+        }
     }
 
     pub fn selected(mut self, selected: bool) -> Self {
@@ -53,6 +65,12 @@ impl GameCapsule {
 
     pub fn on_play(mut self, handler: impl Into<PressHandler>) -> Self {
         self.on_play = Some(handler.into());
+        self
+    }
+
+    /// What players said and whether the app is new on the site (Catalog cards).
+    pub fn note(mut self, note: Option<CardNote>) -> Self {
+        self.note = note;
         self
     }
 
@@ -84,6 +102,16 @@ impl Component for GameCapsule {
                     .position(Position::new_absolute().top(SPACE_2).left(SPACE_2))
                     .child(SystemBadge::new(self.game.platform).over_art(true)),
             )
+            .maybe(self.note.as_ref().is_some_and(|n| n.new), |el| {
+                el.child(
+                    rect()
+                        .position(Position::new_absolute().top(SPACE_2).right(SPACE_2))
+                        .padding(Gaps::new(2., SPACE_2, 2., SPACE_2))
+                        .corner_radius(RADIUS_SM)
+                        .background(t.install)
+                        .child(TypeStyle::Meta.text("NEW", t.on_install)),
+                )
+            })
             .maybe(show_play, |el| {
                 el.child(
                     rect()
@@ -99,6 +127,15 @@ impl Component for GameCapsule {
             .padding(Gaps::new(SPACE_2, SPACE_3, SPACE_3, SPACE_3))
             .child(TypeStyle::Label.text(self.game.title.clone(), t.ink).max_lines(1).text_overflow(TextOverflow::Ellipsis))
             .child(TypeStyle::Meta.text(self.game.project.clone(), t.ink_subtle).max_lines(1).text_overflow(TextOverflow::Ellipsis))
+            .maybe_child(self.note.as_ref().map(|note| {
+                let color = match note.tone {
+                    Tone::Positive => t.ok,
+                    Tone::Caution => t.warn,
+                    Tone::Negative => t.danger,
+                    Tone::Muted => t.ink_muted,
+                };
+                TypeStyle::Meta.text(note.rating.clone(), color).max_lines(1).text_overflow(TextOverflow::Ellipsis)
+            }))
             .child(StatusBadge::new(self.game.status).map(self.failure.clone(), |b, text| b.failure(text)));
 
         let card = rect()

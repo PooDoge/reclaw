@@ -139,6 +139,7 @@ fn catalog_app(repository: &str, folder: &str) -> CatalogApp {
         entry: AppEntry { name: folder.into(), repository: repository.into(), folder_name: folder.into(), ..Default::default() },
         lists: vec![],
         release: None,
+        site: None,
     }
 }
 
@@ -155,7 +156,7 @@ fn every_game_the_screens_know_is_linked_by_its_id_and_the_librarys_copy_wins() 
     let site_app = |slug: &str, recommended: u32| SiteApp {
         slug: slug.into(),
         recommended,
-        launcher: Launcher { folder_name: slug.into(), release_asset_filter: None },
+        launcher: Launcher { folder_name: slug.into(), ..Default::default() },
         ..Default::default()
     };
     let links = Links::new(

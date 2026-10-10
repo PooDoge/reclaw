@@ -4,6 +4,8 @@
 //! * `paths`: where an app's folder is (pure)
 //! * `jobs`: the install and update flow, cancelling, and how a job ends
 //! * `actions`: uninstall, open the folder, check for an update, verify
+//! * `site`: a job's questions to quiverlauncher.com: the release, its check, a broken download's report
+//! * `verified`: which release of a quiverlauncher.com app to install and whether it must be confirmed (pure)
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -20,6 +22,8 @@ use reclaw_ui::activity::ActivityId;
 mod actions;
 mod jobs;
 pub mod paths;
+mod site;
+pub mod verified;
 
 /// What the host works with to install: the installer, and where things are on this machine.
 pub struct Installs {
@@ -28,6 +32,8 @@ pub struct Installs {
     pub(super) home: Option<PathBuf>,
     jobs: Mutex<HashMap<u32, Running>>,
     next_activity: AtomicU64,
+    /// Presses of Install waiting for the one that confirms a release the site did not verify.
+    confirmations: Mutex<verified::Confirmations>,
 }
 
 /// A job that is working now.
@@ -38,11 +44,22 @@ struct Running {
 
 impl Installs {
     pub fn new(installer: Option<Installer>, platform: reclaw_install::Platform, home: Option<PathBuf>) -> Self {
-        Self { installer, platform, home, jobs: Mutex::new(HashMap::new()), next_activity: AtomicU64::new(1) }
+        Self {
+            installer,
+            platform,
+            home,
+            jobs: Mutex::new(HashMap::new()),
+            next_activity: AtomicU64::new(1),
+            confirmations: Mutex::default(),
+        }
     }
 
     fn jobs(&self) -> std::sync::MutexGuard<'_, HashMap<u32, Running>> {
         self.jobs.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn confirmations(&self) -> std::sync::MutexGuard<'_, verified::Confirmations> {
+        self.confirmations.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub(crate) fn next_activity(&self) -> ActivityId {

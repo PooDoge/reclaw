@@ -11,7 +11,7 @@
 //! Still two candidates: no link. Better unlinked than shown another app's reviews.
 use std::collections::HashMap;
 
-use super::types::{ReleaseStatus, SiteApp};
+use super::{ReleaseStatus, SiteApp};
 use crate::entry::AppEntry;
 
 /// What the site said, indexed for linking: the release status feed (repositories) and the listing (folders, filters, everything
@@ -20,11 +20,35 @@ use crate::entry::AppEntry;
 pub struct Links {
     pub status: Vec<ReleaseStatus>,
     pub apps: HashMap<String, SiteApp>,
+    /// The slugs (lower case) in the order the listing gave them, each once.
+    order: Vec<String>,
 }
 
 impl Links {
     pub fn new(status: Vec<ReleaseStatus>, apps: Vec<SiteApp>) -> Self {
-        Self { status, apps: apps.into_iter().map(|a| (a.slug.to_lowercase(), a)).collect() }
+        let mut order = Vec::with_capacity(apps.len());
+        let mut by_slug = HashMap::with_capacity(apps.len());
+        for app in apps {
+            let slug = app.slug.to_lowercase();
+            if by_slug.insert(slug.clone(), app).is_none() {
+                order.push(slug);
+            }
+        }
+        Self { status, apps: by_slug, order }
+    }
+
+    /// Every app, in the listing's order.
+    pub fn listed(&self) -> impl Iterator<Item = &SiteApp> {
+        self.order.iter().filter_map(|slug| self.apps.get(slug))
+    }
+
+    /// The app's line of the release status feed: by its id, else by its slug.
+    pub fn status_of(&self, app: &SiteApp) -> Option<&ReleaseStatus> {
+        let id = app.id.trim();
+        self.status
+            .iter()
+            .find(|s| !id.is_empty() && s.id == id)
+            .or_else(|| self.status.iter().find(|s| s.slug.eq_ignore_ascii_case(app.slug.trim())))
     }
 
     pub fn app(&self, slug: &str) -> Option<&SiteApp> {
@@ -34,8 +58,7 @@ impl Links {
     /// The folder the site gives an app: its own, or its slug when it gives none (Quiver's `FolderFor`).
     fn folder(&self, slug: &str) -> Option<String> {
         let app = self.app(slug)?;
-        let folder = app.launcher.folder_name.trim();
-        Some(if folder.is_empty() { app.slug.clone() } else { folder.to_string() })
+        Some(super::folder_for(app))
     }
 
     fn filter(&self, slug: &str) -> String {

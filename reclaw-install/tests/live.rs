@@ -43,6 +43,7 @@ fn request(host: Host, repo: &str, folder: &Path) -> Request {
         preferred_version: None,
         allow_prerelease: false,
         asset: None,
+        releases: None,
     }
 }
 

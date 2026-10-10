@@ -98,6 +98,23 @@ fn a_review_and_an_apps_page_read() {
 }
 
 #[test]
+fn a_page_with_withdrawn_false_reads_as_the_live_api_answers_it() {
+    // Quiver 3.5's test of a real `/apps/{slug}` answer has `"withdrawn":false`, and `game`/`games` beside the entry.
+    let detail: Detail = parse_one(&format!(
+        r#"{{"entry":{G1R_DELUXE},"game":{{"artwork":"https://x/icon.png","id":"k9"}},"games":[],
+            "project":{{"aiUse":{{"level":"assisted","source":"signals"}},"author":"bryanthaboi","name":"G1R Deluxe",
+              "projectType":"port","provider":"github","repository":"bryanthaboi/gen1recomp","slug":"github-bryanthaboi-gen1recomp"}},
+            "withdrawn":false}}"#
+    ))
+    .expect("readable")
+    .expect("not null");
+    assert!(detail.withdrawn.is_empty());
+    assert_eq!(detail.project.repository.as_deref(), Some("bryanthaboi/gen1recomp"));
+    assert_eq!(detail.entry.consoles, ["gb", "gbc", "gba"]);
+    assert_eq!(detail.entry.launcher.files_to_add, ["portable.txt"]);
+}
+
+#[test]
 fn addresses_escape_what_they_carry() {
     assert_eq!(path::apps(None), "/apps?limit=100");
     assert_eq!(path::release_status(Some("a b/c")), "/release-status?limit=100&cursor=a%20b%2Fc");
@@ -113,7 +130,7 @@ fn status(id: &str, slug: &str, provider: &str, repository: &str) -> ReleaseStat
 fn app(slug: &str, folder: &str, filter: Option<&str>) -> SiteApp {
     SiteApp {
         slug: slug.into(),
-        launcher: Launcher { folder_name: folder.into(), release_asset_filter: filter.map(str::to_string) },
+        launcher: Launcher { folder_name: folder.into(), release_asset_filter: filter.map(str::to_string), ..Default::default() },
         ..Default::default()
     }
 }
@@ -168,4 +185,10 @@ fn a_repository_that_moved_is_found_by_its_folder_when_only_one_entry_has_it() {
     assert_eq!(link(&entry("old/a", "gamea"), &links).as_deref(), Some("a"));
     assert_eq!(link(&entry("old/b", "b"), &links).as_deref(), Some("b"), "no folder from the site: its slug");
     assert_eq!(link(&entry("old/c", "GameC"), &links), None);
+}
+
+#[test]
+fn a_slug_of_dots_never_becomes_a_path_segment() {
+    assert_eq!(path::release_history(".."), "/apps/_/release-history?limit=100");
+    assert_eq!(path::download_problem("."), "/apps/_/download-problem");
 }

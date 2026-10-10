@@ -1,5 +1,5 @@
-//! What to ask for and what comes back, for the small answers (a catalog file, a release list). Large files use
-//! `download`.
+//! What to ask for and what comes back, for the small answers (a catalog file, a release list) and the odd small report sent as
+//! JSON. Large files use `download`.
 use std::time::Duration;
 
 use crate::error::NetError;
@@ -24,6 +24,8 @@ pub struct Request {
     /// Time allowed for the whole exchange, body included.
     pub timeout: Duration,
     pub cache: Option<CacheRule>,
+    /// A JSON body, which makes the request a POST. Never cached.
+    pub json: Option<Vec<u8>>,
 }
 
 impl Request {
@@ -35,7 +37,13 @@ impl Request {
             max_bytes: 8 * 1024 * 1024,
             timeout: Duration::from_secs(30),
             cache: None,
+            json: None,
         }
+    }
+
+    /// A POST of `body` as JSON (a report to a site; nothing secret). It is never cached, whatever else is set.
+    pub fn post_json(url: impl Into<String>, body: Vec<u8>) -> Self {
+        Self { json: Some(body), ..Self::get(url) }
     }
 
     pub fn accept(mut self, accept: &str) -> Self {
@@ -59,7 +67,9 @@ impl Request {
     }
 
     pub fn cached(mut self, ttl: Duration, stale_on_error: bool) -> Self {
-        self.cache = Some(CacheRule { ttl, stale_on_error });
+        if self.json.is_none() {
+            self.cache = Some(CacheRule { ttl, stale_on_error });
+        }
         self
     }
 }
