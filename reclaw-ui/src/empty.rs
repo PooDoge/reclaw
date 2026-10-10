@@ -33,12 +33,13 @@ pub fn library(filtered: bool) -> EmptyText {
     }
 }
 
-/// The Mods tab with nothing to show. `any_known` is whether the program knows of any mod at all.
-pub fn mods(any_known: bool) -> EmptyText {
-    if any_known {
-        say("No mods match", "Try another site or a different search.")
-    } else {
-        say("No mods to show yet", "Install a game that has mods and its mods from Thunderstore and GameBanana appear here.")
+/// The Mods tab with nothing to show. `known` is how many mods there are before the site chip and the search (for the chosen game,
+/// when `one_game`).
+pub fn mods(known: usize, one_game: bool) -> EmptyText {
+    match (known, one_game) {
+        (1.., _) => say("No mods match", "Try another site or a different search."),
+        (0, true) => say("No mods listed for this game yet", "Its mod sites have listed nothing, or could not be reached. Press Refresh."),
+        (0, false) => say("No mods to show yet", "Install a game that has mods and its mods from Thunderstore and GameBanana appear here."),
     }
 }
 
@@ -74,7 +75,9 @@ mod tests {
 
     #[test]
     fn mods_say_where_they_come_from() {
-        assert!(mods(false).text.contains("Install a game that has mods"));
-        assert_eq!(mods(true).title, "No mods match");
+        assert!(mods(0, false).text.contains("Install a game that has mods"));
+        assert_eq!(mods(3, false).title, "No mods match");
+        assert_eq!(mods(3, true).title, "No mods match");
+        assert!(mods(0, true).title.contains("this game"));
     }
 }

@@ -30,6 +30,9 @@ pub struct AppState {
     /// What the catalog says about every project, installed or not.
     pub projects: Vec<ProjectInfo>,
     pub mods: Vec<ModEntry>,
+    /// The installed games Reclaw can list and install mods for, by id, in the library's order. A game here may have no
+    /// mods listed yet (its sites have not answered), which is why this is not derived from `mods`.
+    pub moddable: Vec<u32>,
     /// What quiverlauncher.com and its players say about each game, and the game pages read from it.
     pub community: Community,
     /// Whether the catalog is loading, how fresh it is, and what went wrong with it.
@@ -70,6 +73,7 @@ impl AppState {
             games: Vec::new(),
             projects: Vec::new(),
             mods: Vec::new(),
+            moddable: Vec::new(),
             community: Community::default(),
             catalog: CatalogStatus::default(),
             credentials: CredentialsStatus::default(),

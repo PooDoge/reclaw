@@ -150,14 +150,46 @@ pub(super) fn deck_button(c: &Ctx) -> ActionButton {
         .on_press(move |_| toggle.call(()))
 }
 
-/// The search field, with the Deck mode button beside it on layouts that have no top bar.
-pub(super) fn search_row(c: &Ctx) -> Rect {
+/// The line saying a search narrows the list, with Clear; `None` when no search is running.
+pub(super) fn search_bar(c: &Ctx, narrow: bool) -> Option<Rect> {
+    (!c.query.is_empty()).then(|| {
+        crate::desktop::pages::common::results_bar(
+            &c.t,
+            crate::search::SearchScope::Library,
+            &c.query,
+            c.visible.len(),
+            narrow,
+            c.on_clear_search.clone(),
+        )
+    })
+}
+
+/// The games, or, when a search left none, what it searched and the way back.
+pub(super) fn grid_or_nothing(c: &Ctx, columns: usize) -> Element {
+    if c.visible.is_empty() && !c.query.is_empty() {
+        crate::desktop::pages::common::no_results(
+            &c.t,
+            crate::search::SearchScope::Library,
+            &c.query,
+            "Try other words, or another filter.",
+            c.on_clear_search.clone(),
+        )
+        .into_element()
+    } else {
+        grid(c, columns).into_element()
+    }
+}
+
+/// The top row on layouts that have no top bar: the page's name and the Deck mode button, leaving the right end free for the
+/// floating search button.
+pub(super) fn top_row(c: &Ctx) -> Rect {
     rect()
         .horizontal()
         .content(Content::Flex)
         .cross_align(Alignment::Center)
         .spacing(SPACE_2)
         .width(Size::fill())
-        .child(rect().width(Size::flex(1.)).child(SearchField::new(c.search).density(c.env.density)))
+        .padding(Gaps::new(0., crate::desktop::pages::common::floating_search_reserve(&c.env), 0., 0.))
+        .child(rect().width(Size::flex(1.)).child(TypeStyle::TitlePage.text("Library", c.t.ink)))
         .child(deck_button(c))
 }

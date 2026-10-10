@@ -6,7 +6,8 @@
 //! * `common`: the headless harness (`Mount`, `Session`) every test uses
 //! * `deck_*`: Deck mode (input, lifecycle with real processes, notifications and holds, surfaces, snapshots)
 //! * `credentials`: the Network and Diagnostics settings, and that a pasted token leaves the page once, as a secret
-//! * `desktop_*`, `nav_stage`: the desktop interface and the router (`desktop_failures`: the tooltip and log behind "Failed")
+//! * `desktop_*`, `nav_stage`: the desktop interface and the router (`desktop_failures`: the tooltip and log behind "Failed";
+//!   `desktop_search`: the search button, each tab's results, the Mods tab's shelves)
 //! * `recents`: the Recent menu (desktop) and the Quick access list (Deck)
 //! * `media`: artwork and READMEs against a fake internet; `banner`: what the game page shows when the catalog has no banner
 //! * `real_data`: data arriving after the first frame, and (with `QUIVER_CATALOG_DIR`) the real catalog on both interfaces
@@ -25,6 +26,7 @@ mod deck_surfaces;
 mod deck_theme;
 mod desktop_failures;
 mod desktop_pages;
+mod desktop_search;
 mod desktop_settings;
 mod desktop_snapshots;
 mod desktop_surfaces;

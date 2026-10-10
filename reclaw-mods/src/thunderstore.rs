@@ -4,10 +4,13 @@
 //! was written): the community's listing at `/api/cyberstorm/listing/<community>/` (twenty packages a page, a `next` address), its
 //! sections at `/api/cyberstorm/community/<community>/filters/` (the "Mods" section leaves out modpacks and tools), and one
 //! package's newest version, with its download address and dependencies, at `/api/experimental/package/<owner>/<name>/`.
+//! The dates (`datetime_created` and `last_updated` in a listing, `date_created` and `date_updated` for one package) are not in
+//! Quiver's client and were not seen in a real answer: the names are Thunderstore's as remembered, unconfirmed. A listing without
+//! them still reads, and the Mods tab then orders by the site's own ranking.
 use serde_json::Value;
 
 use crate::{
-    package::{Download, Package, Page, Sort, encode, flag, number, text},
+    package::{Download, Package, Page, Sort, encode, flag, number, text, timestamp},
     source::Provider,
 };
 
@@ -77,6 +80,8 @@ fn listed_package(item: &Value, community: &str) -> Option<Package> {
         rating: number(item.get("rating_count")).unwrap_or(0),
         version,
         size: number(item.get("size")),
+        created: timestamp(item.get("datetime_created")),
+        updated: timestamp(item.get("last_updated")),
         owner,
         name,
     })
@@ -129,6 +134,8 @@ pub fn parse_package(body: &[u8], community: &str) -> Result<(Package, Download)
         rating: 0,
         version: version.clone(),
         size: None,
+        created: timestamp(value.get("date_created")),
+        updated: timestamp(value.get("date_updated")),
         owner,
         name,
     };

@@ -66,10 +66,11 @@ pub fn platforms(projects: &[ProjectInfo]) -> Vec<(Platform, u32)> {
         .collect()
 }
 
-/// Mods from one provider (or all) whose title, author, summary or tags contain `query`.
-pub fn mods_matching(mods: &[ModEntry], provider: Option<ModProvider>, query: &str) -> Vec<ModEntry> {
+/// Mods for one game (or all) from one provider (or all) whose title, author, summary or tags contain `query`.
+pub fn mods_matching(mods: &[ModEntry], game: Option<u32>, provider: Option<ModProvider>, query: &str) -> Vec<ModEntry> {
     let query = query.trim().to_lowercase();
     mods.iter()
+        .filter(|m| game.is_none_or(|wanted| m.game_id == wanted))
         .filter(|m| provider.is_none_or(|wanted| m.provider == wanted))
         .filter(|m| {
             query.is_empty()
@@ -82,13 +83,11 @@ pub fn mods_matching(mods: &[ModEntry], provider: Option<ModProvider>, query: &s
         .collect()
 }
 
-/// Whether a title, project name or any tag contains `query`, ignoring case. An empty query matches.
+/// Whether every word of `query` is in the title, project name or a tag, ignoring case. An empty query matches.
 pub fn matches_query(game: &GameEntry, query: &str) -> bool {
-    let query = query.trim().to_lowercase();
-    query.is_empty()
-        || game.title.to_lowercase().contains(&query)
-        || game.project.to_lowercase().contains(&query)
-        || game.tags.iter().any(|tag| tag.to_lowercase().contains(&query))
+    let mut fields = vec![&*game.title, &*game.project];
+    fields.extend(game.tags.iter().map(|tag| &**tag));
+    crate::search::matches_all(&fields, query)
 }
 
 #[cfg(test)]
@@ -181,10 +180,12 @@ mod tests {
     #[test]
     fn mods_filter_by_provider_and_text() {
         let mods = sample_mods();
-        assert!(mods_matching(&mods, Some(ModProvider::GameBanana), "").iter().all(|m| m.provider == ModProvider::GameBanana));
-        assert_eq!(mods_matching(&mods, None, "RANDOM").len(), 1);
-        assert_eq!(mods_matching(&mods, None, "").len(), mods.len());
-        assert!(mods_matching(&mods, Some(ModProvider::Thunderstore), "randomizer").is_empty());
+        assert!(mods_matching(&mods, None, Some(ModProvider::GameBanana), "").iter().all(|m| m.provider == ModProvider::GameBanana));
+        assert_eq!(mods_matching(&mods, None, None, "RANDOM").len(), 1);
+        assert_eq!(mods_matching(&mods, None, None, "").len(), mods.len());
+        assert!(mods_matching(&mods, None, Some(ModProvider::Thunderstore), "randomizer").is_empty());
+        assert!(mods_matching(&mods, Some(1), None, "").iter().all(|m| m.game_id == 1));
+        assert!(mods_matching(&mods, Some(1), None, "randomizer").is_empty(), "the game and the search combine");
     }
 
     #[test]
@@ -195,5 +196,8 @@ mod tests {
         assert!(matches_query(&games[1], "mods"));
         assert!(matches_query(&games[0], ""));
         assert!(!matches_query(&games[0], "zelda"));
+        // Every word, in any field and any order.
+        assert!(matches_query(&games[0], "n64 starfall"));
+        assert!(!matches_query(&games[0], "starfall zelda"));
     }
 }

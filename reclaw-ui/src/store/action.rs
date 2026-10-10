@@ -25,6 +25,8 @@ pub enum AppAction {
     SetGames(Vec<GameEntry>),
     SetProjects(Vec<ProjectInfo>),
     SetMods(Vec<ModEntry>),
+    /// The installed games whose mods can be browsed, by id.
+    SetModdable(Vec<u32>),
     /// Each game's entry on quiverlauncher.com, by game id (read after every catalog refresh).
     SetCommunity(std::collections::BTreeMap<u32, reclaw_catalog::site::SiteApp>),
     /// A game's page on quiverlauncher.com is being read, or was.

@@ -40,6 +40,8 @@ fixtures.rs              invented games for tests only (compiled for tests and t
 effect.rs                Effect: every command the UI asks of its host (both interfaces)
 app_menu.rs systems.rs   per-app Options menu as data; system badges, filter and sort by system
 catalog.rs launch.rs     one game's view-model for its page; what Play says per run state
+mod_games.rs mod_shelves.rs  the Mods tab's game choices; its shelves, search order and pages              (spec: mods)
+search/                  the desktop search: which tab, open/close/send and the kept draft, matching, settings filter (spec: search)
 
 store/                   shared state: AppState, AppAction, reduce, channels, Store handle, hooks  (spec: state)
 activity/                installs, updates, mod downloads: the board, indicators, time left         (spec: state)
@@ -193,7 +195,7 @@ and the media hub); the shell's own effects are handled inside it.
 * Deck's Catalog and Mods pages, and the README on Deck.
 * Drawing mermaid diagrams (they show as source), a cache size and "clear cache" in Settings.
 * Mods: checked against a fake site only (the real Thunderstore and GameBanana were out of reach); no enable / disable, no chooser for a
-  GameBanana mod with several files, no Deck page.
+  GameBanana mod with several files, no Deck page; the search covers the mods already listed, not the sites.
 * Background update passes and auto-update (an explicit Check for updates exists), a chooser when several builds fit, choosing
   which program to start when there are several, a Windows-runner picker (the library's `linuxRunner` fields are honoured), a
   desktop or Steam shortcut, Flatpak bundles. `docs/quiver-parity.md` has the plan.

@@ -35,6 +35,7 @@
 | `specs/catalog-format.md` | The catalog and library documents, in Quiver's format, and the optional `reclaw` block |
 | `specs/logging.md` | The log file, what is written, what never is, the diagnostics report |
 | `specs/credentials.md` | Access tokens: where they live, how they are sent, checked and dropped, the Network settings |
+| `specs/search.md` | The desktop search button: which tab, open and close, what is kept, what results show |
 | `specs/updates.md` | `scripts/update.sh` and Settings, About, "Update from source" |
 | `specs/community.md` | What quiverlauncher.com says about a game: linking, ratings, reviews, releases, facts |
 

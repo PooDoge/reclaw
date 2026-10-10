@@ -208,6 +208,14 @@ fn rebuilding_the_game_list_keeps_what_is_running() {
 }
 
 #[test]
+fn the_moddable_games_are_told_on_the_mods_channel_only_when_they_change() {
+    let mut s = state();
+    assert_eq!(s.reduce(AppAction::SetModdable(vec![2, 1])), vec![AppChannel::Mods]);
+    assert_eq!(s.moddable, vec![2, 1]);
+    assert!(s.reduce(AppAction::SetModdable(vec![2, 1])).is_empty());
+}
+
+#[test]
 fn the_community_entries_and_a_games_page_redraw_only_their_readers_and_only_when_they_change() {
     use crate::community::{PageData, PageState};
     let mut s = crate::store::AppState::default();

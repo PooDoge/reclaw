@@ -3,7 +3,7 @@ use freya::prelude::*;
 use crate::{
     activity::FailureHint,
     catalog::GameView,
-    desktop::{DesktopEnv, GameDialogs},
+    desktop::{DesktopEnv, DesktopUi, GameDialogs},
     effect::Effect,
     nav::Nav,
     prelude::*,
@@ -20,6 +20,9 @@ pub(super) struct Ctx {
     pub on_effect: EventHandler<Effect>,
     /// What the Failed badge says and opens, when the game is shown as failed.
     pub failure: Option<FailureHint>,
+    pub ui: DesktopUi,
+    /// Whether the game is installed and Reclaw can list mods for it.
+    pub takes_mods: bool,
     /// What quiverlauncher.com says about the game, when it has an entry there.
     pub community: crate::community::CommunityOf,
     /// Now, in JavaScript milliseconds, for "updated 3 d ago".
@@ -27,6 +30,12 @@ pub(super) struct Ctx {
 }
 
 impl Ctx {
+    /// A handler that opens the Mods tab on this game's mods.
+    pub fn show_mods(&self) -> impl Fn(Event<PressEventData>) + 'static {
+        let (ui, nav, id) = (self.ui, self.nav, self.view.game.id);
+        move |_| ui.show_mods_for(nav, id)
+    }
+
     /// A handler that opens a link in the system browser or player.
     pub fn open_url(&self) -> EventHandler<String> {
         let on_effect = self.on_effect.clone();

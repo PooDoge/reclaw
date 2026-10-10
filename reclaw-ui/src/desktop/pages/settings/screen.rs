@@ -4,12 +4,13 @@ use super::{form::Form, tokens::TokenBoxes};
 use crate::{
     catalog::GameView,
     desktop::{
-        pages::common::{NotFound, PageHeader},
+        pages::common::{NotFound, PageHeader, floating_search_reserve, no_results, results_bar},
         use_desktop_ui,
     },
     metrics::*,
     nav::{Route, use_nav},
     prelude::*,
+    search::{SearchScope, filter_schema, row_count},
     settings::{LaunchContext, Schema, SettingsTarget, app_properties, global_settings},
     shell::use_shell,
     store::{use_credentials, use_display, use_games, use_launch, use_mods, use_projects, use_settings},
@@ -96,6 +97,10 @@ impl Component for SettingsScreen {
             })
             .collect();
 
+        // A search runs over Reclaw's own settings; a game's properties are a page under the Library and are not searched.
+        let query = if self.target == SettingsTarget::Global { ui.query(SearchScope::Settings) } else { String::new() };
+        let found = (!query.is_empty()).then(|| filter_schema(&schema, &query));
+
         let form = Form {
             target: self.target,
             schema: schema.clone(),
@@ -127,7 +132,40 @@ impl Component for SettingsScreen {
         };
 
         let list = rect().vertical().spacing(2.).width(if phone { Size::fill() } else { Size::px(SIDEBAR_W) }).children(buttons);
-        let body = if phone {
+        let body = if let Some(found) = found {
+            // The rows the search found, working, under their sections' titles: change a setting without going to its section.
+            let on_clear = EventHandler::new(move |()| ui.clear_search(SearchScope::Settings));
+            let count = row_count(&found);
+            let content = if found.sections.is_empty() {
+                no_results(&t, SearchScope::Settings, &query, "Try other words, such as a setting's name or one of its choices.", on_clear)
+                    .into_element()
+            } else {
+                let sections = (0..found.sections.len()).map(|i| {
+                    let title = found.sections[i].title;
+                    rect()
+                        .vertical()
+                        .spacing(SPACE_2)
+                        .width(Size::fill())
+                        .child(TypeStyle::Eyebrow.text(title, t.accent))
+                        .child(Form { schema: found.clone(), section: i, ..form.clone() })
+                        .key(title)
+                        .into_element()
+                });
+                rect()
+                    .vertical()
+                    .spacing(SPACE_5)
+                    .width(Size::fill())
+                    .child(results_bar(&t, SearchScope::Settings, &query, count, false, on_clear))
+                    .children(sections)
+                    .into_element()
+            };
+            let gutter = if phone { SPACE_4 } else { SPACE_5 };
+            ScrollView::new()
+                .show_scrollbar(false)
+                .height(Size::flex(1.))
+                .child(rect().width(Size::fill()).padding(Gaps::new(0., gutter, SPACE_5, gutter)).child(content))
+                .into_element()
+        } else if phone {
             if show_list {
                 ScrollView::new().show_scrollbar(false).child(rect().padding(SPACE_4).child(list)).into_element()
             } else {
@@ -155,7 +193,12 @@ impl Component for SettingsScreen {
             .content(Content::Flex)
             .expanded()
             .background(t.bg_base)
-            .child(rect().width(Size::fill()).padding(Gaps::new(SPACE_4, SPACE_5, SPACE_3, SPACE_5)).child(header))
+            .child(
+                rect()
+                    .width(Size::fill())
+                    .padding(Gaps::new(SPACE_4, SPACE_5 + floating_search_reserve(&env), SPACE_3, SPACE_5))
+                    .child(header),
+            )
             .child(body)
             .into_element()
     }

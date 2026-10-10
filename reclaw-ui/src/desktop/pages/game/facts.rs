@@ -61,30 +61,36 @@ pub(super) fn requirements(c: &Ctx) -> Option<Element> {
     )
 }
 
-/// The project's page and its issue tracker.
+/// The game's mods on the Mods tab, when it takes mods; the project's page and its issue tracker,
+/// when the catalog knows the project. Nothing when neither applies.
 pub(super) fn links(c: &Ctx) -> Option<Element> {
-    let project = c.view.project.as_ref()?;
-    let open = c.open_url();
-    let (home, issues) = (project.repo.url(), format!("{}/issues", project.repo.url()));
-    let (open_home, open_issues) = (open.clone(), open);
+    let mods =
+        c.takes_mods.then(|| ActionButton::new(ButtonVariant::Secondary).icon(IconName::Mods).label("Browse mods").on_press(c.show_mods()));
+    let project = c.view.project.as_ref().map(|project| {
+        let open = c.open_url();
+        let (home, issues) = (project.repo.url(), format!("{}/issues", project.repo.url()));
+        let (open_home, open_issues) = (open.clone(), open);
+        [
+            ActionButton::new(ButtonVariant::Secondary)
+                .icon(IconName::External)
+                .label("Project page")
+                .on_press(move |_| open_home.call(home.clone())),
+            ActionButton::new(ButtonVariant::Ghost)
+                .icon(IconName::External)
+                .label("Report a problem")
+                .on_press(move |_| open_issues.call(issues.clone())),
+        ]
+    });
+    if mods.is_none() && project.is_none() {
+        return None;
+    }
     Some(
         rect()
             .vertical()
             .spacing(SPACE_2)
             .width(Size::fill())
             .child(heading(&c.t, "Links"))
-            .child(
-                ActionButton::new(ButtonVariant::Secondary)
-                    .icon(IconName::External)
-                    .label("Project page")
-                    .on_press(move |_| open_home.call(home.clone())),
-            )
-            .child(
-                ActionButton::new(ButtonVariant::Ghost)
-                    .icon(IconName::External)
-                    .label("Report a problem")
-                    .on_press(move |_| open_issues.call(issues.clone())),
-            )
+            .children(mods.into_iter().chain(project.into_iter().flatten()).map(IntoElement::into_element))
             .into_element(),
     )
 }

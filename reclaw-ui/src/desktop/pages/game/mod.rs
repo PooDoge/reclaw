@@ -1,5 +1,5 @@
 //! The Game page: one project's banner and action bar, then what to know before playing it: about,
-//! screenshots and videos, recent updates from the project, requirements, the mods made for it.
+//! screenshots and videos, recent updates from the project, requirements, the mods made for it and a link to all of them.
 //!
 //! * `ctx`: everything the sections share, built once per render
 //! * `hero`: the banner and the actions (install or play, favorite, settings); `about`, `media`,
@@ -28,10 +28,11 @@ use crate::{
     desktop::use_desktop_ui,
     effect::Effect,
     metrics::*,
+    mod_games::takes_mods,
     nav::{use_nav, use_page_motion},
     prelude::*,
     shell::use_shell,
-    store::{use_activity_of, use_community_of, use_games, use_mods, use_projects},
+    store::{use_activity_of, use_community_of, use_games, use_moddable, use_mods, use_projects},
 };
 
 #[derive(PartialEq)]
@@ -45,7 +46,7 @@ impl Component for GamePage {
         let (shell, ui, nav) = (use_shell(), use_desktop_ui(), use_nav());
         let motion = use_page_motion();
         let env = *ui.env.read();
-        let (games, projects, mods) = (use_games(), use_projects(), use_mods());
+        let (games, projects, mods, moddable) = (use_games(), use_projects(), use_mods(), use_moddable());
         let activity = use_activity_of(self.id);
         let community = use_community_of(self.id);
         // Read the game's page on quiverlauncher.com each time the page opens (the host asks once however often this runs, and a
@@ -69,8 +70,9 @@ impl Component for GamePage {
             return NotFound { what: "game", id: self.id.to_string() }.into_element();
         };
         let failure = (view.game.status == AppStatus::Failed).then(|| hint_for_game(&activity, self.id));
+        let takes_mods = takes_mods(self.id, &moddable);
         let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0., |d| d.as_millis() as f64);
-        let c = Ctx { t, env, view, nav, dialogs: ui.dialogs, on_effect: shell.on_effect.clone(), failure, community, now };
+        let c = Ctx { t, env, view, nav, dialogs: ui.dialogs, on_effect: shell.on_effect.clone(), failure, ui, takes_mods, community, now };
 
         // After the banner has settled, the sections below it rise in one after another.
         let section = |index: usize, content: Option<Element>| {

@@ -285,3 +285,43 @@
 .fl-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--radius-md);font:600 13px/16px var(--font-sans);color:var(--ink);background:transparent;border:1px solid transparent}
 .fl-btn.secondary{background:var(--bg-raised);border-color:var(--line-strong)}
 /* failure:end */
+/* search:start */
+.sr{font-family:var(--font-sans);color:var(--ink)}
+.sr-slot{position:relative;width:32px;height:32px;flex:none}
+.sr-slot.touch{width:44px;height:44px}
+.sr-bar{position:absolute;top:0;right:0;height:100%;width:100%;display:flex;align-items:center;box-sizing:border-box;overflow:hidden;background:var(--bg-panel);border:1px solid var(--line);border-radius:var(--radius-md);transition:width 240ms cubic-bezier(.16,1,.3,1),background 120ms;cursor:pointer;z-index:2}
+.sr-bar:hover{background:var(--bg-raised);border-color:var(--line-strong)}
+.sr-bar.open{background:var(--bg-raised);border:2px solid var(--accent);cursor:text;box-shadow:var(--shadow-pop)}
+.sr-bar input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:400 14px var(--font-sans);padding:0 32px 0 var(--space-4)}
+.sr-slot.touch .sr-bar input{padding-right:44px}
+.sr-bar input::placeholder{color:var(--ink-subtle)}
+.sr-mag{position:absolute;top:0;right:0;width:30px;height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink-muted)}
+.sr-slot.touch .sr-mag{width:42px}
+.sr-bar.open .sr-mag{color:var(--ink);cursor:pointer;right:-1px}
+.sr-dot{position:absolute;top:1px;right:1px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1.5px var(--bg-nav);z-index:3}
+@media (prefers-reduced-motion:reduce){.sr-bar{transition:none}}
+.sr-results{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-2) var(--space-2) var(--space-4);background:var(--bg-panel);border-left:3px solid var(--accent);border-radius:var(--radius-md);color:var(--accent)}
+.sr-results b{font:600 13px var(--font-sans);color:var(--ink)}
+.sr-results .where{font:400 12px var(--font-sans);color:var(--ink-subtle);flex:1}
+.sr-results .clear{display:inline-flex;align-items:center;gap:var(--space-2);height:32px;padding:0 var(--space-3);font:600 13px var(--font-sans);color:var(--ink-muted)}
+.sr-none{display:flex;flex-direction:column;align-items:center;gap:var(--space-3);padding:var(--space-6);color:var(--ink-subtle)}
+.sr-none h4{margin:0;font:600 16px var(--font-sans);color:var(--ink)}
+.sr-none p{margin:0;font:400 14px var(--font-sans);color:var(--ink-muted)}
+.sr-hit{color:var(--accent);font-weight:700}
+.ms{display:flex;flex-direction:column;gap:var(--space-3)}
+.ms-head{display:flex;align-items:center;gap:var(--space-3)}
+.ms-ico{width:32px;height:32px;border-radius:var(--radius-md);background:var(--bg-raised);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.ms-title{flex:1}
+.ms-title b{font:600 16px var(--font-sans);color:var(--ink)}
+.ms-title .n{font:400 12px var(--font-mono);color:var(--ink-subtle);margin-left:var(--space-2)}
+.ms-title .note{display:block;font:400 12px var(--font-sans);color:var(--ink-subtle)}
+.ms-more{display:inline-flex;align-items:center;gap:var(--space-1);font:600 13px var(--font-sans);color:var(--ink-muted)}
+.ms-grid{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:var(--space-2)}
+.ms-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--bg-panel);border:1px solid var(--line);border-radius:var(--radius-md);min-width:0}
+.ms-row .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--space-1)}
+.ms-row .t{font:600 13px var(--font-sans);color:var(--ink)}
+.ms-row .m{font:400 12px var(--font-sans);color:var(--ink-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-row .s{font:400 14px var(--font-sans);color:var(--ink-muted)}
+.ms-pager{display:flex;align-items:center;gap:var(--space-3)}
+.ms-pager .mid{flex:1;text-align:center;font:400 12px var(--font-sans);color:var(--ink-muted)}
+/* search:end */

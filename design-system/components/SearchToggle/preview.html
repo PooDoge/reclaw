@@ -1,0 +1,10 @@
+<!-- @dsCard group="Inputs" height=170 subtitle="Press it: it opens to the left over what is beside it, and closes on Enter or a click away" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>body{margin:0;padding:16px;background:var(--bg-base);font-family:var(--font-sans);color:var(--ink)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}.cap{font:700 11px/14px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-subtle);margin:0 0 6px}</style></head>
+<body><div id="r"></div><script>
+var R=window.Reclaw,h=React.createElement;
+function App(){return h("div",{className:"col"},
+  h("div",null,h("div",{className:"cap"},"Top bar (wide): closed, between Deck mode and the edge"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.Button,{variant:"ghost",icon:"refresh"},"Recent"),h(R.Button,{variant:"ghost"},"Deck mode"),h(R.SearchToggle,{expanded:320}))),
+  h("div",null,h("div",{className:"cap"},"Open, typing; and closed with a search running (the dot)"),h("div",{className:"row",style:{justifyContent:"flex-end",gap:16,padding:"4px 16px",background:"var(--bg-nav)",maxWidth:620}},h(R.SearchToggle,{open:true,pinned:true,value:"star",expanded:320}),h("span",{style:{width:24}}),h(R.SearchToggle,{active:true}))))}
+ReactDOM.createRoot(document.getElementById("r")).render(h(App));
+</script></body></html>

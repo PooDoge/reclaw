@@ -27,6 +27,7 @@ impl AppState {
             }
             AppAction::SetProjects(projects) => set_if_changed(&mut self.projects, projects, AppChannel::Projects),
             AppAction::SetMods(mods) => set_if_changed(&mut self.mods, mods, AppChannel::Mods),
+            AppAction::SetModdable(ids) => set_if_changed(&mut self.moddable, ids, AppChannel::Mods),
             AppAction::SetCommunity(apps) => set_if_changed(&mut self.community.apps, apps, AppChannel::Community),
             AppAction::CommunityPage { id, page } => {
                 // A page read again keeps showing what it had until the new answer arrives.
