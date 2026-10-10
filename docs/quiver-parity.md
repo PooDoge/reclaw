@@ -33,6 +33,11 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
    private file, checked when pasted, sent to the API host only, and dropped when refused (ADR 0014). **Today nothing calls the GitHub
    API except the token check**; the token pays off with M2's release fetching. Not taken from Quiver: the `PRIVATE-TOKEN` header
    (it would follow a redirect), the banner with a snooze (a notice names the limit when it is hit; the snooze is not built).
+8. **Quiver 3.5 moved the catalog to quiverlauncher.com** (2026-10-09; read from its source, the site not reachable from the sandbox).
+   The GitHub lists are frozen. The app links each library entry to the site (`catalogEntryId`, a `catalog` snapshot), installs only
+   releases the site verified, and shows ratings, reviews, the developer, AI use and VirusTotal results. Reclaw now keeps the two
+   library keys, reads the site beside the lists and shows that information on the game pages (ADR 0023, spec: community). Not yet:
+   browsing from the site, verified-only installs, the flagged-release warning, reporting failed downloads; usage counts are not sent.
 
 ## Status by area
 
@@ -60,6 +65,7 @@ Status: **done** = pure logic with tests; **ui** = drawn over sample data, not c
 | Window, tray, close-to-tray, placement | Avalonia | custom frame, monitors, saved placement **done**; tray **no** | |
 | Announcements, token banner, launcher self-update (Velopack) | `MainView` | announcements **no**; token banner **no** (a notice appears when a limit is hit once releases are fetched); self-update for a source checkout **done** (`scripts/update.sh`, Settings, About; spec: updates), for a packaged build **no** | M3 |
 | Diagnostics (`LaunchDebugReport`) | `LaunchDebugReport` | the log file, its redaction, the diagnostics report and `docs/troubleshooting.md` are **done** (spec: logging); a per-launch debug report waits for launching | M2 |
+| quiverlauncher.com (listing, ratings, reviews, release checks, developer, AI use) | `QuiverWebsiteClient`, `Browse*` | **done** on the game pages (spec: community), against a fake server; browsing from the site, verified-only installs and *Reinstall verified* **no** | live check |
 | CLI (`--run`, list, update) | `CLIHandler` | **no** | later |
 | Android head | `QuiverLauncher.Android` | not planned | |
 

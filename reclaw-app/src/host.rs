@@ -10,6 +10,7 @@
 //! * `install`: installing, updating, uninstalling and checking apps (one thread per job, reported as activity)
 //! * `launch`: starting and stopping apps, through a Windows runner when needed, and following how they end
 //! * `mods`: listing, installing, updating and removing the mods of installed games
+//! * `community`: what quiverlauncher.com says about each game (ratings, reviews, verified releases), read after a refresh and when a page opens
 use std::{
     path::PathBuf,
     sync::{
@@ -36,6 +37,7 @@ use reclaw_ui::{
 
 use crate::browse;
 
+mod community;
 mod credentials;
 mod install;
 mod launch;
@@ -93,6 +95,8 @@ pub struct HostConfig {
     pub platform: Option<Platform>,
     /// Other mod sites than Thunderstore and GameBanana (a test's own server).
     pub mod_sites: Option<reclaw_mods::ModSites>,
+    /// Another quiverlauncher.com API than the real one (`QUIVER_API`, or a test's own server).
+    pub site_api: Option<String>,
 }
 
 impl HostConfig {
@@ -116,6 +120,7 @@ impl HostConfig {
             api: None,
             platform: None,
             mod_sites: None,
+            site_api: None,
         }
     }
 }
@@ -158,6 +163,7 @@ struct Inner {
     logging: Option<Arc<Logging>>,
     installs: install::Installs,
     mods: mods::Mods,
+    community: community::Community,
     runs: launch::Runs,
     protected: Vec<PathBuf>,
 }
@@ -206,6 +212,7 @@ impl Host {
             api,
             platform,
             mod_sites,
+            site_api,
         } = config;
         let store = LibraryStore::new(library_file);
         let mut notices = Vec::new();
@@ -240,6 +247,7 @@ impl Host {
         let platform = platform.unwrap_or_else(Platform::detect);
         let downloads_dir = downloads_dir.unwrap_or_else(|| std::env::temp_dir().join("reclaw-downloads"));
         let mods = mods::Mods::new(net.as_ref(), mod_sites, downloads_dir.join("mods"));
+        let community = community::Community::new(net.as_ref(), site_api);
         let installer = net.clone().map(|net| {
             let source = ReleaseSource::new(net.clone()).with_api(api.unwrap_or_default());
             Installer::new(net, source, downloads_dir)
@@ -263,6 +271,7 @@ impl Host {
                 logging,
                 installs: install::Installs::new(installer, platform, home.clone()),
                 mods,
+                community,
                 runs: {
                     let runs = launch::Runs::new(supervisor, home.as_deref());
                     match probe {
@@ -397,6 +406,8 @@ impl Host {
                 self.send(AppAction::Catalog(status.clone()));
                 // The catalog says which games take mods and where their mods are listed.
                 self.refresh_mods(false);
+                // The games are known: link them to what quiverlauncher.com says about them.
+                self.refresh_community();
                 if status.stale || !status.problems.is_empty() {
                     let title =
                         if status.stale { "Showing a saved copy of the catalog" } else { "Part of the catalog could not be loaded" };
@@ -479,6 +490,7 @@ impl Host {
             Effect::InstallMod { game, provider, id } => self.install_mod(*game, *provider, id),
             Effect::RemoveMod { game, provider, id } => self.remove_mod(*game, *provider, id),
             Effect::RefreshMods => self.refresh_mods(true),
+            Effect::LoadCommunity(app) => self.load_community_page(*app),
             // The rest is the shell's (pages, the window, settings, text boxes) or the gamepad's.
             _ => {}
         }

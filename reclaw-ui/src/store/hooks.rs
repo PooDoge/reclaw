@@ -47,6 +47,11 @@ pub fn use_credentials() -> crate::credentials::CredentialsStatus {
     read(AppChannel::Credentials, |s| s.credentials.clone())
 }
 
+/// What quiverlauncher.com says about one game: its listing entry and its page, once read.
+pub fn use_community_of(id: u32) -> crate::community::CommunityOf {
+    read(AppChannel::Community, |s| s.community.of(id))
+}
+
 pub fn use_mods() -> Vec<ModEntry> {
     read(AppChannel::Mods, |s| s.mods.clone())
 }

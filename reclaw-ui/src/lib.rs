@@ -7,6 +7,7 @@ pub mod banner;
 pub mod bootstrap;
 pub mod catalog;
 pub mod catalog_data;
+pub mod community;
 pub mod components;
 pub mod credentials;
 pub mod deck;

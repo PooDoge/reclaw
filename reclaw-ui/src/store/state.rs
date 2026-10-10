@@ -6,6 +6,7 @@ use reclaw_input::ControllerInfo;
 
 use crate::{
     activity::ActivityBoard,
+    community::Community,
     credentials::CredentialsStatus,
     model::{GameEntry, ModEntry},
     nav::Route,
@@ -29,6 +30,8 @@ pub struct AppState {
     /// What the catalog says about every project, installed or not.
     pub projects: Vec<ProjectInfo>,
     pub mods: Vec<ModEntry>,
+    /// What quiverlauncher.com and its players say about each game, and the game pages read from it.
+    pub community: Community,
     /// Whether the catalog is loading, how fresh it is, and what went wrong with it.
     pub catalog: CatalogStatus,
     /// The access tokens' state (never the tokens). The host fills it in and keeps it current.
@@ -67,6 +70,7 @@ impl AppState {
             games: Vec::new(),
             projects: Vec::new(),
             mods: Vec::new(),
+            community: Community::default(),
             catalog: CatalogStatus::default(),
             credentials: CredentialsStatus::default(),
             activity: ActivityBoard::new(),

@@ -206,3 +206,22 @@ fn rebuilding_the_game_list_keeps_what_is_running() {
     assert!(matches!(s.games[0].run, RunState::Running { pid: 7, .. }), "the host's rebuild does not know what runs");
     assert_eq!(s.games[0].version, "v9", "the rest of the new list is taken");
 }
+
+#[test]
+fn the_community_entries_and_a_games_page_redraw_only_their_readers_and_only_when_they_change() {
+    use crate::community::{PageData, PageState};
+    let mut s = crate::store::AppState::default();
+    let apps = std::collections::BTreeMap::from([(7, reclaw_catalog::site::SiteApp { slug: "sm64".into(), ..Default::default() })]);
+    assert_eq!(s.reduce(AppAction::SetCommunity(apps.clone())), vec![AppChannel::Community]);
+    assert!(s.reduce(AppAction::SetCommunity(apps)).is_empty());
+    assert_eq!(s.community.of(7).app.map(|a| a.slug), Some("sm64".to_string()));
+
+    assert_eq!(s.reduce(AppAction::CommunityPage { id: 7, page: PageState::Loading }), vec![AppChannel::Community]);
+    assert!(s.reduce(AppAction::CommunityPage { id: 7, page: PageState::Loading }).is_empty());
+    let loaded = PageState::Loaded(Box::new(PageData { detail: Ok(None), reviews: Ok(vec![]), releases: Err("offline".into()) }));
+    s.reduce(AppAction::CommunityPage { id: 7, page: loaded.clone() });
+    assert_eq!(s.community.of(7).page, Some(loaded.clone()));
+    assert!(s.reduce(AppAction::CommunityPage { id: 7, page: PageState::Loading }).is_empty(), "read again: the old page stays");
+    assert_eq!(s.community.of(7).page, Some(loaded));
+    assert_eq!(s.community.of(8), crate::community::CommunityOf::default());
+}

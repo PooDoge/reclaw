@@ -20,6 +20,10 @@ pub(super) struct Ctx {
     pub on_effect: EventHandler<Effect>,
     /// What the Failed badge says and opens, when the game is shown as failed.
     pub failure: Option<FailureHint>,
+    /// What quiverlauncher.com says about the game, when it has an entry there.
+    pub community: crate::community::CommunityOf,
+    /// Now, in JavaScript milliseconds, for "updated 3 d ago".
+    pub now: f64,
 }
 
 impl Ctx {

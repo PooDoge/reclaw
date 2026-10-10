@@ -17,12 +17,12 @@ What each area does today is in `docs/specs/`; why it is that way is in `docs/ad
 | `reclaw-input` | Pad buttons to `Action`s, SDL mapping, spatial focus, press-and-hold (`HoldTracker`), environment detection, the gilrs reader (`gilrs-backend`) | no |
 | `reclaw-runtime` | Launching apps as process groups, the `Supervisor` (Stop, force-kill, session events), the clean environment a game starts with, Wine / Proton / custom runners for Windows programs on Linux, controller `InputProfile` (spec: launch) | no |
 | `reclaw-games` | What a project is (catalog metadata, art, media, releases), the systems games came from (`platform`), launch-setting capabilities and how a launch plan is built (`settings`) | no |
-| `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format) | no |
+| `reclaw-catalog` | The catalog and the library in Quiver's format: apps, lists, the community index, the platform index, and the optional `reclaw` block (spec: catalog-format); quiverlauncher.com's types and linking (`site/`, spec: community) | no |
 | `reclaw-log` | The log file, its redaction of credentials, the panic hook, the `Secret` type, one job's own lines (`record`); no dependency on the rest (spec: logging) | no |
 | `reclaw-net` | The one HTTP client: honest user agent, retries, rate-limit and bot-check awareness, disk cache, resumable hashed downloads, access tokens that can change and be checked, `probe` (specs: network, credentials) | no |
 | `reclaw-install` | Which release and which file fit this machine (Quiver's rules, ported), fetching releases from GitHub and GitLab, unpacking zip / tar.gz / tar.xz / 7z safely, the install itself (stage, lay over the folder, write the version last), uninstall with its refusals (spec: install) | no |
 | `reclaw-mods` | Mods from Thunderstore and GameBanana: listing, the install (dependencies first, staged, never over another mod's files), removal, and Quiver's `.quiver-mods.json` record (spec: mods) | no |
-| `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock | no |
+| `reclaw-sync` | Loading the community catalog (index, lists, platform metadata) with offline fallback, and the library file with backups and a lock; the quiverlauncher.com client (`site.rs`) | no |
 | `reclaw-config` | What is remembered between runs: one TOML file, tolerant load, atomic debounced save; the access tokens in their own private file | no |
 | `reclaw-media` | Everything fetched from the internet to show: the address policy, the on-disk cache, the worker hub, README splitting | no |
 | `reclaw` (`reclaw-app/`) | The program: the host that loads the catalog, keeps the library and the tokens, runs installs, updates, uninstalls, launches and mod jobs, writes the diagnostics report, updates from source, and answers the screens' requests; `main` starts the log and the window | yes |
@@ -43,6 +43,7 @@ catalog.rs launch.rs     one game's view-model for its page; what Play says per 
 
 store/                   shared state: AppState, AppAction, reduce, channels, Store handle, hooks  (spec: state)
 activity/                installs, updates, mod downloads: the board, indicators, time left         (spec: state)
+community/               what quiverlauncher.com says about a game: linking, wording            (spec: community)
 notices/                 messages about background events, and which button is held for what       (spec: notices-and-holds)
 settings/                settings as data (schema, values, persistence, geometry, launch rows)
 nav/                     Route enum, Nav handle, transitions, recents, layers, input               (spec: routing)

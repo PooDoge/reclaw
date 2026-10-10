@@ -109,6 +109,9 @@ pub enum Effect {
     },
     /// Ask the mod sites again for the mods of every installed game that has them.
     RefreshMods,
+    /// A game's page opened: read what quiverlauncher.com says about it (who made it, player reviews, its releases), when it has an
+    /// entry there.
+    LoadCommunity(u32),
     /// Open a link (a project page, a release, a video) in the system browser or player.
     OpenUrl(String),
     SwitchToDesktop,

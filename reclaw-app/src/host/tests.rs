@@ -90,8 +90,12 @@ fn rig(server: Option<TestServer>, library_text: Option<&str>) -> Rig {
     let net = Net::new(config).expect("net");
     let url = server.as_ref().map(|s| s.url("/index.json")).unwrap_or_else(|| "http://127.0.0.1:1/index.json".into());
     let sink = Arc::new(Collector::default());
-    let (host, initial) =
-        Host::open(HostConfig { index_url: Some(url.clone()), ..HostConfig::new(Some(net.clone()), library_file.clone()) }, sink.clone());
+    // The catalog's server has no quiverlauncher.com API, so linking finds nothing and sends nothing (`host::community` tests it).
+    let site_api = server.as_ref().map(|s| s.url("/api/v1"));
+    let (host, initial) = Host::open(
+        HostConfig { index_url: Some(url.clone()), site_api, ..HostConfig::new(Some(net.clone()), library_file.clone()) },
+        sink.clone(),
+    );
     let sync = CatalogSync::new(net).with_index_url(url);
     Rig { host, sync, sink, initial, library_file, _dir: dir, _server: server }
 }

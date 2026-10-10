@@ -9,6 +9,8 @@ pub enum AppChannel {
     Games,
     Projects,
     Mods,
+    /// What quiverlauncher.com says about the games.
+    Community,
     /// The catalog loader's status.
     Catalog,
     /// Whether each service has an access token and what it allows.

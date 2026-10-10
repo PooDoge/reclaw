@@ -26,6 +26,12 @@ pub struct AppEntry {
     pub mods: ModsConfig,
     /// A stable id issued by the catalog's website; kept so an entry can be recognised across renames.
     pub catalog_id: Option<String>,
+    /// The id of the quiverlauncher.com entry the app was added from or last linked to (Quiver 3.5's `catalogEntryId`). It does not
+    /// change when the site renames things, so it links the app to its entry before the repository is compared.
+    pub catalog_entry_id: Option<String>,
+    /// What the site's catalog last set on this library app (Quiver 3.5's `catalog`), kept so a later change of the site's does not
+    /// overwrite one the user made. Reclaw does not sync these fields yet; it keeps them so Quiver still can.
+    pub catalog_snapshot: Option<crate::snapshot::CatalogSnapshot>,
     /// Reclaw's own optional block (`reclaw`): pictures, text and requirements Quiver's format has no place for.
     pub extension: Option<Extension>,
 
