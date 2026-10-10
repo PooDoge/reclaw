@@ -27,7 +27,7 @@ pub enum TypeStyle {
 }
 
 impl TypeStyle {
-    fn spec(self) -> (f32, FontWeight, &'static str) {
+    pub(crate) fn spec(self) -> (f32, FontWeight, &'static str) {
         match self {
             Self::TitleHero => (32., FontWeight::BOLD, FONT_SANS),
             Self::TitlePage => (22., FontWeight::BOLD, FONT_SANS),

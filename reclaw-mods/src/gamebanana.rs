@@ -2,11 +2,13 @@
 //!
 //! The shapes are the ones Quiver's working client reads (read 2026-10-06; GameBanana itself could not be reached from where this
 //! was written): a game's mods at `/apiv13/Mod/Index` filtered by `Generic_Game`, and one mod's files at `/apiv11/Mod/<id>`.
-//! Numbers sometimes arrive as strings, and the preview picture has been seen under two names; both are read.
+//! Numbers sometimes arrive as strings, and the preview picture has been seen under two names; both are read. The dates
+//! (`_tsDateAdded`, `_tsDateUpdated` or `_tsDateModified`, seconds since 1970) are not in Quiver's client and were not seen in a
+//! real answer: the names are GameBanana's as remembered, unconfirmed. A record without them still reads.
 use serde_json::Value;
 
 use crate::{
-    package::{Download, Package, Page, Sort, encode, flag, number, text},
+    package::{Download, Package, Page, Sort, encode, flag, number, text, timestamp},
     source::Provider,
 };
 
@@ -67,6 +69,8 @@ fn listed_mod(record: &Value, game: &str) -> Option<Package> {
         rating: number(record.get("_nLikeCount")).unwrap_or(0),
         version: text(record.get("_sVersion")).unwrap_or_default(),
         size: None,
+        created: timestamp(record.get("_tsDateAdded")),
+        updated: timestamp(record.get("_tsDateUpdated")).or_else(|| timestamp(record.get("_tsDateModified"))),
         id,
         owner,
         name,

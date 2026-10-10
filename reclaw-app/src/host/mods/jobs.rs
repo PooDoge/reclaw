@@ -48,7 +48,7 @@ impl Host {
             .mods
             .listings()
             .get(&game.key)
-            .and_then(|l| l.iter().find(|p| p.provider == provider && p.id.eq_ignore_ascii_case(id)).cloned());
+            .and_then(|l| l.iter().map(|l| &l.package).find(|p| p.provider == provider && p.id.eq_ignore_ascii_case(id)).cloned());
         listed.or_else(|| {
             let document = Document::load(&game.folder).ok()?;
             document.find(provider, id).next().map(|r| entries::package_from_record(r, provider))
@@ -88,7 +88,8 @@ impl Host {
             }
             jobs.insert(key.clone(), Running { activity, cancel: cancel.clone() });
         }
-        let title = entries::from_package(game.id, &package, None, false).title;
+        let title =
+            entries::from_listed(game.id, &entries::Listed { package: package.clone(), ranks: Default::default() }, None, false).title;
         self.send(AppAction::Activity(ActivityEvent::Started {
             id: activity,
             game_id: game.id,

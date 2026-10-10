@@ -31,7 +31,7 @@ fn a_listing_page_becomes_packages() {
         "count": 41,
         "next": "https://thunderstore.io/api/cyberstorm/listing/zelda-64-recompiled/?ordering=most-downloaded&page=3",
         "results": [
-            {"name": "Better_Camera", "namespace": "Cam", "description": "Free camera", "download_count": 12904, "icon_url": "https://gcdn.thunderstore.io/live/repository/icons/Cam-Better_Camera-1.2.0.png", "is_deprecated": false, "is_nsfw": false, "rating_count": 30, "size": 52000},
+            {"name": "Better_Camera", "namespace": "Cam", "description": "Free camera", "download_count": 12904, "icon_url": "https://gcdn.thunderstore.io/live/repository/icons/Cam-Better_Camera-1.2.0.png", "is_deprecated": false, "is_nsfw": false, "rating_count": 30, "size": 52000, "datetime_created": "2024-03-05T14:22:31.5Z", "last_updated": "2024-04-01T00:00:00Z"},
             {"name": "", "namespace": "Nobody"},
             {"name": "Old", "namespace": "X", "is_deprecated": true}
         ]
@@ -42,6 +42,8 @@ fn a_listing_page_becomes_packages() {
     assert_eq!((first.id.as_str(), first.owner.as_str(), first.name.as_str()), ("Cam-Better_Camera", "Cam", "Better_Camera"));
     assert_eq!((first.version.as_str(), first.downloads, first.rating, first.size), ("1.2.0", 12904, 30, Some(52000)));
     assert_eq!(first.page_url.as_deref(), Some("https://thunderstore.io/c/zelda-64-recompiled/p/Cam/Better_Camera/"));
+    assert_eq!((first.created, first.updated), (Some(1_709_648_551), Some(1_711_929_600)));
+    assert_eq!(page.packages[1].created, None, "a listing without dates still reads");
     assert!(page.packages[1].deprecated && page.packages[1].version.is_empty());
     assert!(parse_listing(b"[]", "c").is_err());
     assert!(parse_listing(json!({"results": [], "next": null}).to_string().as_bytes(), "c").is_ok_and(|p| p.next.is_none()));

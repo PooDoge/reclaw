@@ -1,13 +1,15 @@
 use freya::prelude::*;
 
+use super::highlighted;
 use crate::{
     components::{hoverable, pointer_cursor},
     effect::Effect,
     metrics::*,
-    model::{ModEntry, ModStatus},
+    model::{ModEntry, ModProvider, ModStatus},
     nav::{Route, use_nav},
     prelude::*,
     shell::use_shell,
+    store::now_secs,
     typography::TypeStyle,
 };
 
@@ -16,7 +18,54 @@ use crate::{
 #[derive(Clone, PartialEq)]
 pub struct ModRow {
     pub entry: ModEntry,
+    /// A search the row was found by: the words it matched are highlighted in its title.
+    pub query: String,
     pub key: DiffKey,
+}
+
+impl ModRow {
+    pub fn new(entry: ModEntry) -> Self {
+        Self { entry, query: String::new(), key: DiffKey::None }
+    }
+
+    pub fn query(mut self, query: impl Into<String>) -> Self {
+        self.query = query.into();
+        self
+    }
+}
+
+/// "3 days ago": how long since `then`, roughly, for a line of small print.
+pub fn ago(then: u64, now: u64) -> String {
+    let secs = now.saturating_sub(then);
+    let (n, unit) = match secs {
+        0..=3_599 => return "just now".to_string(),
+        3_600..=86_399 => (secs / 3_600, "hour"),
+        86_400..=2_591_999 => (secs / 86_400, "day"),
+        2_592_000..=31_535_999 => (secs / 2_592_000, "month"),
+        _ => (secs / 31_536_000, "year"),
+    };
+    format!("{n} {unit}{} ago", if n == 1 { "" } else { "s" })
+}
+
+/// The small print under a mod's title: who, where, which version, how popular, how recent.
+pub fn meta_line(e: &ModEntry, now: u64) -> String {
+    let rating = match (e.rating, e.provider) {
+        (0, _) => String::new(),
+        (n, ModProvider::Thunderstore) => format!("{} ratings", compact_count(n)),
+        (n, ModProvider::GameBanana) => format!("{} likes", compact_count(n)),
+    };
+    [
+        e.author.clone(),
+        e.provider.label().to_string(),
+        version_text(e),
+        format!("{} downloads", compact_count(e.downloads)),
+        rating,
+        e.updated.map(|u| format!("updated {}", ago(u, now))).unwrap_or_default(),
+    ]
+    .into_iter()
+    .filter(|part| !part.is_empty())
+    .collect::<Vec<_>>()
+    .join(" \u{b7} ")
 }
 
 impl KeyExt for ModRow {
@@ -117,25 +166,12 @@ impl Component for ModRow {
                     .vertical()
                     .spacing(SPACE_1)
                     .width(Size::flex(1.))
-                    .child(TypeStyle::Label.text(e.title.clone(), t.ink).max_lines(1).text_overflow(TextOverflow::Ellipsis))
-                    .child(
-                        TypeStyle::Meta
-                            .text(
-                                [
-                                    e.author.clone(),
-                                    e.provider.label().to_string(),
-                                    version_text(e),
-                                    format!("{} downloads", compact_count(e.downloads)),
-                                ]
-                                .into_iter()
-                                .filter(|part| !part.is_empty())
-                                .collect::<Vec<_>>()
-                                .join(" · "),
-                                t.ink_subtle,
-                            )
-                            .max_lines(1)
-                            .text_overflow(TextOverflow::Ellipsis),
-                    )
+                    .child(if self.query.trim().is_empty() {
+                        TypeStyle::Label.text(e.title.clone(), t.ink).max_lines(1).text_overflow(TextOverflow::Ellipsis).into_element()
+                    } else {
+                        highlighted(&t, &e.title, &self.query, TypeStyle::Label, t.ink).into_element()
+                    })
+                    .child(TypeStyle::Meta.text(meta_line(e, now_secs()), t.ink_subtle).max_lines(1).text_overflow(TextOverflow::Ellipsis))
                     .child(TypeStyle::Body.text(e.summary.clone(), t.ink_muted).max_lines(2).text_overflow(TextOverflow::Ellipsis)),
             )
             .child(button);
@@ -147,6 +183,29 @@ impl Component for ModRow {
 mod tests {
     use super::*;
     use crate::fixtures::sample_mods;
+
+    #[test]
+    fn ages_are_rough() {
+        let now = 10_000_000;
+        assert_eq!(ago(now - 10, now), "just now");
+        assert_eq!(ago(now - 7_200, now), "2 hours ago");
+        assert_eq!(ago(now - 86_400, now), "1 day ago");
+        assert_eq!(ago(now - 90 * 86_400, now), "3 months ago");
+        assert_eq!(ago(now + 50, now), "just now", "a clock behind the site's says nothing odd");
+    }
+
+    #[test]
+    fn the_small_print_has_what_the_site_said() {
+        let mut m = sample_mods().remove(0);
+        m.updated = Some(1_000);
+        assert_eq!(
+            meta_line(&m, 1_000 + 2 * 86_400),
+            "pixelwright \u{b7} Thunderstore \u{b7} v2.1.0 \u{b7} 48.2k downloads \u{b7} 120 ratings \u{b7} updated 2 days ago"
+        );
+        m.rating = 0;
+        m.updated = None;
+        assert!(!meta_line(&m, 0).contains("ratings") && !meta_line(&m, 0).contains("updated"));
+    }
 
     #[test]
     fn downloads_are_abbreviated() {

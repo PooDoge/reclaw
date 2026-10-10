@@ -162,6 +162,23 @@ pub struct ModEntry {
     pub icon: Option<String>,
     /// The mod's page on its site.
     pub page_url: Option<String>,
+    /// Thunderstore's ratings, GameBanana's likes.
+    pub rating: u64,
+    /// First published and last updated, in seconds since 1970, when the site says.
+    pub created: Option<u64>,
+    pub updated: Option<u64>,
+    /// Where the site put it in each order it was asked for.
+    pub ranks: ModRanks,
+}
+
+/// A mod's place in each of its site's orders, 0 first; `None` when it was not among those listed in that order. The Mods tab's
+/// sections are built from these, so a section shows what the site itself ranks, not a re-sort of one listing.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct ModRanks {
+    pub downloads: Option<u32>,
+    pub rating: Option<u32>,
+    pub updated: Option<u32>,
+    pub newest: Option<u32>,
 }
 
 impl ModEntry {

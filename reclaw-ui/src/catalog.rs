@@ -83,13 +83,11 @@ pub fn mods_matching(mods: &[ModEntry], game: Option<u32>, provider: Option<ModP
         .collect()
 }
 
-/// Whether a title, project name or any tag contains `query`, ignoring case. An empty query matches.
+/// Whether every word of `query` is in the title, project name or a tag, ignoring case. An empty query matches.
 pub fn matches_query(game: &GameEntry, query: &str) -> bool {
-    let query = query.trim().to_lowercase();
-    query.is_empty()
-        || game.title.to_lowercase().contains(&query)
-        || game.project.to_lowercase().contains(&query)
-        || game.tags.iter().any(|tag| tag.to_lowercase().contains(&query))
+    let mut fields = vec![&*game.title, &*game.project];
+    fields.extend(game.tags.iter().map(|tag| &**tag));
+    crate::search::matches_all(&fields, query)
 }
 
 #[cfg(test)]
@@ -198,5 +196,8 @@ mod tests {
         assert!(matches_query(&games[1], "mods"));
         assert!(matches_query(&games[0], ""));
         assert!(!matches_query(&games[0], "zelda"));
+        // Every word, in any field and any order.
+        assert!(matches_query(&games[0], "n64 starfall"));
+        assert!(!matches_query(&games[0], "starfall zelda"));
     }
 }

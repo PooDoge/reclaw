@@ -33,7 +33,9 @@ pub(super) struct Ctx {
     pub system: State<Option<Platform>>,
     pub systems: Vec<(Platform, u32)>,
     pub sort: Sort,
-    pub search: State<String>,
+    /// The Library's running search; empty when none.
+    pub query: String,
+    pub on_clear_search: EventHandler<()>,
     pub dialogs: GameDialogs,
     pub nav: Nav,
     pub on_effect: EventHandler<Effect>,

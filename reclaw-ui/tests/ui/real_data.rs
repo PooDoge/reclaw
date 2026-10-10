@@ -54,19 +54,17 @@ fn a_catalog_that_arrives_after_the_first_frame_fills_the_page_without_breaking_
 #[test]
 fn a_search_that_matches_nothing_and_is_then_cleared_does_not_break_the_grid() {
     let Loaded { projects, games } = catalog_data::load(&apps_from(SMALL).expect("a catalog"), &[], &Default::default());
-    // In a compact window the search box sits under the page title.
+    // In a compact window the search button floats at the page's top right, beside the rail.
     let mut s = Mount::desktop().size(900., 900.).dev(calm()).games(games).projects(projects).start_at(Route::Catalog {});
     assert!(s.has_label("Alpha Quest"));
-    let (left, _, _, bottom) = s.label_box("3 recompilation projects").expect("the summary line");
-    s.runner.click_cursor((f64::from(left + 120.), f64::from(bottom + 30.)));
+    s.runner.click_cursor(((900. - 16. - 18.), (16. + 18.)));
     s.settle();
     s.type_text("zzzz-nothing");
     s.settle();
-    assert!(s.has_label("No projects match"), "{:?}", s.labels());
-    for _ in 0..12 {
-        s.press(NamedKey::Backspace);
-    }
+    s.press(NamedKey::Enter);
     s.settle();
+    assert!(s.has_label("Nothing in the catalog matches \u{201c}zzzz-nothing\u{201d}"), "{:?}", s.labels());
+    s.click_label("Clear search");
     assert!(s.has_label("Alpha Quest"), "the grid is back: {:?}", s.labels());
 }
 

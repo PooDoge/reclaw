@@ -101,8 +101,12 @@ pub fn sample_mods() -> Vec<ModEntry> {
         status,
         icon: None,
         page_url: Some(format!("https://example.invalid/mods/{id}")),
+        rating: downloads / 400,
+        created: Some(1_700_000_000 + downloads),
+        updated: Some(1_710_000_000 - downloads),
+        ranks: Default::default(),
     };
-    vec![
+    ranked(vec![
         mod_(
             ModProvider::Thunderstore,
             "hd-textures",
@@ -158,7 +162,24 @@ pub fn sample_mods() -> Vec<ModEntry> {
             2_033,
             ModStatus::Installing,
         ),
-    ]
+    ])
+}
+
+/// Each mod's place among its game's mods on the same site, in each order, as a site would rank them.
+pub fn ranked(mut mods: Vec<ModEntry>) -> Vec<ModEntry> {
+    let rank = |mods: &[ModEntry], m: &ModEntry, key: &dyn Fn(&ModEntry) -> u64| {
+        mods.iter().filter(|o| o.game_id == m.game_id && o.provider == m.provider && key(o) > key(m)).count() as u32
+    };
+    let snapshot = mods.clone();
+    for m in &mut mods {
+        m.ranks = crate::model::ModRanks {
+            downloads: Some(rank(&snapshot, m, &|o| o.downloads)),
+            rating: Some(rank(&snapshot, m, &|o| o.rating)),
+            updated: Some(rank(&snapshot, m, &|o| o.updated.unwrap_or(0))),
+            newest: Some(rank(&snapshot, m, &|o| o.created.unwrap_or(0))),
+        };
+    }
+    mods
 }
 
 use crate::store::AppState;

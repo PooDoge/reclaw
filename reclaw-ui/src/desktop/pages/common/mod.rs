@@ -2,11 +2,14 @@
 //! cards and headings, the capsule grid.
 //!
 //! * `not_found`: the page for an id nothing knows; `mod_row`: one mod in a list
+//! * `results`: the line above a search's results, an empty search, highlighted matches
 mod mod_row;
 mod not_found;
+mod results;
 
 pub use mod_row::{ModRow, compact_count, mod_action, mod_effect, mod_icon, version_text};
 pub use not_found::NotFound;
+pub use results::{highlighted, no_results, results_bar};
 
 use freya::prelude::*;
 
@@ -149,35 +152,31 @@ pub fn card(t: &Reclaw, lines: impl IntoIterator<Item = Element>) -> Rect {
         .children(lines)
 }
 
-/// The title row of a top-level page: its name and a short summary, and on layouts without the top
-/// bar's search field (compact and phone), a search box below.
-pub fn tab_header(t: &Reclaw, env: &DesktopEnv, title: &'static str, summary: String, search: State<String>) -> Rect {
-    tab_header_with(t, env, title, summary, search, None)
+/// The title row of a top-level page: its name and a short summary. On layouts without the top bar (compact and phone) the
+/// search button floats at the row's right end, so the row leaves that corner free.
+pub fn tab_header(t: &Reclaw, env: &DesktopEnv, title: &'static str, summary: String) -> Rect {
+    tab_header_with(t, env, title, summary, None)
 }
 
 /// [`tab_header`] with something at the end of the title row (a Refresh button, say).
-pub fn tab_header_with(
-    t: &Reclaw,
-    env: &DesktopEnv,
-    title: &'static str,
-    summary: String,
-    search: State<String>,
-    trailing: Option<Element>,
-) -> Rect {
+pub fn tab_header_with(t: &Reclaw, env: &DesktopEnv, title: &'static str, summary: String, trailing: Option<Element>) -> Rect {
     rect()
-        .vertical()
+        .horizontal()
+        .cross_align(Alignment::End)
         .spacing(SPACE_3)
         .width(Size::fill())
-        .child(
-            rect()
-                .horizontal()
-                .cross_align(Alignment::End)
-                .spacing(SPACE_3)
-                .child(TypeStyle::TitlePage.text(title, t.ink))
-                .child(TypeStyle::Meta.text(summary, t.ink_subtle))
-                .maybe_child(trailing),
-        )
-        .maybe(env.class != LayoutClass::Wide, |el| el.child(SearchField::new(search).density(env.density)))
+        .padding(Gaps::new(0., floating_search_reserve(env), 0., 0.))
+        .child(TypeStyle::TitlePage.text(title, t.ink))
+        .child(TypeStyle::Meta.text(summary, t.ink_subtle).max_lines(1).text_overflow(TextOverflow::Ellipsis))
+        .maybe_child(trailing)
+}
+
+/// The width a page's first row leaves free at its right end for the floating search button (compact and phone).
+pub fn floating_search_reserve(env: &DesktopEnv) -> f32 {
+    match env.class {
+        LayoutClass::Wide => 0.,
+        class => crate::desktop::search_button_size(class, env.density) + SPACE_2,
+    }
 }
 
 /// Nothing to show, and why: an empty list is explained, never blank.

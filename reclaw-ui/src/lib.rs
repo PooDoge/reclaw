@@ -22,11 +22,13 @@ pub mod launch_request;
 pub mod media;
 pub mod metrics;
 pub mod mod_games;
+pub mod mod_shelves;
 pub mod model;
 pub mod nav;
 pub mod notices;
 pub mod pages;
 
+pub mod search;
 pub mod settings;
 pub mod shell;
 pub mod store;

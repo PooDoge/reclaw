@@ -13,7 +13,7 @@ use std::{
 };
 
 use reclaw_catalog::mods::ModsConfig;
-use reclaw_mods::{Document, ModInstaller, ModSites, Package, Provider};
+use reclaw_mods::{Document, ModInstaller, ModSites, Provider};
 use reclaw_net::{Cancel, Net};
 use reclaw_ui::{
     activity::ActivityId,
@@ -40,8 +40,8 @@ struct Running {
 pub struct Mods {
     sites: Option<ModSites>,
     installer: Option<ModInstaller>,
-    /// The last listing of each game, by its key: every source's packages, in the sites' order.
-    listings: Mutex<HashMap<String, Vec<Package>>>,
+    /// The last listing of each game, by its key: every source's packages, in the sites' order, with their place in each order.
+    listings: Mutex<HashMap<String, Vec<entries::Listed>>>,
     jobs: Mutex<HashMap<JobKey, Running>>,
     refreshing: AtomicBool,
 }
@@ -60,7 +60,7 @@ impl Mods {
         }
     }
 
-    fn listings(&self) -> MutexGuard<'_, HashMap<String, Vec<Package>>> {
+    fn listings(&self) -> MutexGuard<'_, HashMap<String, Vec<entries::Listed>>> {
         self.listings.lock().unwrap_or_else(|e| e.into_inner())
     }
 
